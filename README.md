@@ -1,43 +1,42 @@
 # Agents
 
-Скиллы, упакованные как автономные агенты: подключаются плагином в Claude Code или загружаются в любой другой ИИ.
+Скиллы, упакованные как автономные агенты: подключаются плагином в Claude Code или загружаются в любой другой ИИ (ChatGPT, Gemini, Claude.ai, Codex, Cursor).
 
 ## Агенты
 
-| Агент | Статус | Что делает |
+| Агент | Плагин | Что делает |
 |---|---|---|
-| `amazon-creative-studio` (Design) | v2.0 готов | Карусель (MAIN + 2-7), A+, Brand Story, Store, реклама, видео, 3D: план, копирайт, локализация, ТЗ дизайнеру, промпты для ИИ-генераторов, production XLSX, preflight. Реальный товар не перерисовывается. |
-| Amazon Product Intelligence (Agent 1) | в очереди | из `Amazon_Agents_Universal_v3.zip` |
-| Amazon Feed Compiler (Agent 2) | в очереди | из `Amazon_Agents_Universal_v3.zip` |
-| Amazon Feed Error Agent | в очереди | из `Amazon_Agents_Universal_v3.zip` |
+| Design | `amazon-creative-studio` | Карусель (MAIN + 2-7), A+, Brand Story, Store, реклама, видео, 3D: план, копирайт, локализация, ТЗ дизайнеру, промпты для ИИ-генераторов, production XLSX, preflight. Реальный товар не перерисовывается. |
+| Agent 1 | `amazon-product-intelligence` | TTX/каталог/фото/SEO → проверенный пакет товара: GTIN, evidence matrix, claims, product type, SEO-контент (title, bullets, description, backend), цены Sale→Standard→Business, версии/хэши, запечатанный handoff для Agent 2. |
+| Agent 2 | `amazon-feed-compiler` | Пустой шаблон Amazon + пакет Agent 1 → заполненный feed: инспекция шаблона, маппинг, dry run, запись только в Template с 7-й строки, guard-проверка, манифест, разбор Processing Report. |
+| Error Agent | `amazon-feed-error-agent` | Processing Report → причины ошибок → Change Plan (до/после) → правки только после подтверждения на чистой пересборке → QA и повторный анализ. |
 
-## Как работает агент (минимум ручной работы)
+Цепочка: **Agent 1 → Agent 2 → загрузка в Amazon → Error Agent → (исправленный feed) → загрузка → Error Agent …**. Все три Amazon-агента делят папку `amazon-project/` и файл памяти `PROJECT.md`, поэтому одно и то же объяснять дважды не нужно.
 
-- **Один чекпоинт вместо пяти гейтов.** Агент сам читает XLSX/файлы, классифицирует каждую строку, предлагает копирайт и раскладку и присылает один план. Ответ: `ok` или `3: ..., 8: ...`.
-- **Вопросы только по блокерам**, одним сообщением, с уже подставленным рекомендуемым ответом.
-- **Режимы:** `AUTOPILOT` («делай сам»), `SMART` (по умолчанию), `GUIDED` (подтверждение каждого этапа).
-- **Память проекта** `creative-studio/PROJECT.md`: бренд, рынки, решения, термины. Объяснять второй раз не нужно.
-- **Скрипты, которые агент запускает сам:** `validate_asset.py` (проверка изображений/видео), `build_workbook.py` (production XLSX).
-- Итог всегда со статусом `READY FOR AMAZON CREATIVE UPLOAD` / `READY AFTER USER-APPROVED CROP/EXPORT` / `NOT READY ...` и одним `NEXT:`.
+## Как работают агенты (минимум ручной работы)
+
+- **Один чекпоинт вместо россыпи гейтов.** Агент сам читает файлы, классифицирует, считает и присылает один план. Ответ: `ok` или правки по номерам.
+- **Вопросы только по блокерам**, одним сообщением, с уже подставленным рекомендуемым ответом, сгруппированно (не «по каждому SKU»).
+- **Режимы:** `AUTOPILOT` («делай сам»), `SMART` (по умолчанию), `GUIDED` (каждый этап), у Agent 2 ещё `SIMULATION_MODE`.
+- **Память проекта** (`PROJECT.md`): бренд/рынки/шаблоны/решения/правила пользователя.
+- **Скрипты запускает сам агент**, а не вы: цены (точный Decimal), GTIN, проверка контента, инспекция и безопасная запись xlsm, доказательство «изменились только разрешённые ячейки», манифест, сравнение отчётов Amazon, валидация изображений/видео.
+- **Честные статусы:** `READY…` только после прохождения проверок, иначе `NOT READY…` с точными строками/ячейками.
 
 ## Подключение
 
-**Claude Code (плагин):**
+Подробно по каждой платформе: [`docs/CONNECT.md`](docs/CONNECT.md).
+
+**Claude Code:**
 ```
 /plugin marketplace add business2business17-ui/Agents
 /plugin install amazon-creative-studio@business2business17-agents
+/plugin install amazon-product-intelligence@business2business17-agents
+/plugin install amazon-feed-compiler@business2business17-agents
+/plugin install amazon-feed-error-agent@business2business17-agents
 ```
-Появятся агент `amazon-creative-studio` и одноимённый скилл.
+Работает после слияния ветки в `main`; до этого: `git clone -b <ветка> …` и `/plugin marketplace add ./Agents`.
 
-**Любой другой ИИ** (готовые файлы в `dist/amazon-creative-studio/`, архив `dist/amazon-creative-studio.zip`):
-
-| Платформа | Что взять |
-|---|---|
-| Claude Projects, Gemini Gem, Cursor rules, Codex `AGENTS.md`, любой API (system prompt) | `system-prompt.md` (автономный, все референсы внутри) |
-| ChatGPT Custom GPT (лимит Instructions 8000 симв.) | `instructions-short.md` + файлы из `knowledge/` в Knowledge |
-| Среда с выполнением кода | дополнительно `knowledge/scripts/` |
-
-Без доступа к файлам агент выводит обновлённый блок памяти проекта в конце ответа.
+**Другие ИИ:** готовые файлы в `dist/<агент>/` и архивы `dist/<агент>.zip`: `system-prompt.md` (всё внутри) или `instructions-short.md` (≤ 8000 символов, для Custom GPT) + `knowledge/` (справочники, скрипты, шаблоны).
 
 ## Структура
 
@@ -46,20 +45,23 @@
 plugins/<agent>/
   .claude-plugin/plugin.json
   agents/<agent>.md                  определение агента (контракт работы)
-  skills/<agent>/SKILL.md            протокол + references/ scripts/ assets/   <- источник истины
+  skills/<agent>/SKILL.md            протокол агента  <- источник истины
+  skills/<agent>/references/ scripts/ assets/
+shared/amazon/                       общий код и политика трёх Amazon-агентов (источник истины)
 dist/<agent>/                        собирается: python3 tools/build_portable.py
-tools/build_portable.py              --check для проверки актуальности dist
+tools/sync_shared.py                 копирует shared/ в плагины (--check для CI)
+tools/build_portable.py              собирает dist/ (--check для CI)
+tests/test_amazon_tools.py           регрессионные тесты скриптов
 ```
 
-После правок в `plugins/` запускайте `python3 tools/build_portable.py`.
+После правок: `python3 tools/sync_shared.py && python3 tools/build_portable.py && python3 -m unittest discover -s tests`.
 
-## Стандарт для следующих агентов
+## Стандарт агента
 
-Каждый скилл доводится до одного формата: протокол автономной работы в `SKILL.md` (принципы, режимы, пайплайн, чекпоинты, жёсткие правила, итоговые статусы), знания в `references/`, детерминированные проверки в `scripts/`, память проекта, один агент-файл. Метки достоверности правил (`REQUIRED` / `RECOMMENDED` / `PRESET` / `VERIFY_IN_UI`) вместо выдуманных значений.
+`SKILL.md`: принципы → режимы → память → пайплайн с чекпоинтами → жёсткие правила + «Precedence and errata» → скрипты → карта референсов. Длинные оригинальные спецификации разложены по `references/` без потери разделов; найденные противоречия разрешены явно в errata (например: «строку 7 проверять и не сдвигать молча», «отсутствие ставки B2B — не блокер», «Humanizer = гигиена текста, не обход защиты Amazon»).
 
-## Что изменено в Design v2.0 относительно Design.zip
+## Ограничения и что не проверялось
 
-- В `SKILL.md` добавлен протокол агента: принципы, режимы, память, чекпоинты C1/C3 (5 гейтов объединены в один пакетный чекпоинт).
-- Реально созданы скрипты `validate_asset.py` и `build_workbook.py` (в исходном скилле на них были ссылки, но файлов не было).
-- Добавлены референсы `qa-preflight`, `project-memory`, шаблон чекпоинта `creative-plan`; убраны заглушки `api_reference.md` и `assets/README.md`.
-- Убрана пометка «Verified» в `amazon-specs.md`: значения перенесены из исходного пакета и не перепроверялись по живым страницам Amazon (нужен логин Seller Central); для критичных размеров агент обязан сверяться с актуальным источником.
+- Размеры/лимиты Amazon (Design) и лимиты контента (заголовок 75 символов, backend 249 байт и т.д.) перенесены из исходных пакетов, живые страницы Amazon не сверялись (нужен логин Seller Central); продакшн-критичные значения агент обязан проверять по актуальному источнику.
+- Скрипты проверены на синтетических файлах (unit-тесты в `tests/`), а не на реальных шаблонах Amazon. Первый реальный feed лучше прогнать через `SIMULATION_MODE` у Agent 2.
+- Разбор Processing Report опирается на типовую структуру (таблица «Errors and Warnings per Error Code» + цвета ячеек Template); нестандартные макеты агент помечает `SUMMARY_ONLY` / `UNMAPPED` и просит сопоставить вручную.

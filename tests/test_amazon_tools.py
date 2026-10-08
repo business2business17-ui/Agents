@@ -1,0 +1,185 @@
+"""Regression tests for the shared Amazon workbook tools and agent scripts.
+
+Run:  python3 -m unittest discover -s tests -v      (needs openpyxl, lxml, Pillow)
+Builds a synthetic Amazon-like workbook (Template with example row 6, list validation via a defined name, hidden
+sheet, merged cells, fake macro part) and checks the safety guarantees of patch / guard / dry-run / report parsing.
+"""
+import csv
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+import zipfile
+
+import openpyxl
+from openpyxl.styles import PatternFill
+from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.worksheet.datavalidation import DataValidation
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SH = os.path.join(ROOT, "shared", "amazon")
+PI = os.path.join(ROOT, "plugins", "amazon-product-intelligence", "skills", "amazon-product-intelligence", "scripts")
+ER = os.path.join(ROOT, "plugins", "amazon-feed-error-agent", "skills", "amazon-feed-error-agent", "scripts")
+CS = os.path.join(ROOT, "plugins", "amazon-creative-studio", "skills", "amazon-creative-studio", "scripts")
+
+
+def run(script, *args, ok=(0,)):
+    p = subprocess.run([sys.executable, script, *map(str, args)], capture_output=True, text=True)
+    assert p.returncode in ok, f"{os.path.basename(script)} {args} -> {p.returncode}\n{p.stdout}\n{p.stderr}"
+    return p
+
+
+def make_feed(path):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Template"
+    ws["A1"] = "TemplateType=x"
+    ws.merge_cells("A1:C1")
+    keys = ["feed_product_type", "item_sku", "external_product_id", "item_name", "color_name", "generic_keywords"]
+    for i, k in enumerate(keys, 1):
+        ws.cell(5, i, k)
+        ws.cell(6, i, "example")
+    dv = DataValidation(type="list", formula1="=ValidColors", allow_blank=True)
+    ws.add_data_validation(dv)
+    dv.add("E7:E200")
+    dd = wb.create_sheet("Data Definitions")
+    dd["A1"] = "Field"
+    vv = wb.create_sheet("Valid Values")
+    vv["A1"], vv["A2"] = "Blue", "Red"
+    vv.sheet_state = "hidden"
+    wb.defined_names["ValidColors"] = DefinedName("ValidColors", attr_text="'Valid Values'!$A$1:$A$2")
+    tmp = path + ".tmp"
+    wb.save(tmp)
+    with zipfile.ZipFile(tmp) as zi, zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zo:
+        for n in zi.namelist():
+            zo.writestr(n, zi.read(n))
+        zo.writestr("xl/vbaProject.bin", b"\x00FAKEVBA")
+    os.remove(tmp)
+
+
+class AmazonTools(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.d = tempfile.mkdtemp()
+        cls.feed = os.path.join(cls.d, "clean.xlsm")
+        make_feed(cls.feed)
+
+    def p(self, name):
+        return os.path.join(self.d, name)
+
+    def write_json(self, name, data):
+        with open(self.p(name), "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        return self.p(name)
+
+    def test_pricing_policy_v3(self):
+        run(os.path.join(SH, "pricing_engine.py"), "--self-test")
+        out = json.loads(run(os.path.join(SH, "pricing_engine.py"), "--sale", "24.99", "--marketplace", "DE").stdout)
+        self.assertEqual((out["standard_price"], out["business_price"]), (27.77, 24.99))
+
+    def test_patch_guard_roundtrip(self):
+        cells = self.write_json("c.json", [
+            {"cell": "B7", "value": "SKU-1"}, {"cell": "C7", "value": "0012345678905", "type": "text"},
+            {"cell": "D7", "value": "=evil()"}, {"cell": "E7", "value": "Blue"}])
+        out = self.p("out.xlsm")
+        run(os.path.join(SH, "xlsm_patch.py"), "--source", self.feed, "--cells", cells, "--out", out, "--sheet", "Template")
+        run(os.path.join(SH, "workbook_guard.py"), "--source", self.feed, "--output", out, "--sheet", "Template", "--approved", cells)
+        wb = openpyxl.load_workbook(out)
+        ws = wb["Template"]
+        self.assertEqual(ws["C7"].value, "0012345678905")
+        self.assertEqual(ws["C7"].data_type, "s")
+        self.assertEqual(ws["D7"].data_type, "s")  # text, not a formula
+        self.assertEqual(ws["B6"].value, "example")
+        with zipfile.ZipFile(out) as z:
+            self.assertIn("xl/vbaProject.bin", z.namelist())
+
+    def test_patch_refuses_protected_rows_and_overwrites(self):
+        bad = self.write_json("bad.json", [{"cell": "B6", "value": "x"}])
+        p = run(os.path.join(SH, "xlsm_patch.py"), "--source", self.feed, "--cells", bad, "--out", self.p("o1.xlsm"),
+                "--sheet", "Template", ok=(1,))
+        self.assertIn("READ-ONLY", p.stderr)
+        self.assertFalse(os.path.exists(self.p("o1.xlsm")))
+        same = run(os.path.join(SH, "xlsm_patch.py"), "--source", self.feed, "--cells", bad, "--out", self.feed,
+                   "--sheet", "Template", ok=(1,))
+        self.assertIn("differ", same.stderr)
+
+    def test_guard_detects_tampering(self):
+        cells = self.write_json("c2.json", [{"cell": "B7", "value": "SKU-2"}])
+        out = self.p("out2.xlsm")
+        run(os.path.join(SH, "xlsm_patch.py"), "--source", self.feed, "--cells", cells, "--out", out, "--sheet", "Template")
+        wb = openpyxl.load_workbook(out)
+        wb["Template"]["B6"] = "HACK"
+        wb["Data Definitions"]["A1"] = "Changed"
+        bad = self.p("tampered.xlsx")
+        wb.save(bad)
+        p = run(os.path.join(SH, "workbook_guard.py"), "--source", self.feed, "--output", bad, "--sheet", "Template",
+                "--approved", cells, ok=(1,))
+        self.assertIn("NOT READY", p.stdout)
+
+    def test_dry_run_catches_enum_and_identifier_problems(self):
+        cells = self.write_json("c3.json", [
+            {"cell": "E7", "value": "blue"}, {"cell": "E8", "value": "Green"},
+            {"cell": "C7", "value": 4006381333931, "type": "number"}, {"cell": "B7", "value": "S1"}, {"cell": "B8", "value": "S1"}])
+        p = run(os.path.join(SH, "validate_cells.py"), "--source", self.feed, "--cells", cells, "--sheet", "Template",
+                "--key-column", "B", ok=(1,))
+        for code in ("ENUM_AMBIGUOUS", "ENUM_INVALID", "IDENTIFIER_NOT_TEXT", "DUPLICATE_FEED_ROW"):
+            self.assertIn(code, p.stdout)
+
+    def test_inspect_confirms_row7_boundary(self):
+        run(os.path.join(SH, "xlsm_inspect.py"), self.feed, "--json", self.p("insp.json"))
+        d = json.load(open(self.p("insp.json"), encoding="utf-8"))
+        self.assertTrue(d["macros_present"])
+        self.assertEqual(d["data_start_check"]["status"], "DATA_START_CONFIRMED")
+
+    def test_processing_report_and_comparison(self):
+        wb = openpyxl.load_workbook(self.feed)
+        ws = wb["Template"]
+        ws["B7"], ws["E7"] = "SKU-1", "Bluee"
+        ws["E7"].fill = PatternFill("solid", fgColor="FFFFA500")
+        s = wb.create_sheet("Feed Processing Summary", 0)
+        s.append(["Error code", "Category of error", "Store", "Error message", "Affected field", "Impacted column", "Number of errors"])
+        s.append([8058, "Error", "DE", "Invalid value", "color_name", "E", 1])
+        rep = self.p("rep.xlsx")
+        wb.save(rep)
+        run(os.path.join(ER, "parse_processing_report.py"), rep, "--marketplace", "DE", "--json", self.p("p1.json"))
+        d = json.load(open(self.p("p1.json"), encoding="utf-8"))
+        self.assertEqual(d["totals"]["errors"], 1)
+        self.assertEqual(d["findings"][0]["error_code"], "8058")
+        d2 = dict(d, findings=[])
+        self.write_json("p2.json", d2)
+        p = run(os.path.join(ER, "compare_reports.py"), self.p("p1.json"), self.p("p2.json"))
+        self.assertIn("Resolved: 1", p.stdout)
+
+    def test_gtin_and_handoff(self):
+        p = run(os.path.join(PI, "gtin_check.py"), "4006381333931", "4006381333932", ok=(1,))
+        self.assertIn("GTIN_VALID", p.stdout)
+        self.assertIn("check digit should be 1", p.stdout)
+        ex = run(os.path.join(PI, "handoff_tool.py"), "--example").stdout
+        path = self.p("h.json")
+        open(path, "w").write(ex)
+        run(os.path.join(PI, "handoff_tool.py"), "validate", path)
+        rec = json.loads(ex)
+        rec["pricing"]["standard_price"] = 1.0
+        self.write_json("h_bad.json", rec)
+        run(os.path.join(PI, "handoff_tool.py"), "validate", self.p("h_bad.json"), ok=(1,))
+
+    def test_content_check(self):
+        p = run(os.path.join(PI, "content_check.py"), "--title",
+                "Acme Case Case Case for Phone best price 9,99 EUR", ok=(1,))
+        self.assertIn("TITLE_WORD_REPETITION", p.stdout)
+        self.assertIn("FORBIDDEN_TERM_FOUND", p.stdout)
+
+    def test_creative_validator_main_image(self):
+        from PIL import Image, ImageDraw
+        good = Image.new("RGB", (1200, 1200), "white")
+        ImageDraw.Draw(good).rectangle((60, 40, 1140, 1150), fill=(20, 80, 160))
+        good.save(self.p("main.jpg"))
+        run(os.path.join(CS, "validate_asset.py"), self.p("main.jpg"), "--placement", "pdp-main", ok=(0, 2))
+        Image.new("RGB", (800, 800), (230, 230, 230)).save(self.p("grey.png"))
+        run(os.path.join(CS, "validate_asset.py"), self.p("grey.png"), "--placement", "pdp-main", ok=(1,))
+
+
+if __name__ == "__main__":
+    unittest.main()
