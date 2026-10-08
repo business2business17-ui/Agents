@@ -20,6 +20,14 @@ Matching treats UPC-12 and EAN-13 with a leading 0 as the same product (GTIN-14 
 
 **Blockers worth asking about (one message, recommended answer pre-filled):** duplicate rows for one GTIN; an image without a row (default: skip it, list it); a row without an image (default: plan the row as `DESCRIPTION ONLY - ASSET NOT CREATED`, no production without a source image); an invalid check digit (default: keep the code as typed, flag it, do not fix it). Clean matches proceed without waiting for the broken ones. Re-run the script after the user fixes files.
 
+## Step A2 - category and product type (always confirmed with the user)
+
+The matrix can mix categories and product types, so the classification is made **per product**, never per workbook. `match.json` gives `category`, `product_type`, `classification_status` per row and `classification_groups` (identical category + type pairs with their GTINs).
+
+1. Take the category / type from the file when the columns exist (`FROM_FILE_CONFIRM_AT_C1`); otherwise infer from name + TTX + image and mark `HIGH_CONFIDENCE_INFERRED` or `NEEDS_USER_CONFIRMATION` (see `universal-xlsx-intake.md`).
+2. Ask **once, grouped**: one numbered question per distinct (category, type) pair, not per SKU: `1. Haircare / Shampoo - 14 GTINs (4006...,...) - from file. ok? 2. ? / ? - 3 GTINs (name: "X", TTX: ...) - proposed: Household / Water bottle.` Every item carries the agent's recommended answer, so the user answers `ok` or `2: Sports / Bottle`.
+3. This question is sent even when the file has the columns, because the category and type decide which claims, attributes and layouts are allowed. It goes into the same message as the other blockers and is repeated in C1; confirmed values are stored per GTIN in project memory (`CONFIRMED`) and not asked again. Rows whose category/type are clear and confirmed proceed; only the unclear groups wait.
+
 ## Step B - benefits (per product)
 
 | `benefits_status` | What the agent does |
@@ -32,6 +40,10 @@ Drafting rules: a benefit may only restate or explain a supplied fact (a 20,000 
 
 All `DRAFTED_FROM_TTX` benefits are shown once at checkpoint C1 (next to the fact they come from) and approved in the same `ok`. The user can accept all, or edit by number. After approval they are `APPROVED` in project memory and are never re-asked.
 
+## Step B2 - description improvement (per product)
+
+Using TTX + confirmed category + type, audit the existing description and propose an improved one with a change log and the list of missing TTX: `description-improvement.md`. Shown at C1 together with the benefits.
+
 ## Step C - plan and production
 
 Per matched product, continue the normal pipeline (carousel strategy, localization, layout, C1). Mapping into the production workbook:
@@ -42,7 +54,9 @@ Per matched product, continue the normal pipeline (carousel strategy, localizati
 | image path(s) | `Source Image / File / URL / Drive Link` (real path from `match.json`) |
 | row facts | `PRODUCT_TTX` (one line per attribute), `Source TTX / Facts`, `Normalized TTX / Facts` |
 | benefits | `CONTENT_INTELLIGENCE` (`Proposed Benefit`, `Proof / Supporting Fact`, `User Approval Status` = `PROVIDED` / `DRAFTED_FROM_TTX` -> `APPROVED`) and `Proposed Benefit` in `ASSET_PLAN` |
-| unmatched items | `ISSUES` |
+| category / type | `Category (Row Level)`, `Product Type (Row Level)` + their status columns |
+| proposed description, missing TTX | `CONTENT_INTELLIGENCE` (`Draft Copy`, `Missing Proof / Input`) |
+| unmatched items, contradictions | `ISSUES` |
 
 Keep one `Product Row ID` per GTIN so every asset traces back to its image and row. Source quality is checked per image with `scripts/validate_asset.py` (size, aspect, background) before the plan promises anything the file cannot support (for example MAIN fill, or a rear view that only exists as a front photo).
 

@@ -228,10 +228,10 @@ class AmazonTools(unittest.TestCase):
             Image.new("RGB", (40, 40), "white").save(os.path.join(imgs, name))
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.append(["Name", "Штрихкод", "ТТХ", "Преимущества"])
-        ws.append(["A", 4006381333931, "Capacity 500 ml", "Keeps drinks cold\nBPA free"])
-        ws.append(["B", "036000291452", "Weight 120 g", None])
-        ws.append(["C", "9999999999999", "x", "y"])
+        ws.append(["Name", "Штрихкод", "ТТХ", "Преимущества", "Категория", "Тип товара", "Описание"])
+        ws.append(["A", 4006381333931, "Capacity 500 ml", "Keeps drinks cold\nBPA free", "Home", "Bottle", "Nice bottle"])
+        ws.append(["B", "036000291452", "Weight 120 g", None, None, None, None])
+        ws.append(["C", "9999999999999", "x", "y", None, None, None])
         wb.save(self.p("p.xlsx"))
         out = self.p("match.json")
         run(os.path.join(CS, "match_inputs.py"), "--images", imgs, "--xlsx", self.p("p.xlsx"), "--out", out, ok=(1,))
@@ -243,6 +243,13 @@ class AmazonTools(unittest.TestCase):
         b = by["00036000291452"]  # UPC lost its leading zero in the file name: matched via check digit, flagged
         self.assertIn("ZERO_PADDED", b["flags"])
         self.assertEqual(b["row"]["benefits_status"], "MISSING_DRAFT_FROM_TTX")
+        self.assertEqual(a["row"]["category"], "Home")
+        self.assertEqual(a["row"]["product_type"], "Bottle")
+        self.assertEqual(a["row"]["classification_status"], "FROM_FILE_CONFIRM_AT_C1")
+        self.assertEqual(a["row"]["existing_description"], {"Описание": "Nice bottle"})
+        self.assertEqual(b["row"]["classification_status"], "MISSING_ASK")
+        self.assertEqual(r["summary"]["classification_to_ask"], 1)
+        self.assertNotIn("Категория", a["row"]["facts"])
         kinds = {i["issue"] for i in r["issues"]}
         self.assertTrue({"IMAGE_WITHOUT_ROW", "ROW_WITHOUT_IMAGE", "FILENAME_NOT_A_GTIN"} <= kinds)
 

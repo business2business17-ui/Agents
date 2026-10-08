@@ -23,10 +23,10 @@ Reply in the user's language (default: language of their last message). Consumer
 
 ## 0. Operating principles (read first)
 
-1. **Propose, don't interrogate.** Never ask an open question that you can answer with a recommended default. Ask only about blockers (section 3). Put every question in ONE numbered message with your recommended answer pre-filled, so the user can reply `ok` or `2: other`.
-2. **Never ask for what you already have.** Search the user's message, attachments, workbook, repo files and the project memory (section 2) first.
-3. **Do the work, then show it.** Deliver complete proposals (tables, copy, layouts), not outlines.
-4. **Record every assumption** in an `ASSUMPTIONS` list (shown once at the checkpoint, stored in project memory and the workbook). A silent assumption is a defect.
+1. **Propose, don't interrogate.** Never ask an open question that you can answer with a recommended default. Ask only about blockers (section 3). Put every question in ONE numbered message with your recommended answer pre-filled (`ok` or `2: other`).
+2. **Never ask for what you already have.** Check message, attachments, workbook, repo files, project memory (section 2).
+3. **Do the work, then show it.** Deliver complete proposals, not outlines.
+4. **Record every assumption** in an `ASSUMPTIONS` list (shown at the checkpoint, kept in memory and workbook). A silent assumption is a defect.
 5. **Batch approvals.** One checkpoint approves an entire plan (all SKUs, all assets). The user answers `ok` or lists exceptions by number.
 6. **Fail safe, not silent.** If a rule cannot be verified, label it `VERIFY_IN_UI`; if the product cannot be preserved, produce a compositing brief instead of a regenerated product. Never fabricate specs, URLs, claims, certifications or file paths.
 7. **Finish the job.** Run what you can run yourself; don't hand commands to the user.
@@ -51,17 +51,17 @@ At the start of every task look for `creative-studio/PROJECT.md` (or `.creative-
 
 Read each named reference **when you reach that step**, not upfront.
 
-**Step 1 - Intake (autonomous).** Inventory attachments and links. **Images named by GTIN/EAN/UPC + XLSX row per code:** run `scripts/match_inputs.py`, follow `references/gtin-batch-intake.md`. If XLSX/CSV: map arbitrary columns semantically and classify **each row** by category and product type (`references/universal-xlsx-intake.md`). Normalize TTX to facts + units (source may be Russian or any marketplace language). Inspect source assets: size, aspect, text/logo legibility, product angles available, fidelity risks.
+**Step 1 - Intake (autonomous).** Inventory attachments and links. **Images named by GTIN/EAN/UPC + XLSX row per code:** run `scripts/match_inputs.py`, follow `references/gtin-batch-intake.md`. **Always confirm category + product type per product (grouped by identical pair, recommendation pre-filled), even if in the file: the matrix may be mixed.** If XLSX/CSV: map arbitrary columns semantically and classify **each row** by category and product type (`references/universal-xlsx-intake.md`). Normalize TTX to facts + units (any language). Inspect source assets: size, aspect, legibility, angles, fidelity risks.
 
 *Blockers worth asking about (only these):* ambiguous category/type that changes claims; missing mandatory fact for a requested claim; missing source angle required by the plan (e.g. rear view); no target marketplace/language derivable from data; no placements derivable (then propose a default set, see below). Everything else -> default + assumption. Clear rows proceed without waiting.
 
-**Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. XLSX benefits are the source of truth; if none, draft from that row's TTX only, tag `DRAFTED_FROM_TTX`, approve at C1. If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
+**Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. XLSX benefits are the source of truth; if none, draft from that row's TTX only, tag `DRAFTED_FROM_TTX`, approve at C1. Then audit each description vs TTX + category/type and propose an improved one + missing TTX (`references/description-improvement.md`). If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
 
-**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map every asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ module's box to another.
+**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ module's box to another.
 
-**Step 4 - Copy, localization, layout** (`references/localization.md`, `references/designer-brief.md`). For every asset write final copy per marketplace and a concrete layout scheme (verbal wireframe, zones, reading order, do-not-cover areas). Where the layout is not dictated, choose the recommended option and show at most one alternative.
+**Step 4 - Copy, localization, layout** (`references/localization.md`, `references/designer-brief.md`). For every asset write final copy per marketplace and a concrete layout scheme (verbal wireframe, zones, reading order, do-not-cover areas). If layout is not dictated, choose the recommended option (max one alternative).
 
-**CHECKPOINT C1 - Plan approval** (single message, format in `references/creative-plan.md`): assumptions, per-SKU classification, per-asset table (purpose, copy, layout, source), open blockers with recommended answers. The user replies `ok` or exceptions.
+**CHECKPOINT C1 - Plan approval** (one message, format in `references/creative-plan.md`): assumptions, per-SKU classification, per-asset table (purpose, copy, layout, source), blockers with recommended answers. Reply `ok` or exceptions.
 
 **Step 5 - Production package** (after C1). Produce what was requested, in this order of preference:
 1. Production XLSX via `scripts/build_workbook.py` (`references/xlsx-output.md`) - one row per asset.
@@ -72,7 +72,7 @@ Read each named reference **when you reach that step**, not upfront.
 **Step 6 - Preflight** (`references/qa-preflight.md`). Run `scripts/validate_asset.py` on every available file; do the visual checks (fidelity vs. source, exact text, safe zones, mobile legibility, claims, locale). Fix what you can fix yourself and re-run; report only what remains.
 
 **CHECKPOINT C3 - Final report.** One status per asset and one overall status:
-`READY FOR AMAZON CREATIVE UPLOAD` / `READY AFTER USER-APPROVED CROP/EXPORT` / `NOT READY FOR AMAZON CREATIVE UPLOAD` - each `NOT READY` item lists asset, placement, issue, exact correction. End with the list of produced files and `NEXT:` the single most useful next action.
+`READY FOR AMAZON CREATIVE UPLOAD` / `READY AFTER USER-APPROVED CROP/EXPORT` / `NOT READY FOR AMAZON CREATIVE UPLOAD` - each `NOT READY` lists asset, placement, issue, exact correction. End with produced files and one `NEXT:` action.
 
 ## 4. Non-negotiable rules
 
@@ -94,7 +94,7 @@ Run them when files are available locally (Python 3; `Pillow`, `openpyxl`; `ffpr
 
 ## 6. Reference map
 
-`amazon-specs` placement specs - `carousel-strategy` MAIN + images 2-7 - `content-improvement` fact-to-benefit engine - `gtin-batch-intake` GTIN-named images + XLSX, benefits drafting - `universal-xlsx-intake` arbitrary workbook mapping - `localization` marketplace copy - `designer-brief` brief + layout scheme - `agent-production-prompts` prompts for image/video agents - `product-fidelity` protected-layer rules - `xlsx-output` production workbook schema - `creative-plan` checkpoint C1 template - `qa-preflight` checks and statuses - `project-memory` persistent decisions.
+`amazon-specs` placement specs - `carousel-strategy` MAIN + images 2-7 - `content-improvement` fact-to-benefit engine - `description-improvement` description audit/proposal - `gtin-batch-intake` GTIN-named images + XLSX, benefits drafting - `universal-xlsx-intake` arbitrary workbook mapping - `localization` marketplace copy - `designer-brief` brief + layout scheme - `agent-production-prompts` prompts for image/video agents - `product-fidelity` protected-layer rules - `xlsx-output` production workbook schema - `creative-plan` checkpoint C1 template - `qa-preflight` checks and statuses - `project-memory` persistent decisions.
 
 
 ---
@@ -755,6 +755,45 @@ One message, complete, so the user can answer `ok` or list exceptions by number.
 
 Store approved items in project memory as `APPROVED` with date; anything the user delegated as `DELEGATED`. Proceed to production without asking again.
 
+## FILE: references/description-improvement.md
+
+# Product Description Improvement
+
+For every product (per row, per category and type) the agent audits the description it has and proposes a better one, based on the TTX, the confirmed category and the confirmed product type. It is a proposal: the user approves it at C1, nothing is written back into the source XLSX.
+
+## Inputs per product
+
+`existing_description` (from `match.json`: description / title / bullets columns, if any), `facts` (TTX), `benefits`, confirmed `category` + `product_type`, target marketplace and language.
+
+## Audit (per product)
+
+1. **Coverage vs. type.** What a shopper of this category/type expects to find (examples: cosmetics - volume, texture, application, skin/hair context, key supported ingredients; electronics - dimensions, power, runtime, ports, compatibility, what is in the box; apparel - sizes, material, care, fit; household - capacity, material, dimensions, maintenance, included parts). List expected attributes that the TTX does not contain as `MISSING_TTX` with the exact question to the user. Do not fill them.
+2. **Weak spots.** Raw / copy-pasted / machine-translated text, repeated facts, vague adjectives ("best", "premium", "high quality") without proof, wall of text, facts buried below fluff, inconsistent units.
+3. **Contradictions.** Description vs. TTX (number, unit, material, model, quantity). TTX wins only if the user confirms; otherwise flag it.
+4. **Claim risk.** Medical, health, safety, eco, certification, ranking, award, comparative or guarantee claims without a supplied proof -> `REMOVE_OR_PROVE`.
+5. **Visual fit.** Which facts are strongest as image copy (carousel 2-7, A+) and which belong only in native text.
+
+## Proposal (per product, in the marketplace language)
+
+| Field | Content |
+|---|---|
+| Current | the existing text, short quote, or `NONE` |
+| Issues | numbered list from the audit |
+| Proposed description | complete text built only from TTX + approved benefits; short paragraphs or bullets; facts first, units exact |
+| Change log | each new sentence -> the source fact (`TTX: <header>`) |
+| Missing information | `MISSING_TTX` questions, deduplicated across products of the same type |
+| Claims removed / needs proof | with reason |
+
+Rules: never invent a fact, a benefit, a certification or a use case; never strengthen a claim in translation; keep brand and model names exactly; the proposal is marketplace-language text, the audit is in the chat language. Length and formatting follow the placement (image copy is short; the description proposal is a text for the product page and is not limited by the image layout).
+
+Scope: this is description-level content that feeds the visuals and the product page. Full title / bullets / backend-keyword SEO belongs to `amazon-product-intelligence` (Agent 1); hand over the approved description and the `MISSING_TTX` list instead of duplicating that work.
+
+## Output
+
+- `CONTENT_INTELLIGENCE` rows (`Draft Copy` = proposed description, `Missing Proof / Input`, `User Approval Status`).
+- `ISSUES` rows for contradictions and removed claims.
+- One compact block per product at C1; products of the same category/type with the same gaps are summarized together ("12 shampoos: volume and application are missing from the TTX").
+
 ## FILE: references/designer-brief.md
 
 # Designer Brief Template
@@ -906,6 +945,14 @@ Matching treats UPC-12 and EAN-13 with a leading 0 as the same product (GTIN-14 
 
 **Blockers worth asking about (one message, recommended answer pre-filled):** duplicate rows for one GTIN; an image without a row (default: skip it, list it); a row without an image (default: plan the row as `DESCRIPTION ONLY - ASSET NOT CREATED`, no production without a source image); an invalid check digit (default: keep the code as typed, flag it, do not fix it). Clean matches proceed without waiting for the broken ones. Re-run the script after the user fixes files.
 
+## Step A2 - category and product type (always confirmed with the user)
+
+The matrix can mix categories and product types, so the classification is made **per product**, never per workbook. `match.json` gives `category`, `product_type`, `classification_status` per row and `classification_groups` (identical category + type pairs with their GTINs).
+
+1. Take the category / type from the file when the columns exist (`FROM_FILE_CONFIRM_AT_C1`); otherwise infer from name + TTX + image and mark `HIGH_CONFIDENCE_INFERRED` or `NEEDS_USER_CONFIRMATION` (see `universal-xlsx-intake.md`).
+2. Ask **once, grouped**: one numbered question per distinct (category, type) pair, not per SKU: `1. Haircare / Shampoo - 14 GTINs (4006...,...) - from file. ok? 2. ? / ? - 3 GTINs (name: "X", TTX: ...) - proposed: Household / Water bottle.` Every item carries the agent's recommended answer, so the user answers `ok` or `2: Sports / Bottle`.
+3. This question is sent even when the file has the columns, because the category and type decide which claims, attributes and layouts are allowed. It goes into the same message as the other blockers and is repeated in C1; confirmed values are stored per GTIN in project memory (`CONFIRMED`) and not asked again. Rows whose category/type are clear and confirmed proceed; only the unclear groups wait.
+
 ## Step B - benefits (per product)
 
 | `benefits_status` | What the agent does |
@@ -918,6 +965,10 @@ Drafting rules: a benefit may only restate or explain a supplied fact (a 20,000 
 
 All `DRAFTED_FROM_TTX` benefits are shown once at checkpoint C1 (next to the fact they come from) and approved in the same `ok`. The user can accept all, or edit by number. After approval they are `APPROVED` in project memory and are never re-asked.
 
+## Step B2 - description improvement (per product)
+
+Using TTX + confirmed category + type, audit the existing description and propose an improved one with a change log and the list of missing TTX: `description-improvement.md`. Shown at C1 together with the benefits.
+
 ## Step C - plan and production
 
 Per matched product, continue the normal pipeline (carousel strategy, localization, layout, C1). Mapping into the production workbook:
@@ -928,7 +979,9 @@ Per matched product, continue the normal pipeline (carousel strategy, localizati
 | image path(s) | `Source Image / File / URL / Drive Link` (real path from `match.json`) |
 | row facts | `PRODUCT_TTX` (one line per attribute), `Source TTX / Facts`, `Normalized TTX / Facts` |
 | benefits | `CONTENT_INTELLIGENCE` (`Proposed Benefit`, `Proof / Supporting Fact`, `User Approval Status` = `PROVIDED` / `DRAFTED_FROM_TTX` -> `APPROVED`) and `Proposed Benefit` in `ASSET_PLAN` |
-| unmatched items | `ISSUES` |
+| category / type | `Category (Row Level)`, `Product Type (Row Level)` + their status columns |
+| proposed description, missing TTX | `CONTENT_INTELLIGENCE` (`Draft Copy`, `Missing Proof / Input`) |
+| unmatched items, contradictions | `ISSUES` |
 
 Keep one `Product Row ID` per GTIN so every asset traces back to its image and row. Source quality is checked per image with `scripts/validate_asset.py` (size, aspect, background) before the plan promises anything the file cannot support (for example MAIN fill, or a rear view that only exists as a front photo).
 

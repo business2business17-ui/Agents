@@ -37,6 +37,9 @@ ID_HEADER = re.compile(r"gtin|\bean\b|\bupc\b|barcode|bar code|штрих|бар
 BENEFIT_HEADER = re.compile(
     r"преимущ|выгод|benefit|advantage|vorteil|avantage|ventaja|vantagg|selling.?point|\busp\b|key.?feature.?benefit",
     re.I)
+CATEGORY_HEADER = re.compile(r"категор|category|kategorie|catégorie|categoría|categoria|department|раздел", re.I)
+TYPE_HEADER = re.compile(r"тип\b|вид\b|тип товара|product.?type|item.?type|typ\b|type\b|tipo|sub.?categor|подкатегор", re.I)
+DESC_HEADER = re.compile(r"описани|description|beschreibung|descripci|descrizione|аннотац|bullet|буллет|title|название|наименован|заголовок", re.I)
 EMPTY_BENEFIT = {"", "-", "—", "–", "n/a", "na", "none", "нет", "нету", "null", "tbd", "?", "отсутствует"}
 NAME_SPLIT = re.compile(r"^(\d{6,14})(?:[\s_\-.()]+(.*))?$")
 
@@ -175,8 +178,14 @@ def main():
     mapping = []
     for name, hi, headers, body, gcol, how in sheets:
         ben_cols = [j for j, h in enumerate(headers) if h and j != gcol and BENEFIT_HEADER.search(h)]
+        skip = {gcol, *ben_cols}
+        cat_cols = [j for j, h in enumerate(headers) if h and j not in skip and CATEGORY_HEADER.search(h)]
+        typ_cols = [j for j, h in enumerate(headers) if h and j not in skip | set(cat_cols) and TYPE_HEADER.search(h)]
+        desc_cols = [j for j, h in enumerate(headers) if h and j not in skip | set(cat_cols) | set(typ_cols) and DESC_HEADER.search(h)]
         mapping.append({"sheet": name, "header_row": hi + 1, "gtin_column": headers[gcol] or f"col{gcol + 1}",
-                        "gtin_detected_by": how, "benefit_columns": [headers[j] for j in ben_cols]})
+                        "gtin_detected_by": how, "benefit_columns": [headers[j] for j in ben_cols],
+                        "category_columns": [headers[j] for j in cat_cols], "type_columns": [headers[j] for j in typ_cols],
+                        "description_columns": [headers[j] for j in desc_cols]})
         for off, r in enumerate(body):
             raw = cell_text(r[gcol]) if gcol < len(r) else ""
             if not raw:
@@ -186,7 +195,7 @@ def main():
             key, status, note = gtin_info(digits)
             if "e" in raw.lower() and not digits.isdigit():
                 key, status, note = None, "GTIN_INVALID", "scientific notation / text: identifier corrupted by Excel"
-            facts, benefits_raw = {}, []
+            facts, benefits_raw, cat_v, typ_v, desc_v = {}, [], [], [], {}
             for j, h in enumerate(headers):
                 if j == gcol or j >= len(r):
                     continue
@@ -195,14 +204,23 @@ def main():
                     continue
                 if j in ben_cols:
                     benefits_raw.append(t)
+                elif j in cat_cols:
+                    cat_v.append(t)
+                elif j in typ_cols:
+                    typ_v.append(t)
+                elif j in desc_cols:
+                    desc_v[h] = t
                 else:
                     facts[h or f"col{j + 1}"] = t
             benefits = []
             for t in benefits_raw:
                 if t.strip().lower() not in EMPTY_BENEFIT:
                     benefits += split_benefits(t)
+            category, ptype = " / ".join(cat_v) or None, " / ".join(typ_v) or None
+            cls = "FROM_FILE_CONFIRM_AT_C1" if category and ptype else "PARTIAL_ASK" if category or ptype else "MISSING_ASK"
             rec = {"sheet": name, "row_hint": xl_row, "gtin_raw": digits, "key": key, "gtin_status": status,
-                   "note": note, "facts": facts, "benefits": benefits,
+                   "note": note, "facts": facts, "benefits": benefits, "category": category, "product_type": ptype,
+                   "classification_status": cls, "existing_description": desc_v,
                    "benefits_status": "PROVIDED" if benefits else "MISSING_DRAFT_FROM_TTX" if facts else "MISSING_NO_TTX"}
             seen_rows.append(rec)
             if key is None:
@@ -241,13 +259,22 @@ def main():
     for r in rows_without_image:
         issues.append({"issue": "ROW_WITHOUT_IMAGE", "gtin_raw": r["gtin"], "detail": f"{r['sheet']} row ~{r['row_hint']}"})
 
+    groups = {}
+    for m in matched:
+        r = m["row"]
+        g = groups.setdefault((r["category"], r["product_type"]), {"category": r["category"], "product_type": r["product_type"],
+                                                                  "status": r["classification_status"], "gtins": []})
+        g["gtins"].append(m["gtin"])
+    classification_groups = list(groups.values())
+    n_cls_ask = sum(1 for m in matched if m["row"]["classification_status"] != "FROM_FILE_CONFIRM_AT_C1")
     n_missing = sum(1 for m in matched if m["row"]["benefits_status"].startswith("MISSING"))
     result = {
         "summary": {"images": len(images), "xlsx_rows": len(seen_rows), "matched_products": len(matched),
                     "benefits_provided": len(matched) - n_missing, "benefits_missing_to_draft": n_missing,
                     "images_without_row": len(images_without_row), "rows_without_image": len(rows_without_image),
-                    "issues": len(issues)},
-        "mapping": mapping, "matched": matched, "images_without_row": images_without_row,
+                    "issues": len(issues), "classification_to_ask": n_cls_ask,
+                    "category_type_groups": len(classification_groups)},
+        "classification_groups": classification_groups, "mapping": mapping, "matched": matched, "images_without_row": images_without_row,
         "rows_without_image": rows_without_image, "issues": issues,
     }
     if a.out:
@@ -257,7 +284,10 @@ def main():
           f"benefits provided={s['benefits_provided']} / to draft from TTX={s['benefits_missing_to_draft']}")
     for m in mapping:
         print(f"  sheet '{m['sheet']}': GTIN column '{m['gtin_column']}' ({m['gtin_detected_by']}), "
-              f"benefit columns: {m['benefit_columns'] or 'none'}")
+              f"benefit columns: {m['benefit_columns'] or 'none'}, "
+              f"category: {m['category_columns'] or 'none'}, type: {m['type_columns'] or 'none'}, "
+              f"description: {m['description_columns'] or 'none'}")
+    print(f"  category/type groups: {s['category_type_groups']}; products needing a category/type question: {s['classification_to_ask']}")
     for i in issues:
         print(f"  ! {i['issue']}: {i.get('gtin_raw') or i.get('path', '')} {i.get('detail') or ''}")
     if not a.out:
