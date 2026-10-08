@@ -12,8 +12,11 @@ Definitions
   TACOS = ad spend / total sales (organic + ad)   ad cost per unit = ad spend / units
   break-even ACOS/TACOS = net profit before ads / sales (ACOS/TACOS at which net profit is zero)
   target ACOS/TACOS     = (net profit before ads - target margin * net revenue) / sales   (needs --target-margin)
-  "sales" in ACOS/TACOS follow --sales-basis gross|net so they match the report you take the numbers from
-  (default gross; CONFIRM how Seller Central / Ads console report sales for your marketplace).
+  "sales" in ACOS/TACOS must match the report the numbers come from (VAT included or not). There is NO default:
+    * --sales-basis gross|net states it explicitly, or
+    * with --total-sales the script DETECTS it by comparing the report figure with GMV gross and GMV net of the
+      units x price lines (within 3%); if both fit or neither fits it stops and asks.
+  With VAT 0 gross = net and no choice is needed.
 
 Usage:
   performance_calc.py --cost 9 --referral-pct 15 --fba-fee 3.2 --channel fba --vat-pct 19 \\
@@ -56,7 +59,7 @@ def main():
     ap.add_argument("--ad-spend")
     ap.add_argument("--ad-sales", help="ad-attributed sales (same basis as --sales-basis)")
     ap.add_argument("--total-sales", help="total sales incl. organic (defaults to GMV on the chosen basis)")
-    ap.add_argument("--sales-basis", choices=["gross", "net"], default="gross")
+    ap.add_argument("--sales-basis", choices=["gross", "net"], default=None)
     ap.add_argument("--target-margin")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
@@ -71,10 +74,28 @@ def main():
     gmv_gross = sum(p * u for p, u in lines)
     gmv_net = gmv_gross / (1 + vat)
     profit_before = sum(e.at(p)["profit"] * u for p, u in lines)
-    basis_total = gmv_gross if a.sales_basis == "gross" else gmv_net
+    basis, basis_note = a.sales_basis, "stated by the user"
+    if vat == 0:
+        basis, basis_note = basis or "gross", "VAT 0: gross = net"
+    elif basis is None and a.total_sales:
+        ts = d(a.total_sales, "total_sales")
+        near_g = abs(ts - gmv_gross) <= gmv_gross * D("0.03")
+        near_n = abs(ts - gmv_net) <= gmv_net * D("0.03")
+        if near_g != near_n:
+            basis = "gross" if near_g else "net"
+            basis_note = f"DETECTED: total sales {q2(ts)} is within 3% of GMV {basis} ({q2(gmv_gross if near_g else gmv_net)}); confirm with the user"
+        else:
+            sys.exit(f"sales basis cannot be detected (total sales {q2(ts)} vs GMV gross {q2(gmv_gross)} / net {q2(gmv_net)}): "
+                     "ask the user whether the report shows sales incl. VAT or excl. VAT and pass --sales-basis gross|net")
+    if basis is None and (a.ad_spend is not None):
+        sys.exit("sales basis unknown: ask the user whether the report (Business Report / Ads console) shows sales incl. VAT or excl. VAT, "
+                 "or pass --total-sales so it can be detected; then pass --sales-basis gross|net")
+    basis = basis or "gross"
+    a.sales_basis = basis
+    basis_total = gmv_gross if basis == "gross" else gmv_net
     target = d(a.target_margin, "target_margin") / 100 if a.target_margin else None
     out = dict(assumptions=dict(unit_model="fees and discounts per unit", referral_base=a.referral_base,
-                                margin="net profit / net revenue ex VAT", sales_basis=a.sales_basis,
+                                margin="net profit / net revenue ex VAT", sales_basis=f"{basis} ({basis_note})",
                                 ad_spend="cost to the business, net of recoverable VAT"),
                units=str(units), gmv_gross=str(q2(gmv_gross)), gmv_net=str(q2(gmv_net)),
                net_profit_before_ads=str(q2(profit_before)),
