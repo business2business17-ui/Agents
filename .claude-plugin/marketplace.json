@@ -1,0 +1,12 @@
+{
+  "name": "business2business17-agents",
+  "owner": { "name": "business2business17-ui" },
+  "metadata": { "description": "Skills packaged as autonomous agents for Amazon seller operations." },
+  "plugins": [
+    {
+      "name": "amazon-creative-studio",
+      "source": "./plugins/amazon-creative-studio",
+      "description": "Autonomous Amazon creative agent (design): carousel, A+, Brand Story, Store, ads, video; briefs, prompts, production XLSX, preflight."
+    }
+  ]
+}
