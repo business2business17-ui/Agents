@@ -17,7 +17,7 @@ Usage:
   margin_calc.py ... --basis-price 24.99 --quantities 2,4          # propose tier percents so the deepest tier keeps the target margin
   margin_calc.py ... --from-pricing pricing.json                    # evaluate sale/standard/business/tier/B2B-min prices from pricing_engine output
   margin_calc.py ... --channel both --mfn-fee 4.10 --fba-fee 3.20   # compare channels
-Optional: --vat-pct, --referral-min, --referral-base gross|net, --other-pct, --other-fixed, --buffer-pp (safety, percentage points).
+Optional: --vat-pct, --referral-min, --referral-base gross|net, --other-pct, --other-fixed (returns reserve, prep: NOT ads - ads are handled by performance_calc.py), --buffer-pp (safety, percentage points).
 Exit 0 = all evaluated levels meet the target margin (or no target given), 1 = some level below target, 2 = usage error.
 """
 import argparse

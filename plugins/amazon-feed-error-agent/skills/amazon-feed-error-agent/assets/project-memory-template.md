@@ -13,6 +13,8 @@
 - User-decided extras (NOT policy v3, no defaults). The tier QUANTITY SET (2-4-6 / 2-4 / ...) is asked every run and is not stored as a default. Approved per product group: tier basis `<business|standard>` | discount percents `<qty:%,...>` | B2B minimum rule `<DEEPEST_TIER|none>` | B2B maximum `<+% over max(Business, Sale)|none>` | allowed price range `<-% / +% of Standard Price|none>` | tag `<CONFIRMED>` | date
 
 ## Unit economics (user-supplied per product group; re-confirm when fees change)
+> Confirmed model: per-unit fees; referral fee on the gross (VAT-inclusive) price; margin = net profit / net revenue ex VAT. Ad metrics: sales basis for ACOS/TACOS = `<gross|net>`.
+
 | Product group / SKUs | Landed unit cost | Referral fee % (+ per-item min) | FBA fee / MFN fee (per unit) | VAT % | Other % / fixed | Target margin % | Date | Tag |
 |---|---|---|---|---|---|---|---|---|
 

@@ -99,6 +99,20 @@ class AmazonTools(unittest.TestCase):
                 "--vat-pct", "19", "--target-margin", "25", "--price", "24.99", ok=(1,))
         self.assertIn("BELOW TARGET", p.stdout)
 
+    def test_performance_metrics(self):
+        base = ["--cost", "9", "--referral-pct", "15", "--fba-fee", "3.2", "--channel", "fba", "--vat-pct", "19",
+                "--lines", "24.99:300,22.49:120", "--json"]
+        out = json.loads(run(os.path.join(SH, "performance_calc.py"), *base, "--ad-spend", "650", "--ad-sales", "2100",
+                             "--target-margin", "10").stdout)
+        self.assertEqual(out["gmv_gross"], "10195.80")
+        self.assertEqual(out["acos"], "31.0%")
+        self.assertEqual(out["tacos"], "6.4%")
+        self.assertEqual(out["roas"], "3.23")
+        self.assertEqual(out["net_profit"], "1264.53")
+        p = run(os.path.join(SH, "performance_calc.py"), *base, "--ad-spend", "650", "--ad-sales", "2100",
+                "--target-margin", "15", ok=(1,))
+        self.assertIn("below target", p.stdout)
+
     def test_b2b_max_is_tied_to_sale_price(self):
         out = json.loads(run(os.path.join(SH, "pricing_engine.py"), "--sale", "24.99", "--marketplace", "DE", "--b2b-max-pct", "20").stdout)
         self.assertEqual(out["business_max_price"], 29.99)
