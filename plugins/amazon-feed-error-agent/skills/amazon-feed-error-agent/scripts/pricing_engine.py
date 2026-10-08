@@ -72,7 +72,8 @@ def compute(sale, marketplace=None, currency=None, precision=None, b2b_applicabl
       tiers         [(qty, discount_pct), ...]  quantity-tier prices = basis * (1 - pct/100)
       tier_basis    'business' | 'standard'     which price the tier discounts apply to (must be stated)
       b2b_min_rule  'DEEPEST_TIER'              B2B minimum allowed price = price of the tier with the largest qty
-      b2b_max_pct   percent above Business Price -> B2B maximum allowed price
+      b2b_max_pct   percent above max(Business Price, Sale Price) -> B2B maximum allowed price (so the range always
+                    contains the Sale Price that is active during a sale, even when rounding puts it 1 cent above B)
       min_pct / max_pct  percent below / above Standard Price -> minimum / maximum seller allowed price (audience ALL)
     Everything produced from these arguments is tagged policy_status USER_DECISION.
     """
@@ -195,8 +196,16 @@ def compute(sale, marketplace=None, currency=None, precision=None, b2b_applicabl
             issues.append("B2B maximum skipped: B2B price not applicable")
         else:
             pct = dec(b2b_max_pct, "b2b_max_pct")
-            b2b_max = rnd(B * (1 + pct / 100), precision)
-            guard["business_max_percent_above_business_price"] = str(pct)
+            base = max(B, S)
+            b2b_max = rnd(base * (1 + pct / 100), precision)
+            guard["business_max_rule"] = "max(Business Price, Sale Price) * (1 + pct/100)"
+            guard["business_max_percent"] = str(pct)
+            if b2b_max < B or b2b_max < S:
+                status = "PRICE_CONFLICT"
+                issues.append("B2B maximum is below the Business Price or the Sale Price")
+            if b2b_min is not None and b2b_min > b2b_max:
+                status = "PRICE_CONFLICT"
+                issues.append("B2B minimum above B2B maximum")
     if min_pct is not None or max_pct is not None:
         if min_pct is not None:
             lo = rnd(P * (1 - dec(min_pct, "min_pct") / 100), precision)
@@ -288,7 +297,7 @@ def main():
     ap.add_argument("--tiers", help='USER-DECIDED quantity tiers "qty:discount_pct,..." e.g. "2:5,4:10,6:15"')
     ap.add_argument("--tier-basis", choices=["business", "standard"], help="price the tier discounts apply to (no default)")
     ap.add_argument("--b2b-min", choices=["deepest-tier"], help="B2B minimum = price of the largest-quantity tier")
-    ap.add_argument("--b2b-max-pct", help="B2B maximum = Business Price + pct")
+    ap.add_argument("--b2b-max-pct", help="B2B maximum = max(Business Price, Sale Price) + pct")
     ap.add_argument("--min-pct", help="minimum seller allowed price = Standard Price - pct")
     ap.add_argument("--max-pct", help="maximum seller allowed price = Standard Price + pct")
     ap.add_argument("--batch")
