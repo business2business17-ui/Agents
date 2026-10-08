@@ -1,7 +1,0 @@
-{
-  "name": "amazon-feed-compiler",
-  "version": "2.0.0",
-  "description": "Amazon feed template interpreter and compiler: inspect, map, dry-run, safe write to Template rows 7+, audit, manifest, processing-report round trip.",
-  "author": { "name": "business2business17-ui" },
-  "keywords": ["amazon", "seller", "feed", "listing"]
-}
