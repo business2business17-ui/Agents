@@ -188,6 +188,32 @@ class AmazonTools(unittest.TestCase):
         Image.new("RGB", (800, 800), (230, 230, 230)).save(self.p("grey.png"))
         run(os.path.join(CS, "validate_asset.py"), self.p("grey.png"), "--placement", "pdp-main", ok=(1,))
 
+    def test_creative_gtin_match(self):
+        from PIL import Image
+        imgs = self.p("imgs")
+        os.makedirs(imgs)
+        for name in ("4006381333931.jpg", "4006381333931_2.png", "36000291452.jpg", "5901234123457.jpg", "bad name.jpg"):
+            Image.new("RGB", (40, 40), "white").save(os.path.join(imgs, name))
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Name", "Штрихкод", "ТТХ", "Преимущества"])
+        ws.append(["A", 4006381333931, "Capacity 500 ml", "Keeps drinks cold\nBPA free"])
+        ws.append(["B", "036000291452", "Weight 120 g", None])
+        ws.append(["C", "9999999999999", "x", "y"])
+        wb.save(self.p("p.xlsx"))
+        out = self.p("match.json")
+        run(os.path.join(CS, "match_inputs.py"), "--images", imgs, "--xlsx", self.p("p.xlsx"), "--out", out, ok=(1,))
+        r = json.load(open(out, encoding="utf-8"))
+        by = {m["key"]: m for m in r["matched"]}
+        a = by["04006381333931"]
+        self.assertEqual(len(a["images"]), 2)
+        self.assertEqual(a["row"]["benefits"], ["Keeps drinks cold", "BPA free"])
+        b = by["00036000291452"]  # UPC lost its leading zero in the file name: matched via check digit, flagged
+        self.assertIn("ZERO_PADDED", b["flags"])
+        self.assertEqual(b["row"]["benefits_status"], "MISSING_DRAFT_FROM_TTX")
+        kinds = {i["issue"] for i in r["issues"]}
+        self.assertTrue({"IMAGE_WITHOUT_ROW", "ROW_WITHOUT_IMAGE", "FILENAME_NOT_A_GTIN"} <= kinds)
+
 
 if __name__ == "__main__":
     unittest.main()

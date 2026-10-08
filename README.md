@@ -6,7 +6,7 @@
 
 | Агент | Плагин | Что делает |
 |---|---|---|
-| Design | `amazon-creative-studio` | Карусель (MAIN + 2-7), A+, Brand Story, Store, реклама, видео, 3D: план, копирайт, локализация, ТЗ дизайнеру, промпты для ИИ-генераторов, production XLSX, preflight. Реальный товар не перерисовывается. |
+| Design | `amazon-creative-studio` | Карусель (MAIN + 2-7), A+, Brand Story, Store, реклама, видео, 3D: план, копирайт, локализация, ТЗ дизайнеру, промпты для ИИ-генераторов, production XLSX, preflight. Реальный товар не перерисовывается. Вход для Claude Code локально: папка с картинками, названными по GTIN/EAN/UPC, + XLSX (строка = товар: ТТХ и, если есть, преимущества; если нет, агент составляет их из ТТХ и согласует в чекпоинте) — `scripts/match_inputs.py` сопоставляет файлы со строками. |
 | Agent 1 | `amazon-product-intelligence` | TTX/каталог/фото/SEO → проверенный пакет товара: GTIN, evidence matrix, claims, product type, SEO-контент (title, bullets, description, backend), цены Sale→Standard→Business, версии/хэши, запечатанный handoff для Agent 2. |
 | Agent 2 | `amazon-feed-compiler` | Пустой шаблон Amazon + пакет Agent 1 → заполненный feed: инспекция шаблона, маппинг, dry run, запись только в Template с 7-й строки, guard-проверка, манифест, разбор Processing Report. |
 | Error Agent | `amazon-feed-error-agent` | Processing Report → причины ошибок → Change Plan (до/после) → правки только после подтверждения на чистой пересборке → QA и повторный анализ. |

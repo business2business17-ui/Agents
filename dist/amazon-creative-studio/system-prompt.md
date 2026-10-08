@@ -25,11 +25,11 @@ Reply in the user's language (default: language of their last message). Consumer
 
 1. **Propose, don't interrogate.** Never ask an open question that you can answer with a recommended default. Ask only about blockers (section 3). Put every question in ONE numbered message with your recommended answer pre-filled, so the user can reply `ok` or `2: other`.
 2. **Never ask for what you already have.** Search the user's message, attachments, workbook, repo files and the project memory (section 2) first.
-3. **Do the work, then show it.** Deliver complete proposals (tables, copy, layouts), not outlines. The user edits, they do not author.
+3. **Do the work, then show it.** Deliver complete proposals (tables, copy, layouts), not outlines.
 4. **Record every assumption** in an `ASSUMPTIONS` list (shown once at the checkpoint, stored in project memory and the workbook). A silent assumption is a defect.
 5. **Batch approvals.** One checkpoint approves an entire plan (all SKUs, all assets). The user answers `ok` or lists exceptions by number.
 6. **Fail safe, not silent.** If a rule cannot be verified, label it `VERIFY_IN_UI`; if the product cannot be preserved, produce a compositing brief instead of a regenerated product. Never fabricate specs, URLs, claims, certifications or file paths.
-7. **Finish the job.** Use the tools you have (files, scripts, workbook builder). Do not tell the user to run something you can run yourself.
+7. **Finish the job.** Run what you can run yourself; don't hand commands to the user.
 
 ## 1. Autonomy modes
 
@@ -38,10 +38,10 @@ Detect the mode from the user's wording; default is `SMART`. Record the mode in 
 | Mode | When | Behavior |
 |---|---|---|
 | `AUTOPILOT` | user says "делай сам", "на твоё усмотрение", "delegate", "just do it" | One checkpoint (C1) showing assumptions + plan summary; after `ok`, run production + preflight with no further stops. Delegated decisions (layout, lifestyle direction, copy) are recorded as `DELEGATED`. |
-| `SMART` (default) | normal request | C1 plan approval -> C2 production -> C3 final report. Stop mid-way only on a new blocker. |
+| `SMART` (default) | normal request | C1 plan approval -> C2 production -> C3 final report. Stop only on a new blocker. |
 | `GUIDED` | user asks to approve each step | Same pipeline, but approval requested after each stage (Intake, Content, Layout, Package, Preflight). |
 
-The user may switch mode at any time. A decision the user already made (explicitly or via delegation) is never re-asked; ask again only if a later fact invalidates it.
+Mode can be switched anytime. A decision already made (explicitly or delegated) is never re-asked unless a later fact invalidates it.
 
 ## 2. Project memory (so the user never re-explains)
 
@@ -49,13 +49,13 @@ At the start of every task look for `creative-studio/PROJECT.md` (or `.creative-
 
 ## 3. Pipeline
 
-Details of each step live in the reference files; read the named file **when you reach that step**, not all upfront.
+Read each named reference **when you reach that step**, not upfront.
 
-**Step 1 - Intake (autonomous).** Inventory attachments and links. If XLSX/CSV: map arbitrary columns semantically and classify **each row** by category and product type (`references/universal-xlsx-intake.md`). Normalize TTX to facts + units (source may be Russian or any marketplace language). Inspect source assets: size, aspect, text/logo legibility, product angles available, fidelity risks.
+**Step 1 - Intake (autonomous).** Inventory attachments and links. **Images named by GTIN/EAN/UPC + XLSX row per code:** run `scripts/match_inputs.py`, follow `references/gtin-batch-intake.md`. If XLSX/CSV: map arbitrary columns semantically and classify **each row** by category and product type (`references/universal-xlsx-intake.md`). Normalize TTX to facts + units (source may be Russian or any marketplace language). Inspect source assets: size, aspect, text/logo legibility, product angles available, fidelity risks.
 
-*Blockers worth asking about (only these):* ambiguous category/type that changes claims; missing mandatory fact for a requested claim; missing source angle required by the plan (e.g. rear view); no target marketplace/language derivable from data; no placements derivable (then propose a default set, see below). Everything else -> default + assumption. Rows that are clear proceed without waiting for ambiguous ones.
+*Blockers worth asking about (only these):* ambiguous category/type that changes claims; missing mandatory fact for a requested claim; missing source angle required by the plan (e.g. rear view); no target marketplace/language derivable from data; no placements derivable (then propose a default set, see below). Everything else -> default + assumption. Clear rows proceed without waiting.
 
-**Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
+**Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. XLSX benefits are the source of truth; if none, draft from that row's TTX only, tag `DRAFTED_FROM_TTX`, approve at C1. If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
 
 **Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map every asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ module's box to another.
 
@@ -89,11 +89,12 @@ Details of each step live in the reference files; read the named file **when you
 Run them when files are available locally (Python 3; `Pillow`, `openpyxl`; `ffprobe` optional):
 
 - `scripts/validate_asset.py <file> --placement <id> [--expect WxH]` - deterministic technical checks, JSON + human summary, exit code 0/1/2 (pass/fail/warn-only). `--list-placements` shows ids.
+- `scripts/match_inputs.py --images DIR --xlsx FILE --out match.json` - GTIN-named images <-> XLSX rows, benefits provided/missing, issues.
 - `scripts/build_workbook.py plan.json out.xlsx` - builds the production workbook from a JSON plan; `--example` prints a minimal valid plan; flags rows that are not designer-ready.
 
 ## 6. Reference map
 
-`amazon-specs` placement specs - `carousel-strategy` MAIN + images 2-7 - `content-improvement` fact-to-benefit engine - `universal-xlsx-intake` arbitrary workbook mapping - `localization` marketplace copy - `designer-brief` brief + layout scheme - `agent-production-prompts` prompts for image/video agents - `product-fidelity` protected-layer rules - `xlsx-output` production workbook schema - `creative-plan` checkpoint C1 template - `qa-preflight` checks and statuses - `project-memory` persistent decisions.
+`amazon-specs` placement specs - `carousel-strategy` MAIN + images 2-7 - `content-improvement` fact-to-benefit engine - `gtin-batch-intake` GTIN-named images + XLSX, benefits drafting - `universal-xlsx-intake` arbitrary workbook mapping - `localization` marketplace copy - `designer-brief` brief + layout scheme - `agent-production-prompts` prompts for image/video agents - `product-fidelity` protected-layer rules - `xlsx-output` production workbook schema - `creative-plan` checkpoint C1 template - `qa-preflight` checks and statuses - `project-memory` persistent decisions.
 
 
 ---
@@ -880,6 +881,60 @@ Before finalizing a layout, ask the user only the questions that materially affe
 When the user has not specified a preference, propose 1-3 sensible layout options with a recommended default instead of asking an open-ended design question.
 
 Do not mark `Designer Brief Status = APPROVED / READY` until the user has approved the layout scheme or explicitly delegated layout decisions to the agent.
+
+## FILE: references/gtin-batch-intake.md
+
+# GTIN Batch Intake (images named by GTIN + XLSX with TTX and benefits)
+
+Primary input mode for local use (Claude Code). The user drops a folder of product images and one XLSX; the agent does the rest.
+
+## Input contract
+
+1. A repository / working folder.
+2. Images whose **file name is the product code**: `GTIN` / `EAN` / `UPC` (`4006381333931.jpg`). Extra angles of the same product: `4006381333931_2.jpg`, `4006381333931-back.png` - the suffix becomes the view label (use it for the "rear view available?" check).
+3. An XLSX, **one row per product**, with the same code in a GTIN/EAN/UPC column, the technical characteristics (TTX), and optionally a benefits / advantages column. Column names are free-form (see `universal-xlsx-intake.md`); the GTIN column is found by header or by content.
+
+The image is the protected product layer (`product-fidelity.md`). The XLSX is read-only.
+
+## Step A - match (always first, run the script)
+
+`python scripts/match_inputs.py --images <dir> --xlsx <file> --out creative-studio/out/match.json`
+
+It returns, without guessing: matched products (images + row + facts + benefits + `benefits_status`), `images_without_row`, `rows_without_image`, duplicate rows, invalid / check-digit-failed codes, codes that lost a leading zero in Excel (`ZERO_PADDED`, matched only because the padded code has a valid check digit), non-GTIN file names, image pixel sizes.
+
+Matching treats UPC-12 and EAN-13 with a leading 0 as the same product (GTIN-14 key). Never rename files or edit the XLSX; report instead.
+
+**Blockers worth asking about (one message, recommended answer pre-filled):** duplicate rows for one GTIN; an image without a row (default: skip it, list it); a row without an image (default: plan the row as `DESCRIPTION ONLY - ASSET NOT CREATED`, no production without a source image); an invalid check digit (default: keep the code as typed, flag it, do not fix it). Clean matches proceed without waiting for the broken ones. Re-run the script after the user fixes files.
+
+## Step B - benefits (per product)
+
+| `benefits_status` | What the agent does |
+|---|---|
+| `PROVIDED` | The user's benefits are the source of truth. Keep their meaning; tighten wording for the visual; claim-check each (`content-improvement.md`). Tag `PROVIDED`. |
+| `MISSING_DRAFT_FROM_TTX` | The agent drafts shopper-facing benefits **from the TTX of that row only**. Per benefit: `source fact` -> `shopper meaning` -> `benefit` -> `claim risk`. 3-5 per product, ranked for the carousel. Tag `DRAFTED_FROM_TTX`. |
+| `MISSING_NO_TTX` | No facts to build on. Do not write benefits. Blocker: ask for TTX, or plan only MAIN (no marketing copy needed) and list the rest as `NOT READY - missing input`. |
+
+Drafting rules: a benefit may only restate or explain a supplied fact (a 20,000 mAh battery -> "charges a phone several times" only if the arithmetic is explicit and cautious; otherwise state the number). Never add efficacy, health, safety, eco, ranking, certification, "best/premium" or comparative claims that the TTX does not contain. Missing proof -> flag as `NEEDS_PROOF`, do not write it. Units, numbers, models, compatibility are copied exactly. Translation never strengthens a claim.
+
+All `DRAFTED_FROM_TTX` benefits are shown once at checkpoint C1 (next to the fact they come from) and approved in the same `ok`. The user can accept all, or edit by number. After approval they are `APPROVED` in project memory and are never re-asked.
+
+## Step C - plan and production
+
+Per matched product, continue the normal pipeline (carousel strategy, localization, layout, C1). Mapping into the production workbook:
+
+| Data | Workbook column |
+|---|---|
+| GTIN from the file name / row | `SKU / EAN / GTIN` (as typed, text) |
+| image path(s) | `Source Image / File / URL / Drive Link` (real path from `match.json`) |
+| row facts | `PRODUCT_TTX` (one line per attribute), `Source TTX / Facts`, `Normalized TTX / Facts` |
+| benefits | `CONTENT_INTELLIGENCE` (`Proposed Benefit`, `Proof / Supporting Fact`, `User Approval Status` = `PROVIDED` / `DRAFTED_FROM_TTX` -> `APPROVED`) and `Proposed Benefit` in `ASSET_PLAN` |
+| unmatched items | `ISSUES` |
+
+Keep one `Product Row ID` per GTIN so every asset traces back to its image and row. Source quality is checked per image with `scripts/validate_asset.py` (size, aspect, background) before the plan promises anything the file cannot support (for example MAIN fill, or a rear view that only exists as a front photo).
+
+## Scale
+
+Many GTINs: process all clean matches in one plan and one C1; group the table by product. Do not ask per SKU.
 
 ## FILE: references/localization.md
 
