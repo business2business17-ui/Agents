@@ -4,7 +4,7 @@
 `SMART` <!-- AUTOPILOT | SMART | GUIDED (per agent if different) -->
 
 ## Marketplaces and templates
-| Marketplace | Language | Currency | Template file (path + sha256) | Product Type | Template version |
+| Marketplace | Content language (one row per language for CA/BE/AE/SA/EG/IN) | Currency | Template file (path + sha256) | Product Type | Template version |
 |---|---|---|---|---|---|
 
 ## Pricing configuration

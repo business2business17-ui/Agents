@@ -41,6 +41,11 @@ from datetime import date, datetime
 
 from content_check import FORBIDDEN, STRICT_CLAIMS, STOP, find_terms, meaningful, norm_token, tokens
 
+try:  # shared marketplace table (domain, currency, content languages)
+    from marketplaces import info as mp_info, languages as mp_languages, needs_language_choice
+except ImportError:  # pragma: no cover
+    mp_info = mp_languages = needs_language_choice = None
+
 SYN = {
     "keyword": ["keyword phrase", "keyword", "keywords", "phrase", "search term", "search query", "suchbegriff", "suchanfrage",
                 "mot cle", "mot clé", "parola chiave", "palabra clave", "fraza kluczowa", "keywords phrase"],
@@ -59,28 +64,47 @@ SYN = {
     "marketplace": ["marketplace", "country", "store", "marktplatz", "pays"],
 }
 LANG_MARKERS = {
-    "en": "for with the and women men case cover phone kids girls boys set of black white blue for-men".split(),
-    "de": "für mit und der die das herren damen hülle handyhülle schutzhülle kinder mädchen jungen set aus schwarz weiß".split(),
-    "fr": "pour avec et le la les de femme homme coque étui enfant fille garçon ensemble noir blanc".split(),
-    "it": "per con e il lo la di donna uomo custodia cover bambini ragazza ragazzo nero bianco".split(),
-    "es": "para con y el la los de mujer hombre funda carcasa niños niña niño negro blanco".split(),
-    "nl": "voor met en de het van dames heren hoesje kinderen meisjes jongens zwart wit".split(),
-    "pl": "dla z i na do etui męskie damskie dzieci czarny biały pokrowiec".split(),
-    "sv": "för med och till fodral barn flickor pojkar svart vit skal".split(),
-    "pt": "para com e o a de mulher homem capa crianças preto branco".split(),
+    "en": "for with the and of to your women men kids girls boys black white blue red green".split(),
+    "de": "für mit und der die das herren damen kinder mädchen jungen schwarz weiß ohne aus hülle handyhülle schutzhülle".split(),
+    "fr": "pour avec et les des femme homme enfant fille garçon noir blanc sans coque étui".split(),
+    "it": "per con il gli donna uomo bambini ragazza ragazzo nero bianco senza custodia".split(),
+    "es": "para con los las mujer hombre niños niña niño negro blanco sin funda carcasa".split(),
+    "nl": "voor met het van dames heren kinderen meisjes jongens zwart wit zonder hoesje".split(),
+    "pl": "dla na do etui męskie damskie dzieci czarny biały bez pokrowiec".split(),
+    "sv": "för och till fodral barn flickor pojkar svart vit utan skal".split(),
+    "pt": "para com mulher homem crianças preto branco sem capa".split(),
     "tr": "için ve ile kılıf kapak erkek kadın çocuk siyah beyaz".split(),
 }
-EXPECTED = {"US": ["en"], "UK": ["en"], "CA": ["en", "fr"], "AU": ["en"], "IN": ["en"], "IE": ["en"], "SG": ["en"], "AE": ["en"],
-            "SA": ["en"], "EG": ["en"], "DE": ["de"], "FR": ["fr"], "IT": ["it"], "ES": ["es"], "MX": ["es"], "NL": ["nl"],
-            "BE": ["nl", "fr"], "PL": ["pl"], "SE": ["sv"], "BR": ["pt"], "TR": ["tr"], "JP": ["ja"]}
+SCRIPTS = {  # languages recognised by writing system, not by words
+    "ja": re.compile("[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]"),
+    "ar": re.compile("[\u0600-\u06ff\u0750-\u077f]"),
+    "hi": re.compile("[\u0900-\u097f]"),
+}
 CORE_LANG_TOKENS = {k: set(v) for k, v in LANG_MARKERS.items()}
+
+
+def kw_lang(keyword):
+    """Best guess of the language of one keyword: by script, else by distinctive words. None = unknown/neutral
+    (brands, model names, numbers). Heuristic only - the agent reads the result."""
+    for lang, rx in SCRIPTS.items():
+        if rx.search(keyword):
+            return lang
+    tk = set(tokens(keyword))
+    hits = {l: len(tk & m) for l, m in CORE_LANG_TOKENS.items()}
+    best = max(hits.values()) if hits else 0
+    if best == 0:
+        return None
+    top = [l for l, c in hits.items() if c == best]
+    return top[0] if len(top) == 1 else None
+
+
 TIER_PLACEMENT = {"TIER_1_PRIMARY": "title", "TIER_2_SECONDARY": "highlights/bullets", "TIER_3_LONG_TAIL": "bullets/description",
                   "TIER_4_SEMANTIC": "backend search terms", "EXCLUDE": "-"}
 
 
 def keyn(s):
     s = unicodedata.normalize("NFKC", str(s)).lower()
-    return re.sub(r"[^0-9a-zà-ÿąćęłńóśźż]+", " ", s).strip()
+    return re.sub(r"[\W_]+", " ", s).strip()  # unicode-aware: keeps Latin accents, CJK, Arabic, Devanagari
 
 
 def num(v):
@@ -141,25 +165,24 @@ def read_rows(path):
         import openpyxl
         wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
         ws = wb[wb.sheetnames[0]]
-        it = ws.iter_rows(values_only=True)
-        header = next(it)
-        return [dict(zip(header, r)) for r in it if any(c is not None for c in r)]
+        all_rows = list(ws.iter_rows(values_only=True))
+        hi = next((i for i, r in enumerate(all_rows[:15]) if "keyword" in map_columns([c for c in r if c is not None])), 0)
+        header = all_rows[hi]
+        return [dict(zip(header, r)) for r in all_rows[hi + 1:] if any(c is not None for c in r)]
     text = raw.decode("utf-8-sig", errors="replace")
     try:
         dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;\t")
     except csv.Error:
         dialect = csv.excel
-    return list(csv.DictReader(io.StringIO(text), dialect=dialect))
+    lines = list(csv.reader(io.StringIO(text), dialect=dialect))
+    hi = next((i for i, r in enumerate(lines[:15]) if "keyword" in map_columns([c for c in r if c])), 0)
+    header = lines[hi]
+    return [dict(zip(header, r)) for r in lines[hi + 1:] if any(c.strip() for c in r)]
 
 
 def detect_language(keywords):
     sample = keywords[:300]
-    votes = Counter()
-    for k in sample:
-        tk = set(tokens(k))
-        for lang, marks in CORE_LANG_TOKENS.items():
-            if tk & marks:
-                votes[lang] += 1
+    votes = Counter(l for l in (kw_lang(k) for k in sample) if l)
     n = max(1, len(sample))
     return {l: round(c / n, 3) for l, c in votes.most_common()}
 
@@ -167,7 +190,10 @@ def detect_language(keywords):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("files", nargs="+")
-    ap.add_argument("--marketplace", required=True)
+    ap.add_argument("--marketplace", required=True, help="any Amazon marketplace code (see marketplaces.py --list)")
+    ap.add_argument("--language", help="content language of THIS listing (ISO 639-1). Required when the marketplace has several "
+                                       "(CA en/fr, BE fr/nl, AE/SA/EG ar/en, IN en/hi); defaults to the marketplace language otherwise")
+    ap.add_argument("--allow-languages", default="", help="extra keyword languages to keep as loanwords, e.g. en for DE")
     ap.add_argument("--product-terms", default="", help="comma-separated product-type / model / key attribute terms from the verified TTX")
     ap.add_argument("--competitors", default="")
     ap.add_argument("--verified-claims", default="")
@@ -182,6 +208,20 @@ def main():
     ap.add_argument("--xlsx")
     a = ap.parse_args()
     mp = a.marketplace.upper()
+    flags_pre = []
+    allowed_langs = mp_languages(mp) if mp_languages else []
+    if mp_info and not mp_info(mp):
+        flags_pre.append(dict(code="UNKNOWN_MARKETPLACE", detail=f"{mp} is not in marketplaces.json: add it after checking the seller account; "
+                                                                  "language cannot be enforced, state --language"))
+    target_lang = (a.language or "").lower() or None
+    if target_lang is None and allowed_langs:
+        if needs_language_choice(mp):
+            sys.exit(f"marketplace {mp} has several content languages {allowed_langs}: ask the user which language THIS listing/SEO is for "
+                     f"and pass --language (SEO, content, units and formats follow the language)")
+        target_lang = allowed_langs[0]
+    if target_lang and allowed_langs and target_lang not in allowed_langs:
+        flags_pre.append(dict(code="LANGUAGE_NOT_LISTED_FOR_MARKETPLACE", detail=f"{target_lang} is not in the table for {mp} {allowed_langs}: VERIFY_IN_UI"))
+    keep_langs = {target_lang} | {x.strip().lower() for x in a.allow_languages.split(",") if x.strip()} if target_lang else set()
 
     rows, col_maps, src = [], [], []
     for f in a.files:
@@ -199,7 +239,7 @@ def main():
             rec["_src"] = os.path.basename(f)
             rows.append(rec)
 
-    flags = []
+    flags = list(flags_pre)
     if a.seo_date:
         seo_date, date_basis = a.seo_date, "stated by the user"
     else:
@@ -217,14 +257,13 @@ def main():
             flags.append(dict(code="SEO_MARKETPLACE_MISMATCH", detail=f"file says {sorted(seen)[:5]}, target {mp}"))
     shares = detect_language([str(r["keyword"]) for r in sorted(rows, key=lambda r: -(num(r.get("search_volume")) or 0))
                               if r.get("keyword")])
-    exp = EXPECTED.get(mp, [])
-    if exp and shares:
+    if target_lang and shares:
         top_lang, top_share = next(iter(shares.items()))
-        exp_share = max(shares.get(l, 0) for l in exp)
-        # english tokens are common in every market, so only flag a clearly different dominant language
-        if top_lang not in exp and top_share >= 0.4 and exp_share < 0.15:
-            flags.append(dict(code="SEO_MARKETPLACE_MISMATCH", detail=f"keywords look {top_lang} ({top_share:.0%}), "
-                                                                      f"target {mp} expects {exp} ({exp_share:.0%}): wrong marketplace export?"))
+        tgt_share = shares.get(target_lang, 0)
+        if top_lang != target_lang and top_share >= 0.4 and tgt_share < 0.15:
+            code = "SEO_LANGUAGE_MISMATCH" if top_lang in allowed_langs else "SEO_MARKETPLACE_MISMATCH"
+            flags.append(dict(code=code, detail=f"keywords look {top_lang} ({top_share:.0%}), but {mp} / language '{target_lang}' "
+                                                f"expects {target_lang} ({tgt_share:.0%}): wrong marketplace or language export?"))
 
     # merge exact duplicates
     merged, exact_dups = {}, 0
@@ -282,7 +321,11 @@ def main():
     for it in items:
         it["relevance"] = relevance(it)
         reason = None
-        if find_terms(it["keyword"], comps):
+        kl = kw_lang(it["keyword"])
+        it["lang"] = kl
+        if keep_langs and kl and kl not in keep_langs:
+            reason, it["status"] = f"keyword language '{kl}' is not the listing language '{target_lang}'", "WRONG_LANGUAGE"
+        elif find_terms(it["keyword"], comps):
             reason, it["status"] = "competitor brand", "COMPETITOR_TERM"
         elif find_terms(it["keyword"], FORBIDDEN):
             reason, it["status"] = "prohibited / promotional / medical wording", "PROHIBITED_TERM"
@@ -339,7 +382,7 @@ def main():
     out_items = []
     for it in sorted(items, key=lambda x: (x.get("tier") is None, x.get("tier") == "EXCLUDE", -(x.get("score") or 0), -(x["sv"] or 0))):
         out_items.append(dict(keyword=it["keyword"], search_volume=it["sv"], relevance=it.get("relevance"), score=it.get("score"),
-                              tier=it.get("tier"), status=it.get("status"), reason=it.get("reason"),
+                              tier=it.get("tier"), language=it.get("lang"), status=it.get("status"), reason=it.get("reason"),
                               placement=TIER_PLACEMENT.get(it.get("tier"), ""), cluster=it.get("cluster"),
                               iq_score=num(it.get("iq_score")), competing_products=num(it.get("competing_products")),
                               title_density=num(it.get("title_density")), keyword_sales=num(it.get("keyword_sales")),
@@ -350,11 +393,11 @@ def main():
         "total_keywords_in_files": len(rows), "after_exact_dedup": len(items), "exact_duplicates_removed": exact_dups,
         "semantic_duplicate_clusters": sem_dup_clusters,
         "usable_keywords": sum(tc[t] for t in ("TIER_1_PRIMARY", "TIER_2_SECONDARY", "TIER_3_LONG_TAIL", "TIER_4_SEMANTIC")),
-        "irrelevant": st["IRRELEVANT"], "competitor_terms": st["COMPETITOR_TERM"], "prohibited_terms": st["PROHIBITED_TERM"],
+        "wrong_language": st["WRONG_LANGUAGE"], "irrelevant": st["IRRELEVANT"], "competitor_terms": st["COMPETITOR_TERM"], "prohibited_terms": st["PROHIBITED_TERM"],
         "unsupported_claims": st["UNSUPPORTED_CLAIM"], "user_excluded": st["USER_EXCLUDED"],
         "tier_1": tc["TIER_1_PRIMARY"], "tier_2": tc["TIER_2_SECONDARY"], "tier_3": tc["TIER_3_LONG_TAIL"], "tier_4": tc["TIER_4_SEMANTIC"],
         "excluded": tc["EXCLUDE"], "needs_product_terms": st["NEEDS_PRODUCT_TERMS"]}
-    result = dict(marketplace=mp, seo_source_date=seo_date, seo_source_date_basis=date_basis, expected_language=exp,
+    result = dict(marketplace=mp, seo_source_date=seo_date, seo_source_date_basis=date_basis, expected_language=allowed_langs, target_language=target_lang,
                   language_shares=shares, flags=flags, sources=src, sanitization_report=report, keywords=out_items,
                   note="SEO data is search demand, never evidence of product facts. Marketplace-isolated: do not reuse for another marketplace.")
     if a.out:
@@ -377,7 +420,7 @@ def main():
     print(f"SEO SANITIZATION REPORT [{mp}] source date {seo_date} ({date_basis})")
     for k, v in report.items():
         print(f"  {k:32} {v}")
-    print("  language shares:", shares, "| expected:", exp)
+    print("  language shares:", shares, "| marketplace languages:", allowed_langs, "| target:", target_lang)
     for f in flags:
         print(f"  FLAG {f['code']}: {f['detail']}")
     for x in out_items[:12]:

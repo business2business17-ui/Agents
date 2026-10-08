@@ -2,6 +2,13 @@
 
 SEO data is **search demand only**. It never proves a product fact, a claim, a compatibility or a feature (spec sections 3, 14). It is marketplace-specific: a US export is never translated into DE SEO (`SEO_MARKETPLACE_MISMATCH`).
 
+## Country and language
+
+- Any Amazon country. SEO is tied to **marketplace + content language**: `seo_import.py --marketplace XX --language yy` (language optional for single-language countries, mandatory for CA, BE, AE, SA, EG, IN). Keywords in another language are marked `WRONG_LANGUAGE` and excluded (loanwords such as English terms on DE can be kept with `--allow-languages en`); a file whose dominant language is not the target gets `SEO_MARKETPLACE_MISMATCH` / `SEO_LANGUAGE_MISMATCH`.
+- Language detection: by script for ja / ar / hi, by distinctive words for en, de, fr, it, es, nl, pl, sv, pt, tr. Other languages are not detected: the agent checks them by reading, and states the language explicitly.
+- A **Cerebro XLSX** export may start with title rows; the header row is found automatically. Thousand/decimal separators (12,400 / 12.400) are parsed.
+- Cerebro/Magnet/MCP data for CA contains both English and French phrases: run once per language, with the matching `--language`.
+
 ## Choose the source (ask once, remember in `PROJECT.md` -> SEO sources)
 
 | Source | When | How |

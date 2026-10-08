@@ -248,6 +248,52 @@ class AmazonTools(unittest.TestCase):
         r = run(os.path.join(PI, "seo_import.py"), de, "--marketplace", "DE", "--seo-date", "2026-10-01", "--out", self.p("s2.json"))
         self.assertIn("NEEDS_PRODUCT_TERMS", json.dumps(json.load(open(self.p("s2.json"), encoding="utf-8"))))
 
+    def test_countries_and_languages(self):
+        import openpyxl as _x
+        def mk(name, rows):
+            wb = _x.Workbook(); ws = wb.active
+            ws.append(["Helium 10 Cerebro"]); ws.append([]); ws.append(["Keyword Phrase", "Search Volume"])  # title rows above the header
+            for r in rows:
+                ws.append(r)
+            wb.save(self.p(name)); return self.p(name)
+        seo = os.path.join(PI, "seo_import.py")
+        # multi-language marketplace: language must be chosen
+        ca = mk("ca.xlsx", [("phone case for pixel 8", 9000), ("pixel 8 case with stand", 4000)])
+        p = run(seo, ca, "--marketplace", "CA", "--product-terms", "pixel 8", ok=(1,))
+        self.assertIn("ask the user which language", p.stderr + p.stdout)
+        p = run(seo, ca, "--marketplace", "CA", "--language", "fr", "--product-terms", "pixel 8", ok=(1,))
+        self.assertIn("SEO_LANGUAGE_MISMATCH", p.stdout)
+        run(seo, ca, "--marketplace", "CA", "--language", "en", "--product-terms", "pixel 8", "--seo-date", "2026-10-01")
+        # script-based languages
+        jp = mk("jp.xlsx", [("Pixel 8 ケース", 15000), ("スマホケース 耐衝撃", 20000), ("phone case for pixel 8", 3000)])
+        out = self.p("jp.json")
+        run(seo, jp, "--marketplace", "JP", "--product-terms", "pixel 8,ケース", "--seo-date", "2026-10-01", "--out", out)
+        by = {k["keyword"]: k for k in json.load(open(out, encoding="utf-8"))["keywords"]}
+        self.assertEqual(by["Pixel 8 ケース"]["language"], "ja")
+        self.assertEqual(by["phone case for pixel 8"]["status"], "WRONG_LANGUAGE")
+        ae = mk("ae.xlsx", [("جراب بكسل 8", 3000), ("غطاء هاتف", 2000)])
+        run(seo, ae, "--marketplace", "AE", "--language", "ar", "--product-terms", "بكسل,جراب,غطاء", "--seo-date", "2026-10-01")
+        # locale lists for content checks
+        p = run(os.path.join(PI, "content_check.py"), "--title", "Acme etui na telefon", "--lang", "pl")
+        self.assertIn("LOCALE_LIST_MISSING", p.stdout)
+        # handoff: language required for multi-language marketplaces, currency must match the marketplace
+        rec = json.loads(run(os.path.join(PI, "handoff_tool.py"), "--example").stdout)
+        rec["marketplace"] = "CA"
+        rec["content"].pop("language")
+        self.write_json("h_ca.json", rec)
+        run(os.path.join(PI, "handoff_tool.py"), "seal", self.p("h_ca.json"), self.p("h_ca.jsonl"))
+        p = run(os.path.join(PI, "handoff_tool.py"), "validate", self.p("h_ca.jsonl"), ok=(1,))
+        self.assertIn("content.language is required for CA", p.stdout)
+        self.assertIn("CURRENCY_CONFLICT", p.stdout)
+
+    def test_marketplace_table_matches_pricing_engine(self):
+        sys.path.insert(0, SH)
+        import marketplaces, pricing_engine
+        for code, cur in pricing_engine.MARKETPLACE_CURRENCY.items():
+            self.assertEqual(marketplaces.currency(code), cur, code)
+        self.assertEqual(marketplaces.languages("JP"), ["ja"])
+        self.assertTrue(marketplaces.needs_language_choice("BE"))
+
     def test_content_check(self):
         p = run(os.path.join(PI, "content_check.py"), "--title",
                 "Acme Case Case Case for Phone best price 9,99 EUR", ok=(1,))

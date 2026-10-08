@@ -5,6 +5,11 @@ Usage:
   content_check.py --file content.json [--competitors "Nike,Adidas"] [--verified-claims "waterproof,IPX4"]
   content_check.py --file handoff.jsonl           (reads record["content"], one JSON object per line)
   content_check.py --title "..." --backend "..." [--lang de]
+Languages: built-in prohibited-term / claim lists exist for en, de, fr, es, it only. For any other content language
+(pl, nl, sv, pt, tr, ja, ar, hi ...) the AGENT must translate the English lists (best, #1, guaranteed, cure, FDA approved,
+medically proven, cheapest, lowest price, miracle, free shipping + the strict-claim list) into that language and pass them with
+--forbidden-extra "a,b,c" / --claims-extra "..." or --forbidden-file file.txt (one term per line). Without them a
+LOCALE_LIST_MISSING warning is reported: a clean result is then NOT proof that the copy is compliant.
 Limits (defaults from the spec; override when the Product Type rule differs):
   --title-max 75  --highlights-max 125  --bullets-max 5  --backend-max-bytes 249  --max-word-repeat 2
 Checks: title length / repeated meaningful words / prohibited elements (price, shipping, URL, e-mail, phone, emoji,
@@ -39,6 +44,7 @@ der die das und oder von für mit in auf bei aus als ist sind ein eine einer zu
 le la les un une et ou de du des pour avec sur par en
 el los las un una y o de del para con en por
 il lo gli i e o di del per con su da un uno una""".split())
+BUILTIN_LANGS = {"en", "de", "fr", "es", "it"}
 EMOJI = re.compile("[\U0001F300-\U0001FAFF☀-➿⭐✅❌]")
 URL = re.compile(r"(https?://|www\.)\S+", re.I)
 MAIL = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
@@ -140,14 +146,23 @@ def check(c, o):
     verified = [x.strip().lower() for x in (o.verified_claims or "").split(",") if x.strip()]
     fields = {"title": title, "item_highlights": hi, "description": desc, "backend_search_terms": backend}
     fields.update({f"bullet_{i}": b for i, b in enumerate(bullets, 1)})
+    extra_f = [x.strip() for x in (o.forbidden_extra or "").split(",") if x.strip()]
+    if o.forbidden_file:
+        extra_f += [l.strip() for l in open(o.forbidden_file, encoding="utf-8-sig") if l.strip()]
+    extra_c = [x.strip() for x in (o.claims_extra or "").split(",") if x.strip()]
+    lang = (o.lang or c.get("language") or "").lower()
+    if lang and lang not in BUILTIN_LANGS and not (extra_f and extra_c):
+        out.append(f("WARN", "content", "LOCALE_LIST_MISSING",
+                     f"no built-in prohibited-term/claim lists for language '{lang}': translate them and pass --forbidden-extra/--claims-extra "
+                     "(a clean result is not proof of compliance)"))
     for name, text in fields.items():
         if not text:
             continue
-        for t in find_terms(text, FORBIDDEN):
+        for t in find_terms(text, FORBIDDEN + extra_f):
             out.append(f("ERROR", name, "FORBIDDEN_TERM_FOUND", f"'{t}' (prohibited promotional/medical wording)"))
         for t in find_terms(text, comps):
             out.append(f("ERROR", name, "COMPETITOR_BRAND", f"'{t}'"))
-        for t in find_terms(text, STRICT_CLAIMS):
+        for t in find_terms(text, STRICT_CLAIMS + extra_c):
             if not any(v and (v in t.lower() or t.lower() in v) for v in verified):
                 out.append(f("WARN", name, "CLAIM_NEEDS_EVIDENCE", f"'{t}' is a strictly verified claim: needs evidence in the Evidence Matrix"))
     return out
@@ -168,6 +183,9 @@ def main():
     ap.add_argument("--highlights")
     ap.add_argument("--backend")
     ap.add_argument("--lang")
+    ap.add_argument("--forbidden-extra", default="", help="localized prohibited terms for the content language, comma-separated")
+    ap.add_argument("--claims-extra", default="", help="localized strictly-verified claim terms, comma-separated")
+    ap.add_argument("--forbidden-file", help="file with extra prohibited terms, one per line")
     ap.add_argument("--competitors", default="")
     ap.add_argument("--verified-claims", default="")
     ap.add_argument("--title-max", type=int, default=75)

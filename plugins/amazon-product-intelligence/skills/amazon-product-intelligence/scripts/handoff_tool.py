@@ -16,6 +16,11 @@ import copy
 import hashlib
 import json
 import sys
+
+try:
+    from marketplaces import info as _mp_info, languages as _mp_langs, needs_language_choice as _mp_choice, currency as _mp_cur
+except ImportError:  # pragma: no cover
+    _mp_info = _mp_langs = _mp_choice = _mp_cur = None
 from datetime import datetime, timezone
 
 SCHEMA = "1.0.0"
@@ -44,7 +49,7 @@ EXAMPLE = {
                     "status": "GTIN_VALID"},
     "product_type": {"value": "PHONE_CASE", "status": "LOCKED", "confidence": "HIGH", "locked": True},
     "catalog": {"brand": "ExampleBrand"},
-    "content": {"title": "ExampleBrand Slim Case for Pixel 8, Matte Black", "item_highlights": "", "bullet_points": [],
+    "content": {"language": "de", "title": "ExampleBrand Slim Case for Pixel 8, Matte Black", "item_highlights": "", "bullet_points": [],
                 "description": "", "backend_search_terms": "", "backend_bytes": 0},
     "pricing": {"price_input_type": "sale_price", "sale_price": 24.99, "standard_price": 27.77, "business_price": 24.99,
                 "business_price_status": "CALCULATED", "pricing_policy_version": POLICY, "pricing_basis": "STANDARD_PRICE",
@@ -174,6 +179,20 @@ def validate_one(r):
     elif r["operation_intent"] in ("PRICE_ONLY", "OFFER_ONLY"):
         errs.append("PRICE_ONLY/OFFER_ONLY without pricing block")
     c = r.get("content") or {}
+    if _mp_info:
+        if not _mp_info(r["marketplace"]):
+            warns.append(f"marketplace '{r['marketplace']}' is not in marketplaces.json: language/currency cannot be cross-checked")
+        elif c:
+            lang = (c.get("language") or "").lower()
+            if not lang:
+                if _mp_choice(r["marketplace"]):
+                    errs.append(f"content.language is required for {r['marketplace']} (languages {_mp_langs(r['marketplace'])}: one record per language)")
+                else:
+                    warns.append("content.language missing")
+            elif lang not in _mp_langs(r["marketplace"]):
+                warns.append(f"content.language '{lang}' is not in the table for {r['marketplace']} {_mp_langs(r['marketplace'])}: VERIFY_IN_UI")
+            if p and p.get("currency") and _mp_cur(r["marketplace"]) and p["currency"] != _mp_cur(r["marketplace"]):
+                errs.append(f"pricing.currency {p['currency']} does not match marketplace {r['marketplace']} ({_mp_cur(r['marketplace'])}): CURRENCY_CONFLICT")
     if c and c.get("backend_search_terms") is not None:
         if len(c["backend_search_terms"].encode("utf-8")) != c.get("backend_bytes", -1):
             errs.append("content.backend_bytes does not match UTF-8 byte length")

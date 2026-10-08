@@ -40,6 +40,10 @@ You are an agent, not a form. The user hands over raw material once; you deliver
 
 Shared by all three Amazon agents: `amazon-project/PROJECT.md` (template `assets/project-memory-template.md`, rules `references/project-memory.md`). It stores marketplaces, price-policy config, GTIN-exemption scope, brand approvals, glossary/forbidden terms, SEO source dates, confirmed decisions. Read first, update at each checkpoint. Outputs go to `amazon-project/agent1/` (`normalized/ evidence/ output/json|jsonl|xlsx|issues/ versions/`); raw inputs are never overwritten. No file access: print the memory block at the end of the reply.
 
+## 2a. Country and language (universal)
+
+Any Amazon country is supported; the table is `scripts/marketplaces.py --list` (domain, currency, content languages). **Language follows the country**: one record = one marketplace + one content language. Single-language countries default to their language (DE=de, JP=ja, PL=pl...). Multi-language countries (CA en/fr, BE fr/nl, AE/SA/EG ar/en, IN en/hi) need ONE question: "which language is this listing?" - then SEO, title, bullets, description, backend terms, units, number/date formats and the feed template all follow that language; a second language is a separate record. Keywords and copy in a different language are excluded, never mixed. The table is general knowledge, not verified against the seller's account: unknown country/language = `VERIFY_IN_UI`, add it to `marketplaces.json`.
+
 ## 3. Pipeline and checkpoints
 
 Read the named reference **when you reach the step**.
@@ -48,7 +52,7 @@ Read the named reference **when you reach the step**.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
-4. **SEO and content.** SEO source = a Cerebro/Magnet export file or the Helium 10 MCP (ask once which; per marketplace only). Run `scripts/seo_import.py` (sanitization report, tiers, marketplace-mismatch and age flags), then write title, highlights, bullets, description, backend terms and verify with `scripts/content_check.py`. SEO is demand, never product evidence. `05-seo-and-content.md`, `12-seo-sources-cerebro-helium10-mcp.md`.
+4. **SEO and content.** SEO source = a Cerebro/Magnet XLSX/CSV export or the Helium 10 MCP (ask once which; per marketplace AND language only). Run `scripts/seo_import.py --marketplace XX [--language yy]` (sanitization report, tiers, marketplace-mismatch and age flags), then write title, highlights, bullets, description, backend terms and verify with `scripts/content_check.py`. SEO is demand, never product evidence. `05-seo-and-content.md`, `12-seo-sources-cerebro-helium10-mcp.md`.
 5. **Pricing.** Sale Price is the input; `scripts/pricing_engine.py` gives Standard and Business Price and the audit. Quantity tiers (e.g. 2/4/6 pcs), allowed-price percents and the B2B minimum rule are the USER's decision, not policy v3: if tiers/bounds are wanted, EVERY run ask which quantity set applies (2-4-6 / 2-4 / other) and take the base numbers (landed cost, referral fee %, FBA and/or MFN fee, VAT %, target margin, B2B max %); run `scripts/margin_calc.py` to show margins and PROPOSE the discount ladder, get the user's approval, then run `pricing_engine.py`. For GMV, net profit, ACOS, TACOS, ROAS and the ad budget that still meets the target margin run `scripts/performance_calc.py` on the user's period numbers (sales basis incl./excl. VAT has no default: pass total sales from the report so the script detects it, or ask the user once). Never invent numbers. B2B minimum = deepest tier price (`--b2b-min deepest-tier`); B2B maximum = max(Business, Sale Price) + pct; results are tagged `USER_DECISION`. `06-pricing.md`, `shared-pricing-and-updates.md`.
 6. **Readiness and QA.** Image readiness, hard errors vs warnings, confidence, publish status, final quality check. `07-readiness-and-status.md`, `11-final-qa-and-hard-rules.md`.
    **C2 - Content/Publish checkpoint:** copy per marketplace, price preview, status per SKU. In AUTOPILOT shown as the final report only.
@@ -71,7 +75,8 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
 - `seo_import.py FILES --marketplace XX --product-terms ".." [--competitors ..] [--seo-date ..] --out seo.json` - normalizes Cerebro/Magnet/MCP keyword data, sanitization report, tiers, placement.
-- `content_check.py --file content.json|handoff.jsonl [--competitors ..] [--verified-claims ..]` - length, repetition, prohibited terms, claims needing evidence, backend bytes.
+- `marketplaces.py --list | DE [--language de]` - country table: domain, currency, content languages, whether the language must be chosen.
+- `content_check.py --file content.json|handoff.jsonl [--competitors ..] [--verified-claims ..]` - length, repetition, prohibited terms, claims needing evidence, backend bytes. Built-in term lists exist for en/de/fr/es/it only: for any other language translate the lists and pass `--forbidden-extra/--claims-extra` (otherwise `LOCALE_LIST_MISSING`).
 - `pricing_engine.py --sale 24.99 --marketplace DE | --batch prices.csv` - Standard/Business Price + audit; user-decided `--tiers --tier-basis --b2b-min deepest-tier --b2b-max-pct --min-pct --max-pct`; `--self-test`.
 - `margin_calc.py --cost .. --referral-pct .. --fba-fee/--mfn-fee .. --channel fba|mfn|both --target-margin .. [--from-pricing out.json] [--basis-price .. --quantities 2,4]` - margins, break-even, minimum price, proposed tier ladder.
 - `performance_calc.py --cost .. --referral-pct .. --fba-fee/--mfn-fee .. --channel .. --lines "price:units,.." [--ad-spend .. --ad-sales .. --total-sales ..] --target-margin ..` - GMV (gross/net), net profit and margin, ACOS, TACOS, ROAS, ad cost per unit, break-even and target ACOS/TACOS, maximum ad budget.
@@ -2499,6 +2504,13 @@ If a required Amazon transformation would materially alter the product meaning, 
 # SEO sources: Cerebro / Magnet exports and the Helium 10 MCP
 
 SEO data is **search demand only**. It never proves a product fact, a claim, a compatibility or a feature (spec sections 3, 14). It is marketplace-specific: a US export is never translated into DE SEO (`SEO_MARKETPLACE_MISMATCH`).
+
+## Country and language
+
+- Any Amazon country. SEO is tied to **marketplace + content language**: `seo_import.py --marketplace XX --language yy` (language optional for single-language countries, mandatory for CA, BE, AE, SA, EG, IN). Keywords in another language are marked `WRONG_LANGUAGE` and excluded (loanwords such as English terms on DE can be kept with `--allow-languages en`); a file whose dominant language is not the target gets `SEO_MARKETPLACE_MISMATCH` / `SEO_LANGUAGE_MISMATCH`.
+- Language detection: by script for ja / ar / hi, by distinctive words for en, de, fr, it, es, nl, pl, sv, pt, tr. Other languages are not detected: the agent checks them by reading, and states the language explicitly.
+- A **Cerebro XLSX** export may start with title rows; the header row is found automatically. Thousand/decimal separators (12,400 / 12.400) are parsed.
+- Cerebro/Magnet/MCP data for CA contains both English and French phrases: run once per language, with the matching `--language`.
 
 ## Choose the source (ask once, remember in `PROJECT.md` -> SEO sources)
 
