@@ -154,6 +154,23 @@ def validate_one(r):
             errs.append("business_price must not exceed standard_price")
         if not p.get("currency"):
             errs.append("pricing.currency missing")
+        tiers = p.get("quantity_tiers") or []
+        if tiers:
+            qs = [t.get("quantity") for t in tiers]
+            ps = [t.get("price") for t in tiers]
+            if any(not isinstance(q, int) for q in qs) or qs != sorted(set(qs)):
+                errs.append("pricing.quantity_tiers: quantities must be integers in strictly ascending order")
+            if any(not isinstance(x, (int, float)) for x in ps) or any(a <= b for a, b in zip(ps, ps[1:])):
+                errs.append("pricing.quantity_tiers: prices must strictly decrease as quantity grows")
+            g = p.get("guardrails") or {}
+            if g.get("policy_status") != "USER_DECISION":
+                errs.append("pricing.guardrails.policy_status must be USER_DECISION for tiers/bounds (not part of policy v3)")
+            if g.get("business_min_rule", "").startswith("DEEPEST_TIER"):
+                if p.get("business_min_price") != ps[-1]:
+                    errs.append("business_min_price must equal the price of the largest-quantity tier (rule DEEPEST_TIER)")
+        elif p.get("business_min_price") is not None or p.get("business_max_price") is not None:
+            if (p.get("guardrails") or {}).get("policy_status") != "USER_DECISION":
+                errs.append("B2B min/max present without guardrails.policy_status USER_DECISION")
     elif r["operation_intent"] in ("PRICE_ONLY", "OFFER_ONLY"):
         errs.append("PRICE_ONLY/OFFER_ONLY without pricing block")
     c = r.get("content") or {}

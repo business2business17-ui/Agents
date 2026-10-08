@@ -79,6 +79,14 @@ class AmazonTools(unittest.TestCase):
         out = json.loads(run(os.path.join(SH, "pricing_engine.py"), "--sale", "24.99", "--marketplace", "DE").stdout)
         self.assertEqual((out["standard_price"], out["business_price"]), (27.77, 24.99))
 
+    def test_user_decided_tiers_and_b2b_min(self):
+        out = json.loads(run(os.path.join(SH, "pricing_engine.py"), "--sale", "24.99", "--marketplace", "DE", "--tiers",
+                             "2:5,4:10", "--tier-basis", "business", "--b2b-min", "deepest-tier").stdout)
+        self.assertEqual(out["business_min_price"], out["quantity_tiers"][-1]["price"])
+        self.assertEqual(out["guardrails"]["policy_status"], "USER_DECISION")
+        nobasis = run(os.path.join(SH, "pricing_engine.py"), "--sale", "24.99", "--marketplace", "DE", "--tiers", "2:5", ok=(1,))
+        self.assertIn("PRICE_DATA_REQUIRED", nobasis.stdout)
+
     def test_patch_guard_roundtrip(self):
         cells = self.write_json("c.json", [
             {"cell": "B7", "value": "SKU-1"}, {"cell": "C7", "value": "0012345678905", "type": "text"},

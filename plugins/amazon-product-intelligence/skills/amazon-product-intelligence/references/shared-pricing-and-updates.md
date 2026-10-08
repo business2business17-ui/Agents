@@ -9,6 +9,16 @@
 > 3. Business Price is applicable only where the current template has a supported B2B field; otherwise `business_price_status = NOT_APPLICABLE`.
 
 
+## User-decided extras: quantity tiers and allowed-price bounds (NOT policy v3)
+
+Shared policy v3 does not approve B2B bounds, minimum/maximum allowed prices or quantity tiers ("require their own approved guardrail/tier policy; if absent do not invent"). The user may decide them per project. When they do:
+
+- **The user supplies every number**: tier quantities (e.g. 2 / 4 / 6 pcs) with their discount percents, the price each percent applies to (`business` or `standard`, no default), the min percent (below Standard Price) and max percent (above Standard Price) for the allowed-price range, and the B2B maximum percent if wanted. Ask once, store in `amazon-project/PROJECT.md` tagged `CONFIRMED`; never reuse numbers from another project.
+- **B2B minimum rule `DEEPEST_TIER`** (user decision): the B2B minimum allowed price equals the price of the largest-quantity tier ("from N pcs"), so the minimum can never fall below the deepest quantity discount.
+- Tier prices = basis x (1 - pct/100), HALF_UP at currency precision; quantities strictly ascending, prices strictly descending, percents in (0,100) and increasing.
+- Every record that carries these values is tagged `guardrails.policy_status = USER_DECISION` (visible in the handoff, the review XLSX and the manifest) so they are never mistaken for policy v3. Executable form: `scripts/pricing_engine.py --tiers "2:P2,4:P4" --tier-basis business --b2b-min deepest-tier --b2b-max-pct X --min-pct Y --max-pct Z` (P2, P4, X, Y, Z = the user's numbers).
+- Template fields are re-discovered from the actual workbook (quantity discount type fixed/percent, threshold/price pairs, min/max, B2B min/max); if the template lacks a field, the value is not written and is reported, never forced into another field.
+
 ## Approved user configuration (binding for all three agents)
 - PRICE_INPUT_DEFAULT = sale_price. A single user-supplied price is a Sale Price, not Your Price.
 - STANDARD_PRICE_POLICY = REVERSE_DISCOUNT; STANDARD_DISCOUNT_RATE = Decimal('0.10').

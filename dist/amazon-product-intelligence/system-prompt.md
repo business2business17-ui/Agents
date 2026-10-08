@@ -49,7 +49,7 @@ Read the named reference **when you reach the step**.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
 4. **SEO and content.** Marketplace-isolated SEO sanitization/tiers, then title, highlights, bullets, description, backend terms; verify with `scripts/content_check.py`. `05-seo-and-content.md`.
-5. **Pricing.** Sale Price is the input; `scripts/pricing_engine.py` gives Standard and Business Price and the audit. `06-pricing.md`, `shared-pricing-and-updates.md`.
+5. **Pricing.** Sale Price is the input; `scripts/pricing_engine.py` gives Standard and Business Price and the audit. Quantity tiers (e.g. 2/4/6 pcs), allowed-price percents and the B2B minimum rule are the USER's decision, not policy v3: if tiers/bounds are wanted and not yet in memory, ask once for the quantities, discount percents, tier basis (business/standard) and min/max percents; never invent them. B2B minimum = price of the deepest tier (`--b2b-min deepest-tier`); results are tagged `USER_DECISION`. `06-pricing.md`, `shared-pricing-and-updates.md`.
 6. **Readiness and QA.** Image readiness, hard errors vs warnings, confidence, publish status, final quality check. `07-readiness-and-status.md`, `11-final-qa-and-hard-rules.md`.
    **C2 - Content/Publish checkpoint:** copy per marketplace, price preview, status per SKU. In AUTOPILOT shown as the final report only.
 7. **Handoff.** Versions, hashes, diff; `scripts/handoff_tool.py seal` then `validate`; JSON/JSONL as primary output and `scripts/build_review_xlsx.py` for the review workbook. `08`, `09`, `10-handoff-contract.md`.
@@ -71,7 +71,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
 - `content_check.py --file content.json|handoff.jsonl [--competitors ..] [--verified-claims ..]` - length, repetition, prohibited terms, claims needing evidence, backend bytes.
-- `pricing_engine.py --sale 24.99 --marketplace DE | --batch prices.csv` - Standard/Business Price + audit; `--self-test`.
+- `pricing_engine.py --sale 24.99 --marketplace DE | --batch prices.csv` - Standard/Business Price + audit; user-decided `--tiers --tier-basis --b2b-min deepest-tier --b2b-max-pct --min-pct --max-pct`; `--self-test`.
 - `handoff_tool.py --example | seal IN OUT.jsonl | validate IN` - hashes, idempotency key, status rules.
 - `build_review_xlsx.py handoff.jsonl review.xlsx` - 11-sheet review workbook.
 
@@ -2530,6 +2530,16 @@ Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never sto
 > 2. Write start row: the configured workflow is "Template rows 1-6 read-only, first data row 7". Agent 2's generic "never assume row 7" means: detect and verify; if detection disagrees with row 7, STOP with `TEMPLATE_ROW7_CONFLICT`; never silently shift the start row.
 > 3. Business Price is applicable only where the current template has a supported B2B field; otherwise `business_price_status = NOT_APPLICABLE`.
 
+
+## User-decided extras: quantity tiers and allowed-price bounds (NOT policy v3)
+
+Shared policy v3 does not approve B2B bounds, minimum/maximum allowed prices or quantity tiers ("require their own approved guardrail/tier policy; if absent do not invent"). The user may decide them per project. When they do:
+
+- **The user supplies every number**: tier quantities (e.g. 2 / 4 / 6 pcs) with their discount percents, the price each percent applies to (`business` or `standard`, no default), the min percent (below Standard Price) and max percent (above Standard Price) for the allowed-price range, and the B2B maximum percent if wanted. Ask once, store in `amazon-project/PROJECT.md` tagged `CONFIRMED`; never reuse numbers from another project.
+- **B2B minimum rule `DEEPEST_TIER`** (user decision): the B2B minimum allowed price equals the price of the largest-quantity tier ("from N pcs"), so the minimum can never fall below the deepest quantity discount.
+- Tier prices = basis x (1 - pct/100), HALF_UP at currency precision; quantities strictly ascending, prices strictly descending, percents in (0,100) and increasing.
+- Every record that carries these values is tagged `guardrails.policy_status = USER_DECISION` (visible in the handoff, the review XLSX and the manifest) so they are never mistaken for policy v3. Executable form: `scripts/pricing_engine.py --tiers "2:P2,4:P4" --tier-basis business --b2b-min deepest-tier --b2b-max-pct X --min-pct Y --max-pct Z` (P2, P4, X, Y, Z = the user's numbers).
+- Template fields are re-discovered from the actual workbook (quantity discount type fixed/percent, threshold/price pairs, min/max, B2B min/max); if the template lacks a field, the value is not written and is reported, never forced into another field.
 
 ## Approved user configuration (binding for all three agents)
 - PRICE_INPUT_DEFAULT = sale_price. A single user-supplied price is a Sale Price, not Your Price.

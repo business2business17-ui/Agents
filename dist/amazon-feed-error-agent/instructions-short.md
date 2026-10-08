@@ -44,7 +44,7 @@ Only the `Template` data sheet is writable (if the real data-entry sheet has ano
 Source priority on conflict (never choose silently, show a `DATA CONFLICT`): user decision > Agent 1 factual data > identifiers > current Amazon template > Data Definitions > Valid Values > Instructions > Processing Summary > verified project mapping > repository reference data > official Amazon docs > third-party.
 
 **Precedence and errata** (overrides the reference files):
-- Pricing errors use `shared-pricing-and-updates.md` (v3, exact Decimal). Business Price = 10% below the rounded Standard Price; a missing B2B rate is not a blocker. Never change formulas silently; price corrections appear in the Change Plan with the audit from `pricing_engine.py`.
+- Pricing errors use `shared-pricing-and-updates.md` (v3, exact Decimal). Business Price = 10% below the rounded Standard Price; a missing B2B rate is not a blocker. Never change formulas silently; price corrections appear in the Change Plan with the audit from `pricing_engine.py`. Quantity tiers, B2B min/max and allowed-price bounds are the user's own decisions (`USER_DECISION`, B2B min = deepest tier price): recompute them only with the numbers stored in memory, never invent percents, and flag every change to them separately.
 - "Humanizer"/"Human Review Mode" = template-native, clean data entry (as a careful operator would type it). It is not, and must never become, evasion of Amazon detection or concealment of automation.
 - Do not scan or execute `.ps1/.bat/.cmd/.exe` or VBA from the user's folder; stay inside the folder the user named.
 - Do not commit/push/merge in a repository without an explicit request.

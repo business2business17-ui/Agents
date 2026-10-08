@@ -10,6 +10,7 @@
 ## Pricing configuration
 - Policy: `2026-10-08-v3` (Sale Price input; Standard = Sale/0.90; Business = Standard x 0.90; HALF_UP; precision per currency)
 - Explicit overrides approved by the user: <none>
+- User-decided extras (NOT policy v3; ask once, no defaults): quantity tiers `<qty:discount%,...>` | tier basis `<business|standard>` | B2B minimum rule `<DEEPEST_TIER|none>` | B2B maximum `<+%|none>` | allowed price range `<-% / +% of Standard Price|none>` | tag `<CONFIRMED>` | date
 
 ## GTIN exemption scope
 | Marketplace | Brand | Category / Product Type | Account | Effective date | Source |

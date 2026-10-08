@@ -38,7 +38,7 @@ Read the named reference **when you reach the step**.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
 4. **SEO and content.** Marketplace-isolated SEO sanitization/tiers, then title, highlights, bullets, description, backend terms; verify with `scripts/content_check.py`. `05-seo-and-content.md`.
-5. **Pricing.** Sale Price is the input; `scripts/pricing_engine.py` gives Standard and Business Price and the audit. `06-pricing.md`, `shared-pricing-and-updates.md`.
+5. **Pricing.** Sale Price is the input; `scripts/pricing_engine.py` gives Standard and Business Price and the audit. Quantity tiers (e.g. 2/4/6 pcs), allowed-price percents and the B2B minimum rule are the USER's decision, not policy v3: if tiers/bounds are wanted and not yet in memory, ask once for the quantities, discount percents, tier basis (business/standard) and min/max percents; never invent them. B2B minimum = price of the deepest tier (`--b2b-min deepest-tier`); results are tagged `USER_DECISION`. `06-pricing.md`, `shared-pricing-and-updates.md`.
 6. **Readiness and QA.** Image readiness, hard errors vs warnings, confidence, publish status, final quality check. `07-readiness-and-status.md`, `11-final-qa-and-hard-rules.md`.
    **C2 - Content/Publish checkpoint:** copy per marketplace, price preview, status per SKU. In AUTOPILOT shown as the final report only.
 7. **Handoff.** Versions, hashes, diff; `scripts/handoff_tool.py seal` then `validate`; JSON/JSONL as primary output and `scripts/build_review_xlsx.py` for the review workbook. `08`, `09`, `10-handoff-contract.md`.
@@ -60,7 +60,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
 - `content_check.py --file content.json|handoff.jsonl [--competitors ..] [--verified-claims ..]` - length, repetition, prohibited terms, claims needing evidence, backend bytes.
-- `pricing_engine.py --sale 24.99 --marketplace DE | --batch prices.csv` - Standard/Business Price + audit; `--self-test`.
+- `pricing_engine.py --sale 24.99 --marketplace DE | --batch prices.csv` - Standard/Business Price + audit; user-decided `--tiers --tier-basis --b2b-min deepest-tier --b2b-max-pct --min-pct --max-pct`; `--self-test`.
 - `handoff_tool.py --example | seal IN OUT.jsonl | validate IN` - hashes, idempotency key, status rules.
 - `build_review_xlsx.py handoff.jsonl review.xlsx` - 11-sheet review workbook.
 
