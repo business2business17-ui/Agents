@@ -87,6 +87,24 @@ class AmazonTools(unittest.TestCase):
         nobasis = run(os.path.join(SH, "pricing_engine.py"), "--sale", "24.99", "--marketplace", "DE", "--tiers", "2:5", ok=(1,))
         self.assertIn("PRICE_DATA_REQUIRED", nobasis.stdout)
 
+    def test_margin_calc_proposes_ladder_within_margin(self):
+        args = ["--cost", "9", "--referral-pct", "15", "--fba-fee", "3.2", "--channel", "fba", "--vat-pct", "19",
+                "--target-margin", "15", "--basis-price", "24.99", "--quantities", "2,4", "--json"]
+        out = json.loads(run(os.path.join(SH, "margin_calc.py"), *args).stdout)["fba"]
+        ladder = out["proposed_ladder"]["tiers"]
+        self.assertEqual([t["quantity"] for t in ladder], [2, 4])
+        for t in ladder:  # every proposed tier keeps the target margin
+            self.assertGreaterEqual(float(t["margin"].rstrip("%")), 15.0)
+        p = run(os.path.join(SH, "margin_calc.py"), "--cost", "9", "--referral-pct", "15", "--mfn-fee", "4.5", "--channel", "mfn",
+                "--vat-pct", "19", "--target-margin", "25", "--price", "24.99", ok=(1,))
+        self.assertIn("BELOW TARGET", p.stdout)
+
+    def test_b2b_max_is_tied_to_sale_price(self):
+        out = json.loads(run(os.path.join(SH, "pricing_engine.py"), "--sale", "24.99", "--marketplace", "DE", "--b2b-max-pct", "20").stdout)
+        self.assertEqual(out["business_max_price"], 29.99)
+        self.assertGreaterEqual(out["business_max_price"], out["sale_price"])
+        self.assertIn("max(Business Price, Sale Price)", out["guardrails"]["business_max_rule"])
+
     def test_patch_guard_roundtrip(self):
         cells = self.write_json("c.json", [
             {"cell": "B7", "value": "SKU-1"}, {"cell": "C7", "value": "0012345678905", "type": "text"},
