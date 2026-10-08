@@ -103,7 +103,7 @@ class AmazonTools(unittest.TestCase):
         base = ["--cost", "9", "--referral-pct", "15", "--fba-fee", "3.2", "--channel", "fba", "--vat-pct", "19",
                 "--lines", "24.99:300,22.49:120", "--json"]
         out = json.loads(run(os.path.join(SH, "performance_calc.py"), *base, "--ad-spend", "650", "--ad-sales", "2100",
-                             "--target-margin", "10").stdout)
+                             "--target-margin", "10", ok=(0, 1)).stdout)
         self.assertEqual(out["gmv_gross"], "10195.80")
         self.assertEqual(out["acos"], "31.0%")
         self.assertEqual(out["tacos"], "6.4%")
