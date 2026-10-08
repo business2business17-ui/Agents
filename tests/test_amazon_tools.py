@@ -213,6 +213,41 @@ class AmazonTools(unittest.TestCase):
         self.write_json("h_bad.json", rec)
         run(os.path.join(PI, "handoff_tool.py"), "validate", self.p("h_bad.json"), ok=(1,))
 
+    def test_seo_import_tiers_and_marketplace_isolation(self):
+        import csv as _csv
+        de = self.p("cerebro_de.csv")
+        with open(de, "w", newline="", encoding="utf-8-sig") as f:
+            w = _csv.writer(f, delimiter=";")
+            w.writerow(["Keyword Phrase", "Search Volume", "Cerebro IQ Score"])
+            for r in [("handyhülle pixel 8", "12.400", 1), ("pixel 8 hülle", "9.800", 1), ("hülle pixel 8", "9.800", 1),
+                      ("samsung galaxy hülle", "20.000", 1), ("bester handyhülle pixel 8", "300", 1),
+                      ("kopfhörer bluetooth", "30.000", 1), ("pixel 8 handyhülle schwarz matt", "1.200", 1)]:
+                w.writerow(r)
+        out = self.p("seo.json")
+        run(os.path.join(PI, "seo_import.py"), de, "--marketplace", "DE", "--product-terms", "pixel 8,hülle,handyhülle",
+            "--competitors", "samsung", "--seo-date", "2026-10-01", "--out", out)
+        d = json.load(open(out, encoding="utf-8"))
+        by = {k["keyword"]: k for k in d["keywords"]}
+        self.assertEqual(by["handyhülle pixel 8"]["tier"], "TIER_1_PRIMARY")
+        self.assertEqual(by["pixel 8 handyhülle schwarz matt"]["tier"], "TIER_3_LONG_TAIL")
+        self.assertEqual(by["samsung galaxy hülle"]["status"], "COMPETITOR_TERM")
+        self.assertEqual(by["bester handyhülle pixel 8"]["status"], "PROHIBITED_TERM")
+        self.assertEqual(by["kopfhörer bluetooth"]["status"], "IRRELEVANT")
+        self.assertEqual(sum(k["status"] == "SEMANTIC_DUPLICATE" for k in d["keywords"]), 1)
+        self.assertEqual(d["sanitization_report"]["competitor_terms"], 1)
+        # an English (US) export must never be accepted for DE
+        us = self.p("cerebro_us.csv")
+        with open(us, "w", newline="") as f:
+            w = _csv.writer(f)
+            w.writerow(["Keyword Phrase", "Search Volume"])
+            for r in [("phone case for pixel 8", 12000), ("case with stand for women", 5000), ("clear case for men", 4000)]:
+                w.writerow(r)
+        p = run(os.path.join(PI, "seo_import.py"), us, "--marketplace", "DE", "--product-terms", "pixel 8", ok=(1,))
+        self.assertIn("SEO_MARKETPLACE_MISMATCH", p.stdout)
+        # without product terms nothing is tiered
+        r = run(os.path.join(PI, "seo_import.py"), de, "--marketplace", "DE", "--seo-date", "2026-10-01", "--out", self.p("s2.json"))
+        self.assertIn("NEEDS_PRODUCT_TERMS", json.dumps(json.load(open(self.p("s2.json"), encoding="utf-8"))))
+
     def test_content_check(self):
         p = run(os.path.join(PI, "content_check.py"), "--title",
                 "Acme Case Case Case for Phone best price 9,99 EUR", ok=(1,))

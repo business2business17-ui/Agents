@@ -48,7 +48,7 @@ Read the named reference **when you reach the step**.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
-4. **SEO and content.** Marketplace-isolated SEO sanitization/tiers, then title, highlights, bullets, description, backend terms; verify with `scripts/content_check.py`. `05-seo-and-content.md`.
+4. **SEO and content.** SEO source = a Cerebro/Magnet export file or the Helium 10 MCP (ask once which; per marketplace only). Run `scripts/seo_import.py` (sanitization report, tiers, marketplace-mismatch and age flags), then write title, highlights, bullets, description, backend terms and verify with `scripts/content_check.py`. SEO is demand, never product evidence. `05-seo-and-content.md`, `12-seo-sources-cerebro-helium10-mcp.md`.
 5. **Pricing.** Sale Price is the input; `scripts/pricing_engine.py` gives Standard and Business Price and the audit. Quantity tiers (e.g. 2/4/6 pcs), allowed-price percents and the B2B minimum rule are the USER's decision, not policy v3: if tiers/bounds are wanted, EVERY run ask which quantity set applies (2-4-6 / 2-4 / other) and take the base numbers (landed cost, referral fee %, FBA and/or MFN fee, VAT %, target margin, B2B max %); run `scripts/margin_calc.py` to show margins and PROPOSE the discount ladder, get the user's approval, then run `pricing_engine.py`. For GMV, net profit, ACOS, TACOS, ROAS and the ad budget that still meets the target margin run `scripts/performance_calc.py` on the user's period numbers (sales basis incl./excl. VAT has no default: pass total sales from the report so the script detects it, or ask the user once). Never invent numbers. B2B minimum = deepest tier price (`--b2b-min deepest-tier`); B2B maximum = max(Business, Sale Price) + pct; results are tagged `USER_DECISION`. `06-pricing.md`, `shared-pricing-and-updates.md`.
 6. **Readiness and QA.** Image readiness, hard errors vs warnings, confidence, publish status, final quality check. `07-readiness-and-status.md`, `11-final-qa-and-hard-rules.md`.
    **C2 - Content/Publish checkpoint:** copy per marketplace, price preview, status per SKU. In AUTOPILOT shown as the final report only.
@@ -70,16 +70,17 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
+- `seo_import.py FILES --marketplace XX --product-terms ".." [--competitors ..] [--seo-date ..] --out seo.json` - normalizes Cerebro/Magnet/MCP keyword data, sanitization report, tiers, placement.
 - `content_check.py --file content.json|handoff.jsonl [--competitors ..] [--verified-claims ..]` - length, repetition, prohibited terms, claims needing evidence, backend bytes.
 - `pricing_engine.py --sale 24.99 --marketplace DE | --batch prices.csv` - Standard/Business Price + audit; user-decided `--tiers --tier-basis --b2b-min deepest-tier --b2b-max-pct --min-pct --max-pct`; `--self-test`.
 - `margin_calc.py --cost .. --referral-pct .. --fba-fee/--mfn-fee .. --channel fba|mfn|both --target-margin .. [--from-pricing out.json] [--basis-price .. --quantities 2,4]` - margins, break-even, minimum price, proposed tier ladder.
 - `performance_calc.py --cost .. --referral-pct .. --fba-fee/--mfn-fee .. --channel .. --lines "price:units,.." [--ad-spend .. --ad-sales .. --total-sales ..] --target-margin ..` - GMV (gross/net), net profit and margin, ACOS, TACOS, ROAS, ad cost per unit, break-even and target ACOS/TACOS, maximum ad budget.
 - `handoff_tool.py --example | seal IN OUT.jsonl | validate IN` - hashes, idempotency key, status rules.
-- `build_review_xlsx.py handoff.jsonl review.xlsx` - 11-sheet review workbook.
+- `build_review_xlsx.py handoff.jsonl review.xlsx` - 12-sheet review workbook (incl. SEO).
 
 ## 6. Reference map
 
-`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `shared-pricing-and-updates` price and operation policy - `project-memory`.
+`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `12` SEO sources (Cerebro/Magnet exports, Helium 10 MCP) - `shared-pricing-and-updates` price and operation policy - `project-memory`.
 
 
 ---
@@ -2492,6 +2493,54 @@ Agent 2 must not change product meaning.
 If a required Amazon transformation would materially alter the product meaning, Agent 2 must stop and return:
 
 `AGENT1_DATA_REVIEW_REQUIRED`
+
+## FILE: references/12-seo-sources-cerebro-helium10-mcp.md
+
+# SEO sources: Cerebro / Magnet exports and the Helium 10 MCP
+
+SEO data is **search demand only**. It never proves a product fact, a claim, a compatibility or a feature (spec sections 3, 14). It is marketplace-specific: a US export is never translated into DE SEO (`SEO_MARKETPLACE_MISMATCH`).
+
+## Choose the source (ask once, remember in `PROJECT.md` -> SEO sources)
+
+| Source | When | How |
+|---|---|---|
+| **Export file** (Cerebro, Magnet, Black Box, ABA; CSV/XLSX) | the user already has files, or the marketplace is not available in the MCP | take the file as is; ask the export DATE and marketplace if the file does not state them |
+| **Helium 10 MCP** (tools `mcp__Helium_10__*`) | the MCP is connected | pull with the tools below, save the result as CSV/JSON, then run `scripts/seo_import.py` |
+| Both | best coverage | merge in `seo_import.py` (same marketplace only) |
+
+Never pull or accept SEO for a marketplace other than the target record's marketplace.
+
+## MCP tool map (use only the tools that are actually connected)
+
+| Need | Tool | Key inputs |
+|---|---|---|
+| **Cerebro** - reverse search of an ASIN (own listing or a competitor) | `get_keywords_by_asin` | `asin`, `marketplace`; `exclude_variations` (default false = parent + children); optional `time_period` `YYYY-MM` |
+| **Magnet** - expand a seed keyword (new product without ASIN) | `get_keywords_by_keyword` | `seed_keyword` (in the marketplace language), `marketplace` |
+| Keyword database search (market-level discovery) | `search_amazon_keywords` | `filters` (word count, volume, competition...), `marketplace`, `limit` <= 200 |
+| Score / enrich a candidate list | `analyze_keywords` | <= 200 phrases per call; **output order differs from input: match by `phrase`** |
+| Merged, ranked keyword bank (<= 300 rows) | `find_keywords_with_multi_source` | `sources` (default `top_keywords` + `aba_converting_keywords`; ABA/SQP sources return nothing unless the seller's store is connected in Helium 10) |
+| Top organic keywords of an ASIN group + competitor gaps | `get_top_keywords` | `main_asin`, optional `competitor_asins` (<= 10) |
+| Keywords not yet tracked | `get_keywords_new_suggestion` | `asin_or_url` |
+| Brand Analytics search terms, click/conversion share | `search_amazon_brand_analytics` | **needs Brand Registry** (otherwise permission denied) |
+| After publication: is the ASIN indexed for keyword X? | `check_asin_keyword_index` | one ASIN, <= 50 keywords per call |
+| Remaining quota | `get_mcp_usage_info` | call before a big pull |
+
+## Rules for using the MCP
+
+1. **Never invent an ASIN.** Cerebro needs a real ASIN: the user's own listing, or competitor ASINs the user names. A new product without ASINs starts from Magnet with seed phrases the user approves.
+2. **Marketplace support differs per tool** (e.g. the Listing-Builder bank has BE but not AE/SA; Cerebro/Magnet/ABA support US CA MX DE ES IT FR UK IN NL AU JP AE BR SA). If the target marketplace (SE, PL, TR, IE, SG...) is not offered, report `SEO_SOURCE_UNAVAILABLE_FOR_MARKETPLACE` and ask for an export file; do not substitute another marketplace.
+3. **Session handling.** The first call has no `session_id`; the result ends with `[gateway-meta] session_id=...`; pass exactly that value in every later call (also to sub-agents) and do not run calls in parallel before it exists. Give a one-sentence `context` on each call.
+4. **Volume.** Prefer narrow queries over paging. `limit` up to 10,000 on Cerebro/Magnet; more than ~1,000 rows come back as a download (`data.export.download_url`); for big pulls use `response_format='download'` and `export_format='csv'`, fetch the file, run `seo_import.py` on it. Cursors expire after 30 minutes. One month per `time_period` request. Do not store signed download URLs in artifacts.
+5. **Quota.** Every call consumes MCP quota: check `get_mcp_usage_info` before large batches and pull once per (marketplace, ASIN/seed), not once per SKU of a variation family.
+6. **Provenance.** Record per source: tool or export name, marketplace, ASIN/seed, `time_period`, retrieval or export date, row count. This becomes `seo_source_date`, `seo_version` and the SEO sheet. A file's modification time is NOT the data date: ask.
+
+## From data to content
+
+1. Run `scripts/seo_import.py FILES --marketplace XX --product-terms "<from verified TTX>" --competitors "<brands>" --verified-claims "<claims with evidence>" --seo-date YYYY-MM-DD --out seo.json`. `--product-terms` come from the verified TTX / product type (never from the keyword list itself).
+2. Show the **SEO Sanitization Report** (counts: total, usable, irrelevant, competitor, prohibited, unsupported claims, exact duplicates, semantic-duplicate clusters, tiers 1-4, excluded) and any flags (`SEO_MARKETPLACE_MISMATCH`, `SEO_SOURCE_OLD`). A mismatch stops SEO use for that marketplace until the user decides.
+3. Use tiers as suggested placement: Tier 1 -> title, Tier 2 -> highlights/bullets, Tier 3 -> bullets/description, Tier 4 -> backend terms (semantic duplicates are good backend synonyms). Then write content and verify with `scripts/content_check.py`.
+4. Put `seo.json` into the record (`record["seo"]`) so it appears in the SEO sheet of the review XLSX and in the versions (`seo_source_date`, `seo_version`).
+5. `top1` / `top2` counts and the relevance thresholds are tunable configuration, not Amazon rules. The agent still reads the final keyword list: a keyword is used only if the product really has that attribute.
 
 ## FILE: references/project-memory.md
 
