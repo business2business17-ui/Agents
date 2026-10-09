@@ -8,7 +8,7 @@
 /plugin marketplace add business2business17-ui/Agents
 /plugin install amazon-creative-studio@business2business17-agents
 ```
-Без слияния: `git clone -b claude/loving-johnson-ztavub https://github.com/business2business17-ui/Agents.git`, затем `/plugin marketplace add ./Agents`.
+Без слияния: `git clone -b claude/design-agent https://github.com/business2business17-ui/Agents.git`, затем `/plugin marketplace add ./Agents`.
 Работайте в папке проекта (там появится `creative-studio/`). Для скриптов: `pip install Pillow openpyxl`, для видео нужен `ffmpeg`.
 
 ## Claude.ai

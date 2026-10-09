@@ -2,7 +2,7 @@
 
 Агент **Design** (`amazon-creative-studio`), упакованный как автономный агент: подключается плагином в Claude Code или загружается в любой другой ИИ (ChatGPT, Gemini, Claude.ai, Codex, Cursor).
 
-Агенты Amazon (сбор ТТХ и подготовка данных, заполнение Feed, исправление ошибок загруженного Feed) живут в отдельной ветке и PR: `claude/amazon-agents`, см. `docs/AMAZON_AGENTS.md` после слияния.
+Агенты Amazon (сбор ТТХ и подготовка данных, заполнение Feed, исправление ошибок загруженного Feed) живут в отдельной ветке и PR: `claude/amz-agents-feed-products`, см. `docs/AMAZON_AGENTS.md` после слияния.
 
 ## Design
 
