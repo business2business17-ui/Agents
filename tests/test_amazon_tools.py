@@ -294,6 +294,64 @@ class AmazonTools(unittest.TestCase):
         self.assertEqual(marketplaces.languages("JP"), ["ja"])
         self.assertTrue(marketplaces.needs_language_choice("BE"))
 
+    def test_google_link_cli(self):
+        import http.server, io, threading, zipfile as _zf
+        import openpyxl as _x
+
+        def xl():
+            wb = _x.Workbook(); wb.active.append(["Keyword Phrase", "Search Volume"]); b = io.BytesIO(); wb.save(b); return b.getvalue()
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def reply(self, code, body=b"", ctype="text/plain", extra=None):
+                self.send_response(code); self.send_header("Content-Type", ctype)
+                for k, v in (extra or {}).items(): self.send_header(k, v)
+                self.end_headers(); self.wfile.write(body)
+            def do_GET(self):
+                p = self.path
+                if "PRIVATEFILE" in p and self.headers.get("Authorization") != "Bearer tok123": return self.reply(403, b"no")
+                if "LOGINFILE" in p: return self.reply(302, extra={"Location": "https://accounts.google.com/ServiceLogin"})
+                if "EVILFILE" in p: return self.reply(302, extra={"Location": "https://evil.example.com/x"})
+                if "NOTNATIVE" in p and "/export" in p: return self.reply(400, b"bad")
+                if "/export?format=xlsx" in p: return self.reply(200, xl(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                if "/export?format=csv" in p: return self.reply(200, ("gid=" + p.split("gid=")[-1] + "\na,b\n").encode(), "text/csv")
+                if p.startswith("/uc?"):
+                    z = io.BytesIO()
+                    with _zf.ZipFile(z, "w") as zf: zf.writestr("xl/vbaProject.bin", b"x")
+                    return self.reply(200, z.getvalue(), "application/octet-stream", {"Content-Disposition": 'attachment; filename="FeedTemplate.xlsm"'})
+                self.reply(404, b"nf")
+
+        srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        env = dict(os.environ, GOOGLE_LINK_TEST_BASE=f"http://127.0.0.1:{srv.server_address[1]}")
+        gl = os.path.join(SH, "google_link.py")
+        out = self.p("gdl")
+        sid = "1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
+
+        def go(url, *extra, token=None, ok=(0,)):
+            e = dict(env, **({"GOOGLE_ACCESS_TOKEN": token} if token else {}))
+            p = subprocess.run([sys.executable, gl, "fetch", url, "--out", out, "--json", *extra], capture_output=True, text=True, env=e)
+            self.assertIn(p.returncode, ok, p.stdout + p.stderr)
+            return p
+        info = json.loads(run(gl, "info", f"https://docs.google.com/spreadsheets/d/{sid}/edit#gid=77").stdout)
+        self.assertEqual((info["kind"], info["gid"]), ("sheet", "77"))
+        r = json.loads(go(f"https://docs.google.com/spreadsheets/d/{sid}/edit").stdout)
+        self.assertTrue(r["path"].endswith(".xlsx") and r["warnings"])  # warns: not an Amazon feed template
+        r = json.loads(go(f"https://docs.google.com/spreadsheets/d/{sid}/edit#gid=77", "--format", "csv").stdout)
+        self.assertIn("gid=77", open(r["path"], encoding="utf-8").read())
+        r = json.loads(go(f"https://drive.google.com/file/d/{sid}/view").stdout)
+        self.assertTrue(r["path"].endswith("FeedTemplate.xlsm"))  # original file keeps its name and extension
+        self.assertIn("403", go("https://docs.google.com/spreadsheets/d/PRIVATEFILE0123456789abcdef/edit", ok=(1,)).stderr)
+        go("https://docs.google.com/spreadsheets/d/PRIVATEFILE0123456789abcdef/edit", token="tok123")
+        self.assertIn("NOT_SHARED", go("https://docs.google.com/document/d/LOGINFILE0123456789abcdef/edit", ok=(1,)).stderr)
+        self.assertIn("non-Google host refused", go("https://docs.google.com/document/d/EVILFILE0123456789abcdef/edit", ok=(1,)).stderr)
+        r = json.loads(go("https://docs.google.com/spreadsheets/d/NOTNATIVE0123456789abcdef/edit").stdout)
+        self.assertEqual(r["format"], "raw")  # an uploaded Office file opened in Sheets: falls back to the Drive download
+        for bad in ("https://evil.example.com/spreadsheets/d/" + sid, "http://docs.google.com/document/d/" + sid,
+                    "https://drive.google.com/drive/folders/" + sid):
+            self.assertEqual(go(bad, ok=(1,)).returncode, 1)
+        srv.shutdown()
+
     def test_content_check(self):
         p = run(os.path.join(PI, "content_check.py"), "--title",
                 "Acme Case Case Case for Phone best price 9,99 EUR", ok=(1,))

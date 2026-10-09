@@ -46,7 +46,7 @@ Shared `amazon-project/PROJECT.md` (template `assets/project-memory-template.md`
 
 Details in the reference files (Russian), read when you reach the step.
 
-1. **Intake.** Identify `SOURCE FEED` (chat / folder / repository) as READ-ONLY, compute its hash, make a working copy; determine marketplace, language, category, template type/version, operation (`01-inputs-and-workflow.md`, `08-clean-source-and-change-set.md`). Agent 1 output, if given, is a source of prepared values, not absolute truth (`06-environment-and-agent1-workflow.md`).
+1. **Intake.** Identify `SOURCE FEED` (chat / folder / repository / Google Drive link) as READ-ONLY, compute its hash, make a working copy; determine marketplace, language, category, template type/version, operation (`01-inputs-and-workflow.md`, `08-clean-source-and-change-set.md`). Agent 1 output, if given, is a source of prepared values, not absolute truth (`06-environment-and-agent1-workflow.md`).
 2. **Inspect** (read-only, never run macros): `scripts/xlsm_inspect.py FEED --json insp.json`.
 3. **Map errors.** `scripts/parse_processing_report.py FEED --marketplace XX --json parsed.json` -> every error linked to code, message, severity, SKU, EAN, row, cell, attribute, original value, error fingerprint.
 4. **Classify** (`BLOCKING / ERROR / WARNING / INFO`, root-cause list in `01`) and **research** in the fixed source order: Processing Summary -> Template -> Data Definitions -> Valid Values -> Instructions -> official Amazon docs -> Seller University -> Amazon moderators -> third-party only as confirmation. `scripts/error_kb.py CODE` first; unknown code = `UNVERIFIED_CASE` (`04-error-knowledge-base.md`, `05-learning-reanalysis-goal.md`).
@@ -72,6 +72,7 @@ Source priority on conflict (never choose silently, show a `DATA CONFLICT`): use
 ## 5. Scripts
 
 Python 3 + `lxml`, `openpyxl`.
+- `google_link.py fetch URL --format raw` - download the original feed from a Drive link (a native Google Sheet export is NOT a feed: macros are lost); Google Docs/Sheets with notes or Agent 1 data -> txt/xlsx/csv. Read-only.
 - `xlsm_inspect.py` - read-only structure. - `parse_processing_report.py` - errors by code/SKU/row/cell with colour evidence and fingerprints.
 - `error_kb.py` + `assets/error_kb.json` - structured knowledge base. - `validate_cells.py` - checks proposed values against the template's validations.
 - `xlsm_patch.py` - writes approved cells (expect_old / change_id) without touching anything else. - `workbook_guard.py` - diff proof.
@@ -2147,6 +2148,10 @@ amazon-project/
   agent3/  source/ working/ corrected/ reports/ change-sets/ diffs/
 ```
 Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never store secrets or credentials in any file.
+
+## Google Docs / Sheets links
+
+When the user gives a link to a Google Doc, Sheet, Slides or Drive file, fetch it with `scripts/google_link.py fetch URL --out amazon-project/<agent>/source/` (read-only; works for "Anyone with the link" files, private files need `GOOGLE_ACCESS_TOKEN`, or use the Google Drive connector if the platform has one). Record the source in memory as origin `GOOGLE_LINK` with the URL (without tokens), file id, format, sha256 and fetch time, and treat the downloaded copy as the source: a later change of the Google file is a new fetch, not a silent update (`LOCAL_SOURCE_CHANGED_AFTER_APPROVAL`). Never put tokens into files or memory. Native Google Sheets exported to xlsx are data sources only - NOT Amazon feed templates (macros, validations and hidden structures are lost): the feed template must be the original `.xlsm`/`.xlsx` file from Drive (`--format raw` on a Drive file link) or an upload.
 
 ## Rules
 

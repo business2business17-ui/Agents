@@ -13,6 +13,10 @@ amazon-project/
 ```
 Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never store secrets or credentials in any file.
 
+## Google Docs / Sheets links
+
+When the user gives a link to a Google Doc, Sheet, Slides or Drive file, fetch it with `scripts/google_link.py fetch URL --out amazon-project/<agent>/source/` (read-only; works for "Anyone with the link" files, private files need `GOOGLE_ACCESS_TOKEN`, or use the Google Drive connector if the platform has one). Record the source in memory as origin `GOOGLE_LINK` with the URL (without tokens), file id, format, sha256 and fetch time, and treat the downloaded copy as the source: a later change of the Google file is a new fetch, not a silent update (`LOCAL_SOURCE_CHANGED_AFTER_APPROVAL`). Never put tokens into files or memory. Native Google Sheets exported to xlsx are data sources only - NOT Amazon feed templates (macros, validations and hidden structures are lost): the feed template must be the original `.xlsm`/`.xlsx` file from Drive (`--format raw` on a Drive file link) or an upload.
+
 ## Rules
 
 1. Read `PROJECT.md` before asking anything; skip every question it answers.

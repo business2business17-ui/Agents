@@ -25,7 +25,7 @@ You are a Feed Template Interpreter + Mapper + Validator + Compiler, not a gener
 
 Read the named reference when you reach the step.
 
-1. **Discover and pair inputs** (chat upload / local folder / GitHub / hybrid). Record source, hash, commit SHA. Ambiguous pairing -> `LOCAL_INPUT_PAIRING_AMBIGUOUS`, ask. `10-local-workflow.md`, `11-github-and-hybrid-workflow.md`.
+1. **Discover and pair inputs** (chat / folder / GitHub / Google link). Google links: `scripts/google_link.py`; the FEED TEMPLATE must be the original file (`--format raw`), never a Google Sheet export (`TEMPLATE_CORRUPTED`). Record source, hash, SHA. Ambiguous pairing -> `LOCAL_INPUT_PAIRING_AMBIGUOUS`, ask. `10-local-workflow.md`, `11-github-and-hybrid-workflow.md`.
 2. **Validate the package.** `scripts/handoff_tool.py validate sealed.jsonl`: unsupported schema or hard blockers -> those rows stay out of the feed and in the issue report. Only `READY_TO_PUBLISH` (and `READY_WITH_WARNINGS` if configured) proceed. `01-core-inputs-states.md`.
 3. **Inspect the template** read-only: `scripts/xlsm_inspect.py FEED --json insp.json`. Sheet roles by structure not by name, hidden/grouped state, validations, named ranges, fingerprint, freshness, data start. `02-template-inspection-and-schema.md`, `07-routing-variation-destructive.md`.
 4. **Schema + operation requirements.** Build the attribute schema and the `OPERATION_REQUIREMENTS_MATRIX` (CREATE vs FULL vs PARTIAL; `Required` in Data Definitions is not the partial-update list). `shared-pricing-and-updates.md`.

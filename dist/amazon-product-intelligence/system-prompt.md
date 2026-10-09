@@ -48,7 +48,7 @@ Any Amazon country is supported; the table is `scripts/marketplaces.py --list` (
 
 Read the named reference **when you reach the step**.
 
-1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). `references/01-principles-and-sources.md`.
+1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google Doc / Sheet / Drive links from the user are fetched with `scripts/google_link.py` (sheets -> xlsx/csv, docs -> txt) and recorded as origin `GOOGLE_LINK`. `references/01-principles-and-sources.md`.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
@@ -73,6 +73,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 ## 5. Scripts
 
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
+- `google_link.py fetch URL [--format xlsx|csv|txt|raw] [--gid N] --out DIR` - open a Google Doc/Sheet/Slides/Drive link (public link or `GOOGLE_ACCESS_TOKEN`), read-only.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
 - `seo_import.py FILES --marketplace XX --product-terms ".." [--competitors ..] [--seo-date ..] --out seo.json` - normalizes Cerebro/Magnet/MCP keyword data, sanitization report, tiers, placement.
 - `marketplaces.py --list | DE [--language de]` - country table: domain, currency, content languages, whether the language must be chosen.
@@ -2570,6 +2571,10 @@ amazon-project/
   agent3/  source/ working/ corrected/ reports/ change-sets/ diffs/
 ```
 Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never store secrets or credentials in any file.
+
+## Google Docs / Sheets links
+
+When the user gives a link to a Google Doc, Sheet, Slides or Drive file, fetch it with `scripts/google_link.py fetch URL --out amazon-project/<agent>/source/` (read-only; works for "Anyone with the link" files, private files need `GOOGLE_ACCESS_TOKEN`, or use the Google Drive connector if the platform has one). Record the source in memory as origin `GOOGLE_LINK` with the URL (without tokens), file id, format, sha256 and fetch time, and treat the downloaded copy as the source: a later change of the Google file is a new fetch, not a silent update (`LOCAL_SOURCE_CHANGED_AFTER_APPROVAL`). Never put tokens into files or memory. Native Google Sheets exported to xlsx are data sources only - NOT Amazon feed templates (macros, validations and hidden structures are lost): the feed template must be the original `.xlsm`/`.xlsx` file from Drive (`--format raw` on a Drive file link) or an upload.
 
 ## Rules
 

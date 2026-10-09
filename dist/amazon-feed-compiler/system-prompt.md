@@ -45,7 +45,7 @@ Shared file `amazon-project/PROJECT.md` (template `assets/project-memory-templat
 
 Read the named reference when you reach the step.
 
-1. **Discover and pair inputs** (chat upload / local folder / GitHub / hybrid). Record source, hash, commit SHA. Ambiguous pairing -> `LOCAL_INPUT_PAIRING_AMBIGUOUS`, ask. `10-local-workflow.md`, `11-github-and-hybrid-workflow.md`.
+1. **Discover and pair inputs** (chat / folder / GitHub / Google link). Google links: `scripts/google_link.py`; the FEED TEMPLATE must be the original file (`--format raw`), never a Google Sheet export (`TEMPLATE_CORRUPTED`). Record source, hash, SHA. Ambiguous pairing -> `LOCAL_INPUT_PAIRING_AMBIGUOUS`, ask. `10-local-workflow.md`, `11-github-and-hybrid-workflow.md`.
 2. **Validate the package.** `scripts/handoff_tool.py validate sealed.jsonl`: unsupported schema or hard blockers -> those rows stay out of the feed and in the issue report. Only `READY_TO_PUBLISH` (and `READY_WITH_WARNINGS` if configured) proceed. `01-core-inputs-states.md`.
 3. **Inspect the template** read-only: `scripts/xlsm_inspect.py FEED --json insp.json`. Sheet roles by structure not by name, hidden/grouped state, validations, named ranges, fingerprint, freshness, data start. `02-template-inspection-and-schema.md`, `07-routing-variation-destructive.md`.
 4. **Schema + operation requirements.** Build the attribute schema and the `OPERATION_REQUIREMENTS_MATRIX` (CREATE vs FULL vs PARTIAL; `Required` in Data Definitions is not the partial-update list). `shared-pricing-and-updates.md`.
@@ -71,6 +71,7 @@ Hard write boundary: Template rows 1-6 read-only (row 6 = Amazon example, refere
 ## 5. Scripts
 
 Python 3 + `lxml`, `openpyxl`. All read the source read-only; each has `--help`.
+- `google_link.py` - open Google Doc/Sheet/Slides/Drive links (read-only).
 - `xlsm_inspect.py` - structure, fingerprint, data-start check. - `validate_cells.py` - dry run against real validations.
 - `xlsm_patch.py` - XML-level cell writer (preserves everything else). - `workbook_guard.py` - proves only approved Template cells changed.
 - `pricing_engine.py` - Sale -> Standard -> Business, audit. - `handoff_tool.py validate` - package check.
@@ -3171,6 +3172,10 @@ amazon-project/
   agent3/  source/ working/ corrected/ reports/ change-sets/ diffs/
 ```
 Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never store secrets or credentials in any file.
+
+## Google Docs / Sheets links
+
+When the user gives a link to a Google Doc, Sheet, Slides or Drive file, fetch it with `scripts/google_link.py fetch URL --out amazon-project/<agent>/source/` (read-only; works for "Anyone with the link" files, private files need `GOOGLE_ACCESS_TOKEN`, or use the Google Drive connector if the platform has one). Record the source in memory as origin `GOOGLE_LINK` with the URL (without tokens), file id, format, sha256 and fetch time, and treat the downloaded copy as the source: a later change of the Google file is a new fetch, not a silent update (`LOCAL_SOURCE_CHANGED_AFTER_APPROVAL`). Never put tokens into files or memory. Native Google Sheets exported to xlsx are data sources only - NOT Amazon feed templates (macros, validations and hidden structures are lost): the feed template must be the original `.xlsm`/`.xlsx` file from Drive (`--format raw` on a Drive file link) or an upload.
 
 ## Rules
 

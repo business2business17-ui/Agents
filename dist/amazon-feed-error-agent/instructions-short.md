@@ -26,7 +26,7 @@ Ask `PARTIAL UPDATE` or `FULL UPDATE` only if the user did not say which; recomm
 
 Details in the reference files (Russian), read when you reach the step.
 
-1. **Intake.** Identify `SOURCE FEED` (chat / folder / repository) as READ-ONLY, compute its hash, make a working copy; determine marketplace, language, category, template type/version, operation (`01-inputs-and-workflow.md`, `08-clean-source-and-change-set.md`). Agent 1 output, if given, is a source of prepared values, not absolute truth (`06-environment-and-agent1-workflow.md`).
+1. **Intake.** Identify `SOURCE FEED` (chat / folder / repository / Google Drive link) as READ-ONLY, compute its hash, make a working copy; determine marketplace, language, category, template type/version, operation (`01-inputs-and-workflow.md`, `08-clean-source-and-change-set.md`). Agent 1 output, if given, is a source of prepared values, not absolute truth (`06-environment-and-agent1-workflow.md`).
 2. **Inspect** (read-only, never run macros): `scripts/xlsm_inspect.py FEED --json insp.json`.
 3. **Map errors.** `scripts/parse_processing_report.py FEED --marketplace XX --json parsed.json` -> every error linked to code, message, severity, SKU, EAN, row, cell, attribute, original value, error fingerprint.
 4. **Classify** (`BLOCKING / ERROR / WARNING / INFO`, root-cause list in `01`) and **research** in the fixed source order: Processing Summary -> Template -> Data Definitions -> Valid Values -> Instructions -> official Amazon docs -> Seller University -> Amazon moderators -> third-party only as confirmation. `scripts/error_kb.py CODE` first; unknown code = `UNVERIFIED_CASE` (`04-error-knowledge-base.md`, `05-learning-reanalysis-goal.md`).
