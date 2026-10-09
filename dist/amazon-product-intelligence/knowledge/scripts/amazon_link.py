@@ -190,6 +190,7 @@ def plan(info):
             mcp_line("retrieve_listing_by_asin", code, {"asin": a, "marketplace": code}, "live catalog title/bullets/description and images (the listing's current copy)"),
             mcp_line("get_keywords_by_asin", code, {"asin": a, "marketplace": code, "limit": 150}, "Cerebro: keywords this ASIN is visible for (competitor reverse search)"),
             mcp_line("search_competitors_by_asin", code, {"asin": a, "marketplace": code}, "similar competing listings with price/sales/reviews"),
+            dict(tool="competitor_pack.py ingest", arguments={"asin": a, "marketplace": code}, purpose="if this is a COMPETITOR's product: save the two results above as JSON and build the reference card (images + copy, REFERENCE_ONLY, copy guard) - see references/13-competitor-reference.md of the Product Intelligence agent"),
             dict(tool="mcp__Helium_10__get_asin_price_history / get_asin_bsr_history / get_asin_reviews_history", arguments={"asin": a},
                  purpose="history of price, BSR and reviews (check the tool schema for marketplace support)"),
         ]

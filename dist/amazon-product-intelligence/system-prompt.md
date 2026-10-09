@@ -48,7 +48,7 @@ Any Amazon country is supported; the table is `scripts/marketplaces.py --list` (
 
 Read the named reference **when you reach the step**.
 
-1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country; ASIN, category, search) -> `scripts/amazon_link.py parse` gives marketplace, ASIN/node and the exact MCP calls (`plan`); pages are never scraped. `references/01-principles-and-sources.md`.
+1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country) -> `scripts/amazon_link.py parse|plan` (marketplace, ASIN/node, exact MCP calls; no scraping). Competitor links for a similar product -> `references/13-competitor-reference.md` (`competitor_pack.py`: images + copy as REFERENCE_ONLY, copy guard). `references/01-principles-and-sources.md`.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
@@ -73,6 +73,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 ## 5. Scripts
 
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
+- `competitor_pack.py ingest|matrix|similarity|brands` - competitor reference card from saved Helium 10 MCP results (images downloaded from Amazon image hosts only), feature matrix, brand list, copy guard (exit 1 if our text shares sequences with the competitor).
 - `amazon_link.py parse|build|all-markets|open|plan|expand` - Amazon links of any country: marketplace, ASIN, browse node, keyword; canonical URL; open in the user's browser; `plan` = which Helium 10 MCP calls give the data. No scraping.
 - `google_link.py fetch URL [--format xlsx|csv|txt|raw] [--gid N] --out DIR` - open a Google Doc/Sheet/Slides/Drive link (public link or `GOOGLE_ACCESS_TOKEN`), read-only.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
@@ -87,7 +88,7 @@ Python 3 (`openpyxl` for xlsx). Each has `--help`.
 
 ## 6. Reference map
 
-`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `12` SEO sources (Cerebro/Magnet exports, Helium 10 MCP) - `shared-pricing-and-updates` price and operation policy - `project-memory`.
+`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `12` SEO sources (Cerebro/Magnet exports, Helium 10 MCP) - `13` competitor reference (images, copy) - `shared-pricing-and-updates` price and operation policy - `project-memory`.
 
 
 ---
@@ -2559,6 +2560,39 @@ The user may paste an Amazon product, category or search link of any country. Ru
 3. Use tiers as suggested placement: Tier 1 -> title, Tier 2 -> highlights/bullets, Tier 3 -> bullets/description, Tier 4 -> backend terms (semantic duplicates are good backend synonyms). Then write content and verify with `scripts/content_check.py`.
 4. Put `seo.json` into the record (`record["seo"]`) so it appears in the SEO sheet of the review XLSX and in the versions (`seo_source_date`, `seo_version`).
 5. `top1` / `top2` counts and the relevance thresholds are tunable configuration, not Amazon rules. The agent still reads the final keyword list: a keyword is used only if the product really has that attribute.
+
+## FILE: references/13-competitor-reference.md
+
+# Competitor reference: images and descriptions for a similar product
+
+Purpose: study a competitor's listing (images, title, bullets, description, price/BSR/reviews) to position our own, similar product. The result is **reference only**: structure, feature coverage, gaps, price band. Nothing is copied.
+
+## Source of the data (no scraping)
+
+1. `scripts/amazon_link.py parse URL` -> marketplace + ASIN (any country); `plan URL` -> calls.
+2. Helium 10 MCP (same marketplace as the link; ask the user to confirm it once):
+   - `retrieve_listing_by_asin(asin, marketplace)` -> live `images` [{url, variant}], `product_name`, `item_highlight`, `bullet_points`, `description` (marketplaces US CA MX DE ES IT FR UK IN NL AU JP BE BR);
+   - `get_listing_details(main_asin, marketplace)` -> price, BSR, reviews/rating, LQS, sales and revenue estimates, variations, top-10 keywords (US CA MX DE ES IT FR UK IN NL AE BR AU);
+   - optional: `get_keywords_by_asin` (Cerebro), `search_competitors_by_asin`, price/BSR/review history tools.
+   Save each result as JSON in `amazon-project/agent1/competitors/`.
+3. `scripts/competitor_pack.py ingest LISTING.json [DETAILS.json] --marketplace XX --asin A --out DIR --download-images` -> `competitor_<ASIN>_<MP>.json` (the reference card) and `images/` (only the image URLs the tool returned, Amazon image hosts only, capped, sequential).
+4. Not available (marketplace not in the tool list, MCP not connected): ask the user for screenshots / saved images / pasted text, or `amazon_link.py open URL` so the user looks and reports. Never scrape the page.
+
+## What to do with the card
+
+- **Look at the images** (open the downloaded files with your image viewer): count and order of images, MAIN image style, infographic / lifestyle / size / comparison / A+ patterns, what is shown in each slot, text density, claims on images. Describe, do not reproduce.
+- **Read the copy**: how many bullets, what each bullet sells, order of benefits, spec coverage, tone, what is missing (gaps = our opportunity), objections answered.
+- **Feature matrix**: `competitor_pack.py matrix CARD...` -> price, BSR, reviews, image and bullet counts, measurable features and certifications mentioned. Compare with OUR verified TTX; keep only what OUR product really has.
+- **Competitor terms**: `competitor_pack.py brands CARD...` -> brand guess (confirm with the user) -> pass as `--competitors` to `seo_import.py` and `content_check.py`, so the brand never lands in our SEO or copy.
+- Hand the analysis to the Design agent as a creative reference (layouts and slot ideas, not images to reuse).
+
+## Hard rules
+
+1. **Reference only.** Never reuse competitor text, images, brand, model names, claims or certifications. Our content is written from OUR verified TTX; competitor data is the lowest source in the hierarchy and is never evidence for our product.
+2. **Copy guard before delivery.** `competitor_pack.py similarity CARD OUR_CONTENT.json` must PASS (no shared 6-word sequences above the limit). A FAIL blocks the record until the passage is rewritten from our own facts.
+3. **Claims and certifications** seen on the competitor (waterproof, MIL-STD, IP rating, "organic", ...) are NOT carried over: each needs evidence for our product in the Evidence Matrix.
+4. **IP review.** A similar product must not copy the competitor's design, trade dress, trademarks or patented features. Flag `IP_REVIEW_REQUIRED` in the handoff warnings and tell the user that a legal check of design / trademark / patents is theirs to do; this tool cannot judge infringement.
+5. Record sources (tool, marketplace, ASIN, date) in project memory; competitor files stay in `agent1/competitors/` and are never sent to Amazon.
 
 ## FILE: references/project-memory.md
 

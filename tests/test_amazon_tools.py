@@ -391,6 +391,60 @@ class AmazonTools(unittest.TestCase):
         self.assertEqual(cat["data_sources"][0]["arguments"]["filters"]["category"], ["2407760011"])
         self.assertEqual(run(al, "open", "--marketplace", "FR", "--asin", "B0CHX3QBCH", "--print-only").stdout.strip(), "https://www.amazon.fr/dp/B0CHX3QBCH")
 
+    def test_competitor_reference_pack_and_copy_guard(self):
+        import http.server, io as _io, threading
+        from PIL import Image as _I
+
+        def png(c):
+            b = _io.BytesIO(); _I.new("RGB", (400, 400), c).save(b, "PNG"); return b.getvalue()
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def do_GET(self):
+                ok = self.path.startswith("/img/")
+                self.send_response(200); self.send_header("Content-Type", "image/png" if ok else "text/html"); self.end_headers()
+                self.wfile.write(png("white" if "main" in self.path else (30, 90, 160)) if ok else b"<html>")
+
+        srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        port = srv.server_address[1]
+        listing = {"data": {"images": [{"url": f"http://127.0.0.1:{port}/img/main.png", "variant": "MAIN"},
+                                       {"url": f"http://127.0.0.1:{port}/img/pt01.png", "variant": "PT01"},
+                                       {"url": "https://evil.example.com/x.png", "variant": "PT02"},
+                                       {"url": f"http://127.0.0.1:{port}/page.html", "variant": "PT03"}],
+                            "product_name": "BrandX Slim Case for Pixel 8, Shockproof Matte Black Cover, 6.2 inch, MIL-STD-810G",
+                            "bullet_points": ["MILITARY GRADE PROTECTION: tested to MIL-STD-810G drop standards, keeps your phone safe from falls up to 3 m",
+                                              "Precise cutouts for buttons and ports"],
+                            "description": "BrandX slim case offers waterproof style protection"}}
+        lj = self.write_json("cp_listing.json", listing)
+        dj = self.write_json("cp_details.json", {"data": {"price": 2499, "best_sellers_rank": 1520, "review_count": 4312}})
+        cp = os.path.join(PI, "competitor_pack.py")
+        out = self.p("cp_out")
+        env = dict(os.environ, COMPETITOR_PACK_TEST_ALLOW_HOST="127.0.0.1")
+        p = subprocess.run([sys.executable, cp, "ingest", lj, dj, "--marketplace", "DE", "--asin", "B0CHX3QBCH", "--out", out,
+                            "--download-images", "--delay", "0"], capture_output=True, text=True, env=env)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        card_path = os.path.join(out, "competitor_B0CHX3QBCH_DE.json")
+        card = json.load(open(card_path, encoding="utf-8"))
+        self.assertEqual(card["use"], "REFERENCE_ONLY")
+        self.assertIn("IP_REVIEW_REQUIRED", card["flags"])
+        self.assertEqual(card["observations"]["brand_guess"], "BrandX")
+        self.assertIn("waterproof", card["observations"]["claims_needing_evidence"])
+        self.assertIn("MIL-STD-810G", card["observations"]["certification_mentions"])
+        self.assertNotIn("810 g", card["observations"]["measurable_features"])  # part of a standard name, not a weight
+        by = {i["variant"]: i for i in card["images"]}
+        self.assertTrue(os.path.exists(by["MAIN"]["path"]) and by["MAIN"]["white_background_corners"])
+        self.assertIn("host not an Amazon image host", by["PT02"]["skipped"])  # never fetch from other hosts
+        self.assertIn("not an image", by["PT03"]["error"])
+        self.assertEqual(card["metrics"]["bsr"], 1520)
+        # copy guard
+        copied = self.write_json("cp_copied.json", {"title": "x", "bullet_points": [listing["data"]["bullet_points"][0]]})
+        own = self.write_json("cp_own.json", {"title": "Acme FlexShield cover", "bullet_points": ["Corner airbags absorb impact when dropped from table height"]})
+        run(cp, "similarity", card_path, copied, ok=(1,))
+        run(cp, "similarity", card_path, own)
+        self.assertEqual(run(cp, "brands", card_path).stdout.strip(), "BrandX")
+        srv.shutdown()
+
     def test_content_check(self):
         p = run(os.path.join(PI, "content_check.py"), "--title",
                 "Acme Case Case Case for Phone best price 9,99 EUR", ok=(1,))

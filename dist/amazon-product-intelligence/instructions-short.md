@@ -28,7 +28,7 @@ Any Amazon country is supported; the table is `scripts/marketplaces.py --list` (
 
 Read the named reference **when you reach the step**.
 
-1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country; ASIN, category, search) -> `scripts/amazon_link.py parse` gives marketplace, ASIN/node and the exact MCP calls (`plan`); pages are never scraped. `references/01-principles-and-sources.md`.
+1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country) -> `scripts/amazon_link.py parse|plan` (marketplace, ASIN/node, exact MCP calls; no scraping). Competitor links for a similar product -> `references/13-competitor-reference.md` (`competitor_pack.py`: images + copy as REFERENCE_ONLY, copy guard). `references/01-principles-and-sources.md`.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.

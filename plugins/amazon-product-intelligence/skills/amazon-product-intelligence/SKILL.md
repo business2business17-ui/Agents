@@ -37,7 +37,7 @@ Any Amazon country is supported; the table is `scripts/marketplaces.py --list` (
 
 Read the named reference **when you reach the step**.
 
-1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country; ASIN, category, search) -> `scripts/amazon_link.py parse` gives marketplace, ASIN/node and the exact MCP calls (`plan`); pages are never scraped. `references/01-principles-and-sources.md`.
+1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country) -> `scripts/amazon_link.py parse|plan` (marketplace, ASIN/node, exact MCP calls; no scraping). Competitor links for a similar product -> `references/13-competitor-reference.md` (`competitor_pack.py`: images + copy as REFERENCE_ONLY, copy guard). `references/01-principles-and-sources.md`.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
@@ -62,6 +62,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 ## 5. Scripts
 
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
+- `competitor_pack.py ingest|matrix|similarity|brands` - competitor reference card from saved Helium 10 MCP results (images downloaded from Amazon image hosts only), feature matrix, brand list, copy guard (exit 1 if our text shares sequences with the competitor).
 - `amazon_link.py parse|build|all-markets|open|plan|expand` - Amazon links of any country: marketplace, ASIN, browse node, keyword; canonical URL; open in the user's browser; `plan` = which Helium 10 MCP calls give the data. No scraping.
 - `google_link.py fetch URL [--format xlsx|csv|txt|raw] [--gid N] --out DIR` - open a Google Doc/Sheet/Slides/Drive link (public link or `GOOGLE_ACCESS_TOKEN`), read-only.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
@@ -76,4 +77,4 @@ Python 3 (`openpyxl` for xlsx). Each has `--help`.
 
 ## 6. Reference map
 
-`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `12` SEO sources (Cerebro/Magnet exports, Helium 10 MCP) - `shared-pricing-and-updates` price and operation policy - `project-memory`.
+`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `12` SEO sources (Cerebro/Magnet exports, Helium 10 MCP) - `13` competitor reference (images, copy) - `shared-pricing-and-updates` price and operation policy - `project-memory`.
