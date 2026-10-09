@@ -28,7 +28,7 @@
 /plugin install amazon-feed-compiler@business2business17-agents
 /plugin install amazon-feed-error-agent@business2business17-agents
 ```
-До слияния: `git clone -b claude/amazon-agents <репозиторий>` и `/plugin marketplace add ./Agents`. Нужны `pip install openpyxl lxml`.
+До слияния: `git clone -b claude/amz-agents-feed-products <репозиторий>` и `/plugin marketplace add ./Agents`. Нужны `pip install openpyxl lxml`.
 
 **Другие ИИ:** файлы в `dist/<агент>/` (`system-prompt.md` либо `instructions-short.md` + `knowledge/`) и `dist/<агент>.zip`.
 - Claude.ai: Project -> Instructions = `system-prompt.md`.
