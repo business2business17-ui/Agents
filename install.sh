@@ -28,7 +28,7 @@ fi
 echo "Python packages: OK"
 
 "$PY" - <<'PYC' || exit 1
-import importlib
+import importlib.util
 miss = [m for m in ("openpyxl", "lxml", "PIL") if importlib.util.find_spec(m) is None]
 print("check imports:", "OK" if not miss else f"MISSING {miss}")
 raise SystemExit(1 if miss else 0)
