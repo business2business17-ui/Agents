@@ -19,6 +19,10 @@ SEO data is **search demand only**. It never proves a product fact, a claim, a c
 
 Never pull or accept SEO for a marketplace other than the target record's marketplace.
 
+## From an Amazon link to the right MCP call
+
+The user may paste an Amazon product, category or search link of any country. Run `scripts/amazon_link.py parse URL` (offline) for marketplace, ASIN / browse node / keyword and the canonical URL, then `scripts/amazon_link.py plan URL` for the MCP calls with the right arguments and marketplace support (e.g. ASIN link -> `get_listing_details`, `retrieve_listing_by_asin`, `get_keywords_by_asin`; category node -> `search_products` with `filters.category=[node]`; search link -> `get_keywords_by_keyword`, `analyze_keywords`). The tool never scrapes pages; `open` only gives the URL to the user's own browser. The same ASIN can be missing or a different product in another country: verify per marketplace (`all-markets` lists the URLs).
+
 ## MCP tool map (use only the tools that are actually connected)
 
 | Need | Tool | Key inputs |

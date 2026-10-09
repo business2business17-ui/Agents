@@ -72,6 +72,7 @@ Source priority on conflict (never choose silently, show a `DATA CONFLICT`): use
 ## 5. Scripts
 
 Python 3 + `lxml`, `openpyxl`.
+- `amazon_link.py parse URL` - marketplace/ASIN of an Amazon link in an error message or by the user (catalog conflicts: `plan` lists the data sources; open the page yourself).
 - `google_link.py fetch URL --format raw` - download the original feed from a Drive link (a native Google Sheet export is NOT a feed: macros are lost); Google Docs/Sheets with notes or Agent 1 data -> txt/xlsx/csv. Read-only.
 - `xlsm_inspect.py` - read-only structure. - `parse_processing_report.py` - errors by code/SKU/row/cell with colour evidence and fingerprints.
 - `error_kb.py` + `assets/error_kb.json` - structured knowledge base. - `validate_cells.py` - checks proposed values against the template's validations.

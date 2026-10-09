@@ -60,7 +60,7 @@ Hard write boundary: Template rows 1-6 read-only (row 6 = Amazon example, refere
 ## 5. Scripts
 
 Python 3 + `lxml`, `openpyxl`. All read the source read-only; each has `--help`.
-- `google_link.py` - open Google Doc/Sheet/Slides/Drive links (read-only).
+- `google_link.py` - Google Doc/Sheet/Slides/Drive links (read-only). `amazon_link.py` - parse/normalize Amazon links of any country (ASIN, marketplace).
 - `xlsm_inspect.py` - structure, fingerprint, data-start check. - `validate_cells.py` - dry run against real validations.
 - `xlsm_patch.py` - XML-level cell writer (preserves everything else). - `workbook_guard.py` - proves only approved Template cells changed.
 - `pricing_engine.py` - Sale -> Standard -> Business, audit. - `handoff_tool.py validate` - package check.

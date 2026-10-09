@@ -14,10 +14,10 @@ SH = ROOT / "shared" / "amazon"
 MD = "shared-pricing-and-updates.md"
 PLAN = {
     "amazon-product-intelligence": ["pricing_engine.py", "margin_calc.py", "performance_calc.py", "handoff_tool.py",
-                                    "marketplaces.py", "marketplaces.json", "google_link.py"],
-    "amazon-feed-compiler": ["pricing_engine.py", "handoff_tool.py", "marketplaces.py", "marketplaces.json", "google_link.py", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
+                                    "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py"],
+    "amazon-feed-compiler": ["pricing_engine.py", "handoff_tool.py", "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
                              "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py"],
-    "amazon-feed-error-agent": ["pricing_engine.py", "google_link.py", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
+    "amazon-feed-error-agent": ["pricing_engine.py", "google_link.py", "amazon_link.py", "marketplaces.py", "marketplaces.json", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
                                 "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py"],
 }
 

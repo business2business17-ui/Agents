@@ -48,7 +48,7 @@ Any Amazon country is supported; the table is `scripts/marketplaces.py --list` (
 
 Read the named reference **when you reach the step**.
 
-1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google Doc / Sheet / Drive links from the user are fetched with `scripts/google_link.py` (sheets -> xlsx/csv, docs -> txt) and recorded as origin `GOOGLE_LINK`. `references/01-principles-and-sources.md`.
+1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country; ASIN, category, search) -> `scripts/amazon_link.py parse` gives marketplace, ASIN/node and the exact MCP calls (`plan`); pages are never scraped. `references/01-principles-and-sources.md`.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
 3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`.
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
@@ -73,6 +73,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 ## 5. Scripts
 
 Python 3 (`openpyxl` for xlsx). Each has `--help`.
+- `amazon_link.py parse|build|all-markets|open|plan|expand` - Amazon links of any country: marketplace, ASIN, browse node, keyword; canonical URL; open in the user's browser; `plan` = which Helium 10 MCP calls give the data. No scraping.
 - `google_link.py fetch URL [--format xlsx|csv|txt|raw] [--gid N] --out DIR` - open a Google Doc/Sheet/Slides/Drive link (public link or `GOOGLE_ACCESS_TOKEN`), read-only.
 - `gtin_check.py CODE...|--batch ids.csv` - check digits, leading zeros, duplicates, exemption conflicts.
 - `seo_import.py FILES --marketplace XX --product-terms ".." [--competitors ..] [--seo-date ..] --out seo.json` - normalizes Cerebro/Magnet/MCP keyword data, sanitization report, tiers, placement.
@@ -2522,6 +2523,10 @@ SEO data is **search demand only**. It never proves a product fact, a claim, a c
 | Both | best coverage | merge in `seo_import.py` (same marketplace only) |
 
 Never pull or accept SEO for a marketplace other than the target record's marketplace.
+
+## From an Amazon link to the right MCP call
+
+The user may paste an Amazon product, category or search link of any country. Run `scripts/amazon_link.py parse URL` (offline) for marketplace, ASIN / browse node / keyword and the canonical URL, then `scripts/amazon_link.py plan URL` for the MCP calls with the right arguments and marketplace support (e.g. ASIN link -> `get_listing_details`, `retrieve_listing_by_asin`, `get_keywords_by_asin`; category node -> `search_products` with `filters.category=[node]`; search link -> `get_keywords_by_keyword`, `analyze_keywords`). The tool never scrapes pages; `open` only gives the URL to the user's own browser. The same ASIN can be missing or a different product in another country: verify per marketplace (`all-markets` lists the URLs).
 
 ## MCP tool map (use only the tools that are actually connected)
 

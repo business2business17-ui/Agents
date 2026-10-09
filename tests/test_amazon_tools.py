@@ -352,6 +352,45 @@ class AmazonTools(unittest.TestCase):
             self.assertEqual(go(bad, ok=(1,)).returncode, 1)
         srv.shutdown()
 
+    def test_amazon_link_cli(self):
+        al = os.path.join(SH, "amazon_link.py")
+        def parse(url, ok=(0,)):
+            p = run(al, "parse", url, ok=ok)
+            return json.loads(p.stdout) if p.returncode == 0 else p
+        d = parse("https://www.amazon.de/-/en/Name/dp/b0chx3qbch/ref=sr_1_3?qid=1&sr=8-3&tag=aff-21&th=1")
+        self.assertEqual((d["marketplace"], d["kind"], d["asin"], d["language_hint"]), ("DE", "product", "B0CHX3QBCH", "en"))
+        self.assertEqual(d["canonical_url"], "https://www.amazon.de/dp/B0CHX3QBCH")
+        self.assertIn("tag", d["tracking_params_removed"])
+        self.assertTrue(d["note_affiliate"])
+        d = parse("https://www.amazon.co.uk/product-reviews/B0CHX3QBCH/?ie=UTF8")
+        self.assertEqual((d["marketplace"], d["subkind"]), ("UK", "reviews"))
+        self.assertTrue(d["canonical_url"].endswith("/product-reviews/B0CHX3QBCH"))
+        d = parse("https://www.amazon.com/Cases/b/ref=x?ie=UTF8&node=2407760011")
+        self.assertEqual((d["kind"], d["browse_nodes"], d["canonical_url"]), ("category", ["2407760011"], "https://www.amazon.com/b?node=2407760011"))
+        d = parse("https://www.amazon.com/Best-Sellers/zgbs/wireless/2407760011/ref=zg")
+        self.assertEqual((d["kind"], d["board"], d["browse_nodes"]), ("ranking", "bestsellers", ["2407760011"]))
+        d = parse("https://www.amazon.co.jp/s?k=pixel+8+%E3%82%B1%E3%83%BC%E3%82%B9&rh=n%3A2285178051")
+        self.assertEqual((d["marketplace"], d["keyword"], d["browse_nodes"]), ("JP", "pixel 8 ケース", ["2285178051"]))
+        for host, code in (("amazon.pl", "PL"), ("amazon.se", "SE"), ("amazon.com.tr", "TR"), ("amazon.ae", "AE"), ("amazon.in", "IN"),
+                           ("amazon.com.be", "BE"), ("amazon.sa", "SA"), ("amazon.com.au", "AU"), ("amazon.sg", "SG")):
+            self.assertEqual(parse(f"https://www.{host}/dp/B0CHX3QBCH")["marketplace"], code)
+        for bad in ("https://www.amazon.de.evil.com/dp/B0CHX3QBCH", "https://evil.com/dp/B0CHX3QBCH", "https://www.amazon.de/gp/cart/view.html",
+                    "https://www.amazon.de/ap/signin", "https://www.amazon.xx/dp/B0CHX3QBCH"):
+            self.assertIn("REFUSED", parse(bad, ok=(1,)).stderr)
+        self.assertEqual(run(al, "build", "--marketplace", "JP", "--keyword", "pixel 8 ケース").stdout.strip(),
+                         "https://www.amazon.co.jp/s?k=pixel+8+%E3%82%B1%E3%83%BC%E3%82%B9")
+        rows = run(al, "all-markets", "--asin", "B0CHX3QBCH", "--marketplaces", "DE,CA,AE").stdout.strip().splitlines()
+        self.assertEqual([r.split("\t")[0] for r in rows], ["DE", "CA", "AE"])
+        plan = json.loads(run(al, "plan", "https://www.amazon.de/dp/B0CHX3QBCH").stdout)
+        tools = {s["tool"].split("__")[-1]: s for s in plan["data_sources"]}
+        self.assertTrue(tools["get_listing_details"]["marketplace_supported"])
+        self.assertEqual(tools["get_keywords_by_asin"]["arguments"]["asin"], "B0CHX3QBCH")
+        se = json.loads(run(al, "plan", "https://www.amazon.se/dp/B0CHX3QBCH").stdout)
+        self.assertFalse(se["data_sources"][0]["marketplace_supported"])  # SE is not offered by the MCP tools: say so, never substitute
+        cat = json.loads(run(al, "plan", "https://www.amazon.com/b?node=2407760011").stdout)
+        self.assertEqual(cat["data_sources"][0]["arguments"]["filters"]["category"], ["2407760011"])
+        self.assertEqual(run(al, "open", "--marketplace", "FR", "--asin", "B0CHX3QBCH", "--print-only").stdout.strip(), "https://www.amazon.fr/dp/B0CHX3QBCH")
+
     def test_content_check(self):
         p = run(os.path.join(PI, "content_check.py"), "--title",
                 "Acme Case Case Case for Phone best price 9,99 EUR", ok=(1,))

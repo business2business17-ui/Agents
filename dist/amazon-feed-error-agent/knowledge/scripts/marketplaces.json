@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "purpose": "Single table of Amazon marketplaces: domain, currency, content languages. Language depends on the country; some marketplaces are multi-language and then the language of each listing must be chosen explicitly.",
+    "status": "Carried from general knowledge and the original specs, NOT verified against the seller's account. Which languages a given account/category may actually use is shown in Seller Central and in the feed template (VERIFY_IN_UI). Add or correct entries here, then run tools/sync_shared.py.",
+    "language_codes": "ISO 639-1"
+  },
+  "marketplaces": {
+    "US": {"domain": "amazon.com", "currency": "USD", "languages": ["en"], "note": "Amazon.com also serves Spanish-language shoppers; Spanish content availability is VERIFY_IN_UI."},
+    "CA": {"domain": "amazon.ca", "currency": "CAD", "languages": ["en", "fr"], "multi_language": true, "note": "English and French content; choose per listing."},
+    "MX": {"domain": "amazon.com.mx", "currency": "MXN", "languages": ["es"]},
+    "BR": {"domain": "amazon.com.br", "currency": "BRL", "languages": ["pt"]},
+    "UK": {"domain": "amazon.co.uk", "currency": "GBP", "languages": ["en"]},
+    "DE": {"domain": "amazon.de", "currency": "EUR", "languages": ["de"]},
+    "FR": {"domain": "amazon.fr", "currency": "EUR", "languages": ["fr"]},
+    "IT": {"domain": "amazon.it", "currency": "EUR", "languages": ["it"]},
+    "ES": {"domain": "amazon.es", "currency": "EUR", "languages": ["es"]},
+    "NL": {"domain": "amazon.nl", "currency": "EUR", "languages": ["nl"]},
+    "SE": {"domain": "amazon.se", "currency": "SEK", "languages": ["sv"]},
+    "PL": {"domain": "amazon.pl", "currency": "PLN", "languages": ["pl"]},
+    "BE": {"domain": "amazon.com.be", "currency": "EUR", "languages": ["fr", "nl"], "multi_language": true, "note": "French and Dutch; choose per listing."},
+    "IE": {"domain": "amazon.ie", "currency": "EUR", "languages": ["en"]},
+    "TR": {"domain": "amazon.com.tr", "currency": "TRY", "languages": ["tr"]},
+    "AE": {"domain": "amazon.ae", "currency": "AED", "languages": ["en", "ar"], "multi_language": true, "note": "English and Arabic; choose per listing."},
+    "SA": {"domain": "amazon.sa", "currency": "SAR", "languages": ["ar", "en"], "multi_language": true, "note": "Arabic and English; choose per listing."},
+    "EG": {"domain": "amazon.eg", "currency": "EGP", "languages": ["ar", "en"], "multi_language": true, "note": "Arabic and English; choose per listing."},
+    "ZA": {"domain": "amazon.co.za", "currency": "ZAR", "languages": ["en"]},
+    "IN": {"domain": "amazon.in", "currency": "INR", "languages": ["en", "hi"], "multi_language": true, "note": "English is the usual listing language; Hindi availability is VERIFY_IN_UI."},
+    "JP": {"domain": "amazon.co.jp", "currency": "JPY", "languages": ["ja"], "price_precision": 0},
+    "AU": {"domain": "amazon.com.au", "currency": "AUD", "languages": ["en"]},
+    "SG": {"domain": "amazon.sg", "currency": "SGD", "languages": ["en"]}
+  },
+  "aliases": {"GB": "UK", "EN": "UK"}
+}
