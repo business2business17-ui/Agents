@@ -451,6 +451,15 @@ class AmazonTools(unittest.TestCase):
         self.assertIn("TITLE_WORD_REPETITION", p.stdout)
         self.assertIn("FORBIDDEN_TERM_FOUND", p.stdout)
 
+    def test_category_and_research_references_shipped(self):
+        for a in ("amazon-product-intelligence", "amazon-feed-compiler", "amazon-feed-error-agent"):
+            refs = os.path.join(ROOT, "plugins", a, "skills", a, "references")
+            for f in ("amazon-categories.md", "live-research.md"):
+                self.assertGreater(os.path.getsize(os.path.join(refs, f)), 1000, (a, f))
+            skill = open(os.path.join(refs, "..", "SKILL.md"), encoding="utf-8").read()
+            self.assertIn("amazon-categories", skill)
+            self.assertIn("live-research", skill)
+
 
 if __name__ == "__main__":
     unittest.main()

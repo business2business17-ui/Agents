@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SH = ROOT / "shared" / "amazon"
 MD = "shared-pricing-and-updates.md"
+REFS = [MD, "amazon-categories.md", "live-research.md"]
 PLAN = {
     "amazon-product-intelligence": ["pricing_engine.py", "margin_calc.py", "performance_calc.py", "handoff_tool.py",
                                     "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py"],
@@ -29,7 +30,7 @@ def main():
     stale = []
     for name, scripts in PLAN.items():
         skill = ROOT / "plugins" / name / "skills" / name
-        pairs = ([(SH / s, skill / "scripts" / s) for s in scripts] + [(SH / MD, skill / "references" / MD),
+        pairs = ([(SH / s, skill / "scripts" / s) for s in scripts] + [(SH / m, skill / "references" / m) for m in REFS] + [
                  (SH / "project-memory.md", skill / "references" / "project-memory.md"),
                  (SH / "project-memory-template.md", skill / "assets" / "project-memory-template.md")])
         for src, dst in pairs:
