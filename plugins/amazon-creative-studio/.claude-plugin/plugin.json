@@ -1,0 +1,7 @@
+{
+  "name": "amazon-creative-studio",
+  "version": "2.0.0",
+  "description": "Autonomous Amazon creative agent: carousel, A+, Brand Story, Store, ads, video - plans, copy, localization, designer briefs, agent prompts, production XLSX and preflight with Product Fidelity Lock.",
+  "author": { "name": "business2business17-ui" },
+  "keywords": ["amazon", "creative", "a-plus", "listing-images", "design", "localization"]
+}
