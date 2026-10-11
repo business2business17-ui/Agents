@@ -11,21 +11,6 @@
       "name": "amazon-creative-studio",
       "source": "./plugins/amazon-creative-studio",
       "description": "Autonomous Amazon creative agent (design): carousel, A+, Brand Story, Store, ads, video; briefs, prompts, production XLSX, preflight."
-    },
-    {
-      "name": "amazon-product-intelligence",
-      "source": "./plugins/amazon-product-intelligence",
-      "description": "Agent 1: product data, SEO content, claims, GTIN, deterministic pricing, sealed handoff."
-    },
-    {
-      "name": "amazon-feed-compiler",
-      "source": "./plugins/amazon-feed-compiler",
-      "description": "Agent 2: fills Amazon feed templates safely (Template rows 7+), dry run, workbook guard, manifest."
-    },
-    {
-      "name": "amazon-feed-error-agent",
-      "source": "./plugins/amazon-feed-error-agent",
-      "description": "Agent 3: Processing Report errors, root cause, Change Plan, approved-only patch, QA, re-analysis."
     }
   ]
 }
