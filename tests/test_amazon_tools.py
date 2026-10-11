@@ -532,6 +532,10 @@ class AmazonTools(unittest.TestCase):
         self.assertEqual(rep["price"]["max"], 24.9)
         self.assertEqual(rep["monthly_revenue_total"], 1264.5)  # "1 015,50" read with the German format
         self.assertEqual(rep["title_over_75"], 1)
+        self.assertIn("ESTIMATES", rep["source"])
+        self.assertEqual(rep["category_scope"], "UNKNOWN")
+        run(an, x, "--out", self.p("an_c.json"), "--category", "Pet Supplies > Dogs > Vitamins", ok=(0, 1))
+        self.assertIn("LEAF", json.load(open(self.p("an_c.json"), encoding="utf-8"))["reports"][0]["category_scope"])
         cat = self.p("GB_catalog.csv")
         with open(cat, "w", encoding="utf-8-sig") as fh:
             fh.write('Reporting range=["Quarterly"],Select year=["2026"],Select quarter=["1"],Brand=["Acme"],Category=["Beauty"]\n'

@@ -2614,6 +2614,12 @@ Tool: `scripts/analytics_import.py FILE... [--marketplace XX] [--out analytics.j
 | Brand share by quarter (CSV: total vs brand impressions, clicks, purchases) | `BA_BRAND_SHARE` | share and its change in percentage points between quarters | Trend statement only; missing quarters are named, never interpolated |
 | Voice of the Customer / CX Health (CSV, per ASIN/SKU) | `VOC_CX` | negative-experience rate, star rating, return rate, health | Flags non-Excellent health and any NCX with its top reason; `LOW_SAMPLE` below 10 orders (an "Excellent" with 1 order means only "no complaints yet") |
 
+Example files: the reports the user has shared so far are **samples from different accounts and businesses, a methodology for the format, not data about the current project**. Never copy their numbers into a project's memory or into another project's analysis.
+
+An Xray export is taken from a **leaf (final) category**: the products in it are the market the new product enters. The file itself often does not name that category (blank `Category` column): ask for the full category path once, store it in `PROJECT.md` and use the same leaf for the browse node / Product Type choice (`amazon-categories.md`). A mixed export (several leaf categories) is a `CATEGORY_SCOPE_MIXED` finding: split it before computing benchmarks.
+
+Every statement made from these reports carries its source label (printed by the tool): `Helium 10 Xray - ESTIMATES` vs `Amazon Brand Analytics - Amazon data`.
+
 Rules
 1. Ask what you cannot read from the file: marketplace and date of each report (one question, all files), the category of an Xray export whose Category column is blank, the brand the Brand Analytics files belong to.
 2. Compare only same-period files (`PERIOD_MISMATCH`) and same-marketplace files (`MARKETPLACE_MISMATCH`). A 2025 query report and a 2026 catalog report describe different times.

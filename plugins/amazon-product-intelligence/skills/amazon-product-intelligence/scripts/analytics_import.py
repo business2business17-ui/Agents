@@ -50,6 +50,13 @@ HOST_MP = {"amazon.de": "DE", "amazon.co.uk": "UK", "amazon.com": "US", "amazon.
            "amazon.ie": "IE", "amazon.sg": "SG", "amazon.eg": "EG", "amazon.co.za": "ZA", "amazon.com.be": "BE"}
 CUR_MP = {"€": None, "£": "UK", "$": "US"}
 
+SOURCE_LABEL = {
+    "XRAY": "Helium 10 Xray - ESTIMATES (not Amazon data)",
+    "BA_CATALOG": "Amazon Brand Analytics - Amazon data for the brand and period",
+    "BA_SQP_BRAND": "Amazon Brand Analytics - Amazon data for the brand and period",
+    "BA_BRAND_SHARE": "Brand share table (derived from Amazon market and brand totals; ask who produced it)",
+    "VOC_CX": "Amazon Voice of the Customer / CX Health - Amazon data per ASIN",
+}
 SIGNATURES = {
     "XRAY": {"asin", "asin sales", "asin revenue", "bsr", "review count"},
     "BA_CATALOG": {"asin title", "asin", "impressions: impressions", "clicks: clicks"},
@@ -303,6 +310,7 @@ def main():
     ap.add_argument("files", nargs="+")
     ap.add_argument("--marketplace", default="")
     ap.add_argument("--brand", default="")
+    ap.add_argument("--category", default="", help="leaf (final) category path of an Xray export, e.g. 'Pet Supplies > Dogs > Vitamins'")
     ap.add_argument("--detect", action="store_true")
     ap.add_argument("--out")
     ap.add_argument("--emit-seo-csv")
@@ -340,7 +348,16 @@ def main():
             res = do_share(rows, meta, fl)
         else:
             res = do_voc(rows, fl)
-        res.update(file=base, rows=len(rows), brand=meta.get("brand") or a.brand or None, period=period_of(kind, meta, rows))
+        res.update(file=base, rows=len(rows), brand=meta.get("brand") or a.brand or None, period=period_of(kind, meta, rows),
+                   source=SOURCE_LABEL[kind])
+        if kind == "XRAY":
+            col = Counter(str(r.get("Category") or "").strip() for r in rows if str(r.get("Category") or "").strip())
+            cat = a.category or (col.most_common(1)[0][0] if col else "")
+            res["category"] = cat or None
+            res["category_scope"] = "LEAF (final) category: this product set is the market for entry benchmarks" if cat else "UNKNOWN"
+            if not cat:
+                fl.append(dict(code="CATEGORY_UNKNOWN", detail=f"{base}: the Xray file does not name its category; ask for the leaf (final) category path "
+                                                               "(or pass --category) and record it in PROJECT.md"))
         if kind != "XRAY":
             res.setdefault("marketplace", mp or None)
             res["marketplace_basis"] = "file name / argument" if mp else "UNKNOWN - ask the user"
@@ -373,7 +390,7 @@ def main():
     for r in results:
         head = {k: v for k, v in r.items() if k not in ("items", "quarters", "top_queries_by_volume", "opportunity_queries_high_volume_low_share",
                                                         "clicks_without_purchase", "new_entrants_last_12_months", "notes")}
-        print(f"== {r['kind']} {r['file']}")
+        print(f"== {r['kind']} {r['file']}  [{r['source']}]")
         print(json.dumps(head, ensure_ascii=False, indent=1)[:1800])
     for fl in flags:
         print(f"FLAG {fl['code']}: {fl['detail']}")
