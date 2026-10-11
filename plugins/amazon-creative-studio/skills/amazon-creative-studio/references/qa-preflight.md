@@ -10,6 +10,14 @@ Covers: file readable, format, color mode (RGB only for A+), file size, dimensio
 
 Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
 
+### File-size rule (carousel, <= 10 MB)
+
+A 4000x4000 file over 10 MB is fixed by **compression, not by fewer pixels**: re-export as optimized JPEG (quality ~85-92, progressive, sRGB, metadata stripped) and re-run the validator. Only if it still does not fit, **stop and warn the user**: state the current size, the pixel size you propose (never below 2000x2000, the Amazon recommended floor) and the reason; reduce pixels only after the user agrees, and record it in the workbook `ISSUES` sheet. Never reduce silently.
+
+### PT slots
+
+The number of PT slots per category is `VERIFY_IN_UI`. The agent plans MAIN + 6 (PT01-PT06); `pack_upload_zip.py` accepts up to 8 and prints the same label. Say in the final report that the slot count was not verified for the category.
+
 ## 2. Visual checks (manual / by vision)
 
 | Check | Pass condition |

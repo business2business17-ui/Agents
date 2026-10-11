@@ -124,7 +124,8 @@ def check_image(path, spec, expect, results):
         size = os.path.getsize(path)
         ok = size <= spec["max_bytes"]
         results.append(res("file_size", "PASS" if ok else "FAIL", "AMAZON_REQUIRED",
-                           f"{size / MB:.2f} MB (max {spec['max_bytes'] / MB:.0f} MB)"))
+                           f"{size / MB:.2f} MB (max {spec['max_bytes'] / MB:.0f} MB)"
+                           + ("" if ok else "; fix by re-export/compression, do not reduce pixels without asking the user")))
     if "min_dpi" in spec:
         dpi = im.info.get("dpi")
         if dpi and min(dpi) >= spec["min_dpi"] - 0.5:

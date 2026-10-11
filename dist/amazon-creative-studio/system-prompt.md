@@ -78,7 +78,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 - **Product Fidelity Lock.** The real product is an immutable protected layer: never redraw, regenerate, reshape, recolor, relabel or re-letter it; generate only around it (background, shadow, environment, text layers). Missing rear/side view -> ask for the real image or create environment only. Full rules: `references/product-fidelity.md`.
 - **MAIN image** is not a marketing surface: pure white `#FFFFFF`, real product, no text/badges/graphics, product not clipped, fills >=85% of the frame.
-- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB, sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
+- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields over baked-in text where the placement offers them; embedded text only in safe zones and legible on mobile.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
@@ -1151,6 +1151,14 @@ Run before every final report. Fix what you can; report only what remains.
 Covers: file readable, format, color mode (RGB only for A+), file size, dimensions vs. preset/minimum, aspect ratio, MAIN white background and edge-clipping heuristics, MAIN product fill estimate, video container/codec/fps/duration/bitrate via `ffprobe` (when installed), Store/SB limits. Anything that cannot be checked deterministically is returned as `MANUAL` or `VERIFY_IN_UI`, never as PASS.
 
 Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
+
+### File-size rule (carousel, <= 10 MB)
+
+A 4000x4000 file over 10 MB is fixed by **compression, not by fewer pixels**: re-export as optimized JPEG (quality ~85-92, progressive, sRGB, metadata stripped) and re-run the validator. Only if it still does not fit, **stop and warn the user**: state the current size, the pixel size you propose (never below 2000x2000, the Amazon recommended floor) and the reason; reduce pixels only after the user agrees, and record it in the workbook `ISSUES` sheet. Never reduce silently.
+
+### PT slots
+
+The number of PT slots per category is `VERIFY_IN_UI`. The agent plans MAIN + 6 (PT01-PT06); `pack_upload_zip.py` accepts up to 8 and prints the same label. Say in the final report that the slot count was not verified for the category.
 
 ## 2. Visual checks (manual / by vision)
 

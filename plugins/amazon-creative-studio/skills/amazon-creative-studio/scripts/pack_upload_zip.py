@@ -66,6 +66,7 @@ def main():
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_STORED) as zf:  # images are already compressed
         for name, src in entries:
             zf.write(src, name)
+    print("VERIFY_IN_UI: PT slot count for this category was not checked (agent plans MAIN + 6; this script accepts up to 8).")
     print(f"wrote {zpath} ({len(entries)} files, {zpath.stat().st_size / MB:.1f} MB)")
     return 0
 
