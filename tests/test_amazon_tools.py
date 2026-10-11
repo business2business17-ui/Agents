@@ -513,6 +513,51 @@ class AmazonTools(unittest.TestCase):
         p = run(seo, named, "--marketplace", "DE", "--product-terms", "lotion", ok=(1,))
         self.assertIn("SEO_MARKETPLACE_MISMATCH", p.stdout)
 
+    def test_analytics_import_reports(self):
+        an = os.path.join(PI, "analytics_import.py")
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Display Order", "Product Details", "ASIN", "URL", "Brand", "Price  \u20ac", "ASIN Sales", "ASIN Revenue", "Title Char. Count",
+                   "BSR", "Ratings", "Review Count", "Images", "Fulfillment", "Creation Date", "Sponsored"])
+        ws.append(["1.", "Alpha Dog Oil", "B000000001", "https://www.amazon.de/dp/B000000001", "Alpha", "16,99", "45", "1\u00a0015,50", "90",
+                   "13\u00a0666", "4,2", "264", "7", "FBA", "Jan 4, 2022", ""])
+        ws.append(["2.", "Beta Dog Oil", "B000000002", "https://www.amazon.de/dp/B000000002", "Beta", "24,90", "10", "249", "60",
+                   "5\u00a0000", "4,5", "19", "6", "FBM", "Jan 4, 2022", ""])
+        x = self.p("xray.xlsx")
+        wb.save(x)
+        p = run(an, x, "--out", self.p("an.json"), ok=(0, 1))
+        rep = json.load(open(self.p("an.json"), encoding="utf-8"))["reports"][0]
+        self.assertEqual((rep["kind"], rep["marketplace"], rep["currency"]), ("XRAY", "DE", "\u20ac"))
+        self.assertEqual(rep["price"]["max"], 24.9)
+        self.assertEqual(rep["monthly_revenue_total"], 1264.5)  # "1 015,50" read with the German format
+        self.assertEqual(rep["title_over_75"], 1)
+        cat = self.p("GB_catalog.csv")
+        with open(cat, "w", encoding="utf-8-sig") as fh:
+            fh.write('Reporting range=["Quarterly"],Select year=["2026"],Select quarter=["1"],Brand=["Acme"],Category=["Beauty"]\n'
+                     '"ASIN title",ASIN,Category,"Impressions: Impressions","Clicks: Clicks","Basket Adds: Basket Adds","Purchases: Purchases","Reporting Date"\n'
+                     '"A","B0AAAAAAA1","Beauty","1000","50","5","0","2026-03-31"\n"B","B0AAAAAAA2","Beauty","1000","50","5","10","2026-03-31"\n')
+        sqp = self.p("GB_sqp.csv")
+        with open(sqp, "w", encoding="utf-8-sig") as fh:
+            fh.write('Brand=["Acme"],Reporting range=["Quarterly"],Select year=["2025"],Select quarter=["1"]\n'
+                     '"Search query","Search query score","Search query volume","Impressions: Brand Share %","Impressions: Brand Count","Clicks: Brand Count","Purchases: Brand Count"\n'
+                     '"camel milk cream","3","900","1.5","10","4","0"\n')
+        seo = self.p("sqp_seo.csv")
+        p = run(an, cat, sqp, "--out", self.p("an2.json"), "--emit-seo-csv", seo, ok=(1,))
+        self.assertIn("PERIOD_MISMATCH", p.stdout)
+        data = json.load(open(self.p("an2.json"), encoding="utf-8"))
+        cat_items = {i["asin"]: i for i in next(r for r in data["reports"] if r["kind"] == "BA_CATALOG")["items"]}
+        self.assertIn("CLICKS_NO_PURCHASE", " ".join(cat_items["B0AAAAAAA1"]["diagnosis"]))
+        self.assertEqual(data["reports"][0]["marketplace"], "UK")  # GB_ in the file name
+        self.assertIn("camel milk cream", open(seo, encoding="utf-8").read())
+        run(os.path.join(PI, "seo_import.py"), seo, "--marketplace", "UK", "--source-marketplace", "UK", "--product-terms", "cream")
+        unk = self.p("whatever.csv")
+        open(unk, "w").write("a,b\n1,2\n")
+        self.assertIn("UNKNOWN_REPORT", run(an, unk, ok=(1,)).stdout)
+        nomp = self.p("catalog_nomp.csv")
+        open(nomp, "w", encoding="utf-8").write(open(cat, encoding="utf-8-sig").read())
+        self.assertIn("MARKETPLACE_UNKNOWN", run(an, nomp, ok=(1,)).stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
