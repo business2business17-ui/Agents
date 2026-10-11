@@ -262,6 +262,25 @@ class AmazonTools(unittest.TestCase):
         kinds = {i["issue"] for i in r["issues"]}
         self.assertTrue({"IMAGE_WITHOUT_ROW", "ROW_WITHOUT_IMAGE", "FILENAME_NOT_A_GTIN"} <= kinds)
 
+    def test_creative_specs_and_zip(self):
+        from PIL import Image
+        Image.new("RGB", (362, 453), "blue").save(self.p("card.png"), dpi=(72, 72))
+        run(os.path.join(CS, "validate_asset.py"), self.p("card.png"), "--placement", "brand-story-card")
+        Image.new("RGB", (400, 453), "blue").save(self.p("card_bad.png"), dpi=(72, 72))
+        run(os.path.join(CS, "validate_asset.py"), self.p("card_bad.png"), "--placement", "brand-story-card", ok=(1,))
+        Image.new("RGB", (1500, 1500), "blue").save(self.p("sec.jpg"), dpi=(72, 72))
+        p = run(os.path.join(CS, "validate_asset.py"), self.p("sec.jpg"), "--placement", "pdp-secondary", ok=(2,))
+        self.assertIn("recommended_resolution", p.stdout)
+        Image.new("RGB", (4000, 4000), "blue").save(self.p("sec4k.jpg"), dpi=(72, 72))
+        run(os.path.join(CS, "validate_asset.py"), self.p("sec4k.jpg"), "--placement", "pdp-secondary")
+        out = self.p("zipout")
+        run(os.path.join(CS, "pack_upload_zip.py"), "--asin", "B000123456", "--main", self.p("sec4k.jpg"),
+            "--pt", self.p("sec.jpg"), self.p("sec.jpg"), "--out", out)
+        with zipfile.ZipFile(os.path.join(out, "B000123456.zip")) as z:
+            self.assertEqual(z.namelist(), ["B000123456.MAIN.jpg", "B000123456.PT01.jpg", "B000123456.PT02.jpg"])
+        run(os.path.join(CS, "pack_upload_zip.py"), "--asin", "4006381333931", "--main", self.p("sec.jpg"),
+            "--out", out, ok=(1,))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,12 +24,15 @@ MB = 1024 * 1024
 # id -> spec. Keys: kind, formats, rgb_only, max_bytes, min (w,h), exact (w,h),
 # aspect (min,max) as w/h floats, square, notes.
 PLACEMENTS = {
-    "pdp-main": dict(kind="image", formats={"JPEG", "PNG", "TIFF"}, min_long_side=1000,
+    "pdp-main": dict(kind="image", formats={"JPEG", "PNG", "TIFF"}, min_long_side=1000, rec_min=(2000, 2000),
+                     max_bytes=10 * MB, min_dpi=72, rgb_only=True,
                      preset=(4000, 4000), square=True, main=True,
                      notes="Pure white background, real product, no text/graphics, fill >=85%."),
-    "pdp-secondary": dict(kind="image", formats={"JPEG", "PNG", "TIFF"}, min_long_side=1000,
+    "pdp-secondary": dict(kind="image", formats={"JPEG", "PNG", "TIFF"}, min_long_side=1000, rec_min=(2000, 2000),
+                          max_bytes=10 * MB, min_dpi=72, rgb_only=True,
                           preset=(4000, 4000), square=True,
-                          notes="Preset 4000x4000 1:1 is PRODUCTION_PRESET, not an Amazon mandate."),
+                          notes="Any background; arrows, icons, dimensions, infographics and feature text are allowed. "
+                                "4000x4000 1:1 is the production size (PRODUCTION_PRESET); Amazon recommends >= 2000x2000."),
     "aplus-basic": dict(kind="image", formats={"JPEG", "PNG", "BMP"}, rgb_only=True,
                         max_bytes=2 * MB, min_dpi=72,
                         notes="Module image box is VERIFY_IN_UI (970x300 is only the general comparison size)."),
@@ -38,19 +41,28 @@ PLACEMENTS = {
                           notes="Module image box is VERIFY_IN_UI (1464x600 is only the general comparison size)."),
     "brand-story": dict(kind="image", formats={"JPEG", "PNG", "BMP"}, rgb_only=True,
                         max_bytes=2 * MB, min_dpi=72,
-                        notes="Background/card pixel sizes are VERIFY_IN_UI for the account/marketplace."),
-    "store-hero": dict(kind="image", formats={"JPEG", "PNG"}, min=(3000, 600), max_bytes=5 * MB,
+                        notes="Use brand-story-bg (1464x625) or brand-story-card (362x453) for exact sizes."),
+    "brand-story-bg": dict(kind="image", formats={"JPEG", "PNG", "BMP"}, rgb_only=True, max_bytes=2 * MB, min_dpi=72,
+                           exact=(1464, 625), exact_src="USER_SUPPLIED 2026-10-11",
+                           notes="Brand Story background; confirm in the current builder (VERIFY_IN_UI) if the account differs."),
+    "brand-story-card": dict(kind="image", formats={"JPEG", "PNG", "BMP"}, rgb_only=True, max_bytes=2 * MB, min_dpi=72,
+                             exact=(362, 453), exact_src="USER_SUPPLIED 2026-10-11",
+                             notes="Brand Story focus image / brand card (vertical)."),
+    "aplus-comparison": dict(kind="image", formats={"JPEG", "PNG", "BMP"}, rgb_only=True, max_bytes=2 * MB, min_dpi=72,
+                             exact=(150, 300), exact_src="USER_SUPPLIED 2026-10-11",
+                             notes="Comparison chart: one product image per column."),
+    "store-hero": dict(kind="image", formats={"JPEG", "PNG"}, rgb_only=True, min_dpi=72, min=(3000, 600), max_bytes=5 * MB,
                        notes="Amazon may crop up to 30% (15% per side); keep content central."),
-    "store-logo": dict(kind="image", formats={"JPEG", "PNG"}, min=(400, 400), max_bytes=5 * MB),
-    "store-tile-full": dict(kind="image", formats={"JPEG", "PNG"}, min=(1500, 20), max_bytes=5 * MB,
+    "store-logo": dict(kind="image", formats={"JPEG", "PNG"}, rgb_only=True, min_dpi=72, min=(400, 400), max_bytes=5 * MB),
+    "store-tile-full": dict(kind="image", formats={"JPEG", "PNG"}, rgb_only=True, min_dpi=72, min=(1500, 20), max_bytes=5 * MB,
                             notes="3000 px width recommended; bottom ~19% can be hidden by link title."),
-    "store-tile-large": dict(kind="image", formats={"JPEG", "PNG"}, min=(1500, 1500), max_bytes=5 * MB,
+    "store-tile-large": dict(kind="image", formats={"JPEG", "PNG"}, rgb_only=True, min_dpi=72, min=(1500, 1500), max_bytes=5 * MB,
                              notes="Bottom ~12% can be hidden by link title."),
-    "store-tile-medium": dict(kind="image", formats={"JPEG", "PNG"}, min=(1500, 750), max_bytes=5 * MB,
+    "store-tile-medium": dict(kind="image", formats={"JPEG", "PNG"}, rgb_only=True, min_dpi=72, min=(1500, 750), max_bytes=5 * MB,
                               notes="Bottom ~19% can be hidden by link title."),
-    "store-tile-small": dict(kind="image", formats={"JPEG", "PNG"}, min=(750, 750), max_bytes=5 * MB,
+    "store-tile-small": dict(kind="image", formats={"JPEG", "PNG"}, rgb_only=True, min_dpi=72, min=(750, 750), max_bytes=5 * MB,
                              notes="Bottom ~12% can be hidden by link title."),
-    "store-gallery": dict(kind="image", formats={"JPEG", "PNG"}, min=(1500, 750), max_bytes=5 * MB),
+    "store-gallery": dict(kind="image", formats={"JPEG", "PNG"}, rgb_only=True, min_dpi=72, min=(1500, 750), max_bytes=5 * MB),
     "sb-video": dict(kind="video", containers={"mp4", "mov"}, sizes={(1280, 720), (1920, 1080), (3840, 2160)},
                      dur=(6, 45), dur_rec=20, max_bytes=500 * MB, vcodecs={"h264", "hevc"},
                      fps={23.976, 23.98, 24, 25, 29.97, 29.98, 30}, min_vbitrate=1_000_000,
@@ -98,6 +110,16 @@ def check_image(path, spec, expect, results):
         cmyk = im.mode == "CMYK"
         results.append(res("colorspace", "FAIL" if cmyk else ("PASS" if ok else "WARN"), "AMAZON_REQUIRED",
                            f"mode {im.mode}; A+ requires RGB, CMYK is rejected"))
+    icc = im.info.get("icc_profile")
+    if icc and spec.get("rgb_only"):
+        try:
+            import io
+            from PIL import ImageCms
+            desc = ImageCms.getProfileDescription(ImageCms.ImageCmsProfile(io.BytesIO(icc))).strip()
+            results.append(res("icc_profile", "PASS" if "srgb" in desc.lower() else "WARN", "AMAZON_RECOMMENDED",
+                               f"embedded profile '{desc}' (use sRGB)"))
+        except Exception:  # noqa: BLE001 - profile unreadable: leave to manual check
+            results.append(res("icc_profile", "WARN", "AMAZON_RECOMMENDED", "embedded ICC profile unreadable; export as sRGB"))
     if "max_bytes" in spec:
         size = os.path.getsize(path)
         ok = size <= spec["max_bytes"]
@@ -116,6 +138,16 @@ def check_image(path, spec, expect, results):
         ok = w >= mw and h >= mh
         results.append(res("min_dimensions", "PASS" if ok else "FAIL", "AMAZON_REQUIRED",
                            f"{w}x{h} (minimum {mw}x{mh})"))
+    if "exact" in spec:
+        ew, eh = spec["exact"]
+        results.append(res("exact_dimensions", "PASS" if (w, h) == (ew, eh) else "FAIL",
+                           f"AMAZON_REQUIRED ({spec.get('exact_src', 'see amazon-specs.md')})",
+                           f"{w}x{h} (required {ew}x{eh})"))
+    if "rec_min" in spec:
+        rw, rh = spec["rec_min"]
+        ok = w >= rw and h >= rh
+        results.append(res("recommended_resolution", "PASS" if ok else "WARN", "AMAZON_RECOMMENDED",
+                           f"{w}x{h} (Amazon recommends >= {rw}x{rh}; production size is 4000x4000)"))
     if "min_long_side" in spec:
         ok = max(w, h) >= spec["min_long_side"]
         results.append(res("zoom_resolution", "PASS" if ok else "WARN", "AMAZON_RECOMMENDED",

@@ -10,7 +10,7 @@ Treat image 1 as the Amazon MAIN image.
 
 Internal production rule:
 - 1:1 canvas.
-- 4000 x 4000 px production preset unless the user requests another compliant export.
+- 4000 x 4000 px production preset (not 2000 x 2000; Amazon recommends >= 2000 x 2000 as a floor), <= 10 MB per file, sRGB, >= 72 dpi, unless the user requests another compliant export.
 - Pure white background.
 - Real product only, accurately represented.
 - Product occupancy target 85-90% while keeping the entire product visible.
@@ -21,7 +21,7 @@ The 85% threshold is an Amazon requirement where applicable; 85-90% is the inter
 
 ### Images 2-7 - secondary images
 
-Use 1:1 and 4000 x 4000 px as the default internal production preset unless a project requires otherwise.
+Use 1:1 and 4000 x 4000 px as the default internal production preset unless a project requires otherwise. Any background is allowed (color, interior, lifestyle); arrows, icons, dimensions, infographics and characteristic text are allowed. Delivery: `ASIN.MAIN.jpg`, `ASIN.PT01.jpg` ... in `ASIN.zip` (`scripts/pack_upload_zip.py`, see `amazon-specs.md`).
 
 Do not blindly use the same storyline for every category. Derive the sequence from category, product type, TTX, shopper questions, claim restrictions, and available assets.
 

@@ -25,9 +25,23 @@ Official Seller Central image requirements include:
 
 Internal production preset requested by user:
 
-- `4000 x 4000 px` — PRESET.
+- Carousel production size is `4000 x 4000 px`, not 2000 x 2000 — PRESET. Amazon's recommended resolution is `2000 x 2000 px`; that is the floor (`validate_asset.py` warns below it), 4000 x 4000 is what the agent plans, briefs and exports.
 - `1:1` — PRESET.
 - MAIN target fill `85-90%` while fully visible — PRESET aligned with Amazon minimum fill guidance.
+
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11; treated as `AMAZON_REQUIRED` for this project, re-check in Seller Central if an account differs):
+
+- File size: up to **10 MB per image** (a 4000 x 4000 export must be compressed to fit; never shrink the pixels to do it without telling the user).
+- **Image 1 (MAIN):** background pure white RGB (255,255,255).
+- **Secondary / gallery images:** any background (colored, interior, lifestyle). Arrows, icons, dimensions, infographics and text descriptions of characteristics are allowed.
+- **All image types:** minimum 72 dpi (export at 72 or 96; Amazon resamples to pixels); color profile sRGB / RGB only, never CMYK.
+
+### Bulk image upload (ZIP)
+
+- Files: `ASIN.MAIN.jpg`, then `ASIN.PT01.jpg`, `ASIN.PT02.jpg`, ... (product ID + variant + extension, e.g. `B000123456.MAIN.jpg`). Free names like `image1.jpg` are also accepted by Amazon, but this agent always uses the ASIN pattern.
+- Archive name: `ASIN.zip`, files at the root, one ZIP per ASIN.
+- Build it with `scripts/pack_upload_zip.py` after preflight; the ASIN comes from the XLSX (`asin` in `match.json`), never from the GTIN. No ASIN yet (new listing) -> ask once, or deliver the files named by GTIN and mark the ZIP step `PENDING ASIN`.
+- Number of PT slots: this agent plans MAIN + 6; Amazon's slot count per category is `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, Product image requirements, reference G200498950; Amazon Seller Forums responses linking the same help guidance.
 
@@ -60,6 +74,8 @@ Official Seller Central A+ comparison:
 | Premium A+ | 1464 x 600 px | 7 | 19 | Yes | Yes |
 
 Interpret these as Amazon's Basic-vs-Premium comparison image sizes, not proof that every individual module image box uses that exact dimension.
+
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11): A+ banners and modules - **strictly <= 2 MB per image**; Comparison Chart - **150 x 300 px** per product image in its column (`aplus-comparison` placement).
 
 General A+ technical requirements:
 
@@ -98,6 +114,8 @@ Exact image/video boxes: `VERIFY_IN_UI` per selected module.
 
 Amazon describes Brand Story as a separate A+ type appearing in the "From the brand" area. It supports one module with up to 19 preformatted cards in a carousel format, full-screen backgrounds, image/text cards, and links to products/Brand Stores.
 
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; background (main section backdrop) **1464 x 625 px** (`brand-story-bg`); brand card / focus image **362 x 453 px**, vertical (`brand-story-card`). Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+
 Rules for this skill:
 
 - create the large carousel background separately from foreground cards;
@@ -106,7 +124,7 @@ Rules for this skill:
 - use exact background/card pixel dimensions from the current Amazon Brand Story builder for that account/marketplace;
 - do not promote third-party template dimensions to REQUIRED without current official verification.
 
-Exact background/card pixels: `VERIFY_IN_UI`.
+Exact background/card pixels: values above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, A+ Content reference GLG4RQK2Y2RJADU4.
 

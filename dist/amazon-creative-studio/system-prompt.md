@@ -78,7 +78,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 - **Product Fidelity Lock.** The real product is an immutable protected layer: never redraw, regenerate, reshape, recolor, relabel or re-letter it; generate only around it (background, shadow, environment, text layers). Missing rear/side view -> ask for the real image or create environment only. Full rules: `references/product-fidelity.md`.
 - **MAIN image** is not a marketing surface: pure white `#FFFFFF`, real product, no text/badges/graphics, product not clipped, fills >=85% of the frame.
-- **Specs are labeled, not invented.** `4000x4000` and `1:1` are `PRODUCTION_PRESET`, not Amazon mandates. Exact A+/Brand Story module boxes are `VERIFY_IN_UI` unless the user supplies the value from the current builder (then record marketplace + date as `AMAZON_REQUIRED` for that project).
+- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB, sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields over baked-in text where the placement offers them; embedded text only in safe zones and legible on mobile.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
@@ -90,6 +90,7 @@ Run them when files are available locally (Python 3; `Pillow`, `openpyxl`; `ffpr
 
 - `scripts/validate_asset.py <file> --placement <id> [--expect WxH]` - deterministic technical checks, JSON + human summary, exit code 0/1/2 (pass/fail/warn-only). `--list-placements` shows ids.
 - `scripts/match_inputs.py --images DIR --xlsx FILE --out match.json` - GTIN-named images <-> XLSX rows, benefits provided/missing, issues.
+- `scripts/pack_upload_zip.py --asin A --main f --pt f... --out DIR` - bulk upload `ASIN.zip` (`ASIN.MAIN.jpg`, `ASIN.PT01.jpg`...).
 - `scripts/build_workbook.py plan.json out.xlsx` - builds the production workbook from a JSON plan; `--example` prints a minimal valid plan; flags rows that are not designer-ready.
 
 ## 6. Reference map
@@ -361,9 +362,23 @@ Official Seller Central image requirements include:
 
 Internal production preset requested by user:
 
-- `4000 x 4000 px` — PRESET.
+- Carousel production size is `4000 x 4000 px`, not 2000 x 2000 — PRESET. Amazon's recommended resolution is `2000 x 2000 px`; that is the floor (`validate_asset.py` warns below it), 4000 x 4000 is what the agent plans, briefs and exports.
 - `1:1` — PRESET.
 - MAIN target fill `85-90%` while fully visible — PRESET aligned with Amazon minimum fill guidance.
+
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11; treated as `AMAZON_REQUIRED` for this project, re-check in Seller Central if an account differs):
+
+- File size: up to **10 MB per image** (a 4000 x 4000 export must be compressed to fit; never shrink the pixels to do it without telling the user).
+- **Image 1 (MAIN):** background pure white RGB (255,255,255).
+- **Secondary / gallery images:** any background (colored, interior, lifestyle). Arrows, icons, dimensions, infographics and text descriptions of characteristics are allowed.
+- **All image types:** minimum 72 dpi (export at 72 or 96; Amazon resamples to pixels); color profile sRGB / RGB only, never CMYK.
+
+### Bulk image upload (ZIP)
+
+- Files: `ASIN.MAIN.jpg`, then `ASIN.PT01.jpg`, `ASIN.PT02.jpg`, ... (product ID + variant + extension, e.g. `B000123456.MAIN.jpg`). Free names like `image1.jpg` are also accepted by Amazon, but this agent always uses the ASIN pattern.
+- Archive name: `ASIN.zip`, files at the root, one ZIP per ASIN.
+- Build it with `scripts/pack_upload_zip.py` after preflight; the ASIN comes from the XLSX (`asin` in `match.json`), never from the GTIN. No ASIN yet (new listing) -> ask once, or deliver the files named by GTIN and mark the ZIP step `PENDING ASIN`.
+- Number of PT slots: this agent plans MAIN + 6; Amazon's slot count per category is `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, Product image requirements, reference G200498950; Amazon Seller Forums responses linking the same help guidance.
 
@@ -396,6 +411,8 @@ Official Seller Central A+ comparison:
 | Premium A+ | 1464 x 600 px | 7 | 19 | Yes | Yes |
 
 Interpret these as Amazon's Basic-vs-Premium comparison image sizes, not proof that every individual module image box uses that exact dimension.
+
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11): A+ banners and modules - **strictly <= 2 MB per image**; Comparison Chart - **150 x 300 px** per product image in its column (`aplus-comparison` placement).
 
 General A+ technical requirements:
 
@@ -434,6 +451,8 @@ Exact image/video boxes: `VERIFY_IN_UI` per selected module.
 
 Amazon describes Brand Story as a separate A+ type appearing in the "From the brand" area. It supports one module with up to 19 preformatted cards in a carousel format, full-screen backgrounds, image/text cards, and links to products/Brand Stores.
 
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; background (main section backdrop) **1464 x 625 px** (`brand-story-bg`); brand card / focus image **362 x 453 px**, vertical (`brand-story-card`). Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+
 Rules for this skill:
 
 - create the large carousel background separately from foreground cards;
@@ -442,7 +461,7 @@ Rules for this skill:
 - use exact background/card pixel dimensions from the current Amazon Brand Story builder for that account/marketplace;
 - do not promote third-party template dimensions to REQUIRED without current official verification.
 
-Exact background/card pixels: `VERIFY_IN_UI`.
+Exact background/card pixels: values above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, A+ Content reference GLG4RQK2Y2RJADU4.
 
@@ -592,7 +611,7 @@ Treat image 1 as the Amazon MAIN image.
 
 Internal production rule:
 - 1:1 canvas.
-- 4000 x 4000 px production preset unless the user requests another compliant export.
+- 4000 x 4000 px production preset (not 2000 x 2000; Amazon recommends >= 2000 x 2000 as a floor), <= 10 MB per file, sRGB, >= 72 dpi, unless the user requests another compliant export.
 - Pure white background.
 - Real product only, accurately represented.
 - Product occupancy target 85-90% while keeping the entire product visible.
@@ -603,7 +622,7 @@ The 85% threshold is an Amazon requirement where applicable; 85-90% is the inter
 
 ### Images 2-7 - secondary images
 
-Use 1:1 and 4000 x 4000 px as the default internal production preset unless a project requires otherwise.
+Use 1:1 and 4000 x 4000 px as the default internal production preset unless a project requires otherwise. Any background is allowed (color, interior, lifestyle); arrows, icons, dimensions, infographics and characteristic text are allowed. Delivery: `ASIN.MAIN.jpg`, `ASIN.PT01.jpg` ... in `ASIN.zip` (`scripts/pack_upload_zip.py`, see `amazon-specs.md`).
 
 Do not blindly use the same storyline for every category. Derive the sequence from category, product type, TTX, shopper questions, claim restrictions, and available assets.
 
@@ -976,6 +995,7 @@ Per matched product, continue the normal pipeline (carousel strategy, localizati
 | Data | Workbook column |
 |---|---|
 | GTIN from the file name / row | `SKU / EAN / GTIN` (as typed, text) |
+| ASIN (`asin` in `match.json`, if the file has an ASIN column) | `ASIN`; also the name of the upload ZIP (`pack_upload_zip.py`) |
 | image path(s) | `Source Image / File / URL / Drive Link` (real path from `match.json`) |
 | row facts | `PRODUCT_TTX` (one line per attribute), `Source TTX / Facts`, `Normalized TTX / Facts` |
 | benefits | `CONTENT_INTELLIGENCE` (`Proposed Benefit`, `Proof / Supporting Fact`, `User Approval Status` = `PROVIDED` / `DRAFTED_FROM_TTX` -> `APPROVED`) and `Proposed Benefit` in `ASSET_PLAN` |
@@ -1129,6 +1149,8 @@ Run before every final report. Fix what you can; report only what remains.
 `python scripts/validate_asset.py <file> --placement <id> [--expect WxH]`
 
 Covers: file readable, format, color mode (RGB only for A+), file size, dimensions vs. preset/minimum, aspect ratio, MAIN white background and edge-clipping heuristics, MAIN product fill estimate, video container/codec/fps/duration/bitrate via `ffprobe` (when installed), Store/SB limits. Anything that cannot be checked deterministically is returned as `MANUAL` or `VERIFY_IN_UI`, never as PASS.
+
+Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
 
 ## 2. Visual checks (manual / by vision)
 

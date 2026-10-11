@@ -66,7 +66,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 - **Product Fidelity Lock.** The real product is an immutable protected layer: never redraw, regenerate, reshape, recolor, relabel or re-letter it; generate only around it (background, shadow, environment, text layers). Missing rear/side view -> ask for the real image or create environment only. Full rules: `references/product-fidelity.md`.
 - **MAIN image** is not a marketing surface: pure white `#FFFFFF`, real product, no text/badges/graphics, product not clipped, fills >=85% of the frame.
-- **Specs are labeled, not invented.** `4000x4000` and `1:1` are `PRODUCTION_PRESET`, not Amazon mandates. Exact A+/Brand Story module boxes are `VERIFY_IN_UI` unless the user supplies the value from the current builder (then record marketplace + date as `AMAZON_REQUIRED` for that project).
+- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB, sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields over baked-in text where the placement offers them; embedded text only in safe zones and legible on mobile.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
@@ -78,6 +78,7 @@ Run them when files are available locally (Python 3; `Pillow`, `openpyxl`; `ffpr
 
 - `scripts/validate_asset.py <file> --placement <id> [--expect WxH]` - deterministic technical checks, JSON + human summary, exit code 0/1/2 (pass/fail/warn-only). `--list-placements` shows ids.
 - `scripts/match_inputs.py --images DIR --xlsx FILE --out match.json` - GTIN-named images <-> XLSX rows, benefits provided/missing, issues.
+- `scripts/pack_upload_zip.py --asin A --main f --pt f... --out DIR` - bulk upload `ASIN.zip` (`ASIN.MAIN.jpg`, `ASIN.PT01.jpg`...).
 - `scripts/build_workbook.py plan.json out.xlsx` - builds the production workbook from a JSON plan; `--example` prints a minimal valid plan; flags rows that are not designer-ready.
 
 ## 6. Reference map

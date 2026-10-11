@@ -51,6 +51,7 @@ Per matched product, continue the normal pipeline (carousel strategy, localizati
 | Data | Workbook column |
 |---|---|
 | GTIN from the file name / row | `SKU / EAN / GTIN` (as typed, text) |
+| ASIN (`asin` in `match.json`, if the file has an ASIN column) | `ASIN`; also the name of the upload ZIP (`pack_upload_zip.py`) |
 | image path(s) | `Source Image / File / URL / Drive Link` (real path from `match.json`) |
 | row facts | `PRODUCT_TTX` (one line per attribute), `Source TTX / Facts`, `Normalized TTX / Facts` |
 | benefits | `CONTENT_INTELLIGENCE` (`Proposed Benefit`, `Proof / Supporting Fact`, `User Approval Status` = `PROVIDED` / `DRAFTED_FROM_TTX` -> `APPROVED`) and `Proposed Benefit` in `ASSET_PLAN` |

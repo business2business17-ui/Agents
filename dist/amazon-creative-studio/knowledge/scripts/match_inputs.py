@@ -37,6 +37,7 @@ ID_HEADER = re.compile(r"gtin|\bean\b|\bupc\b|barcode|bar code|штрих|бар
 BENEFIT_HEADER = re.compile(
     r"преимущ|выгод|benefit|advantage|vorteil|avantage|ventaja|vantagg|selling.?point|\busp\b|key.?feature.?benefit",
     re.I)
+ASIN_HEADER = re.compile(r"\basin\b", re.I)
 CATEGORY_HEADER = re.compile(r"категор|category|kategorie|catégorie|categoría|categoria|department|раздел", re.I)
 TYPE_HEADER = re.compile(r"тип\b|вид\b|тип товара|product.?type|item.?type|typ\b|type\b|tipo|sub.?categor|подкатегор", re.I)
 DESC_HEADER = re.compile(r"описани|description|beschreibung|descripci|descrizione|аннотац|bullet|буллет|title|название|наименован|заголовок", re.I)
@@ -178,7 +179,8 @@ def main():
     mapping = []
     for name, hi, headers, body, gcol, how in sheets:
         ben_cols = [j for j, h in enumerate(headers) if h and j != gcol and BENEFIT_HEADER.search(h)]
-        skip = {gcol, *ben_cols}
+        asin_cols = [j for j, h in enumerate(headers) if h and j != gcol and ASIN_HEADER.search(h)]
+        skip = {gcol, *ben_cols, *asin_cols}
         cat_cols = [j for j, h in enumerate(headers) if h and j not in skip and CATEGORY_HEADER.search(h)]
         typ_cols = [j for j, h in enumerate(headers) if h and j not in skip | set(cat_cols) and TYPE_HEADER.search(h)]
         desc_cols = [j for j, h in enumerate(headers) if h and j not in skip | set(cat_cols) | set(typ_cols) and DESC_HEADER.search(h)]
@@ -196,6 +198,7 @@ def main():
             if "e" in raw.lower() and not digits.isdigit():
                 key, status, note = None, "GTIN_INVALID", "scientific notation / text: identifier corrupted by Excel"
             facts, benefits_raw, cat_v, typ_v, desc_v = {}, [], [], [], {}
+            asin_v = next((cell_text(r[j]).upper() for j in asin_cols if j < len(r) and cell_text(r[j])), None)
             for j, h in enumerate(headers):
                 if j == gcol or j >= len(r):
                     continue
@@ -219,7 +222,7 @@ def main():
             category, ptype = " / ".join(cat_v) or None, " / ".join(typ_v) or None
             cls = "FROM_FILE_CONFIRM_AT_C1" if category and ptype else "PARTIAL_ASK" if category or ptype else "MISSING_ASK"
             rec = {"sheet": name, "row_hint": xl_row, "gtin_raw": digits, "key": key, "gtin_status": status,
-                   "note": note, "facts": facts, "benefits": benefits, "category": category, "product_type": ptype,
+                   "note": note, "facts": facts, "benefits": benefits, "asin": asin_v, "category": category, "product_type": ptype,
                    "classification_status": cls, "existing_description": desc_v,
                    "benefits_status": "PROVIDED" if benefits else "MISSING_DRAFT_FROM_TTX" if facts else "MISSING_NO_TTX"}
             seen_rows.append(rec)
