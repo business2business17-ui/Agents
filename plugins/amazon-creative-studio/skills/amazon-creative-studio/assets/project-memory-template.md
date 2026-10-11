@@ -24,6 +24,14 @@
 | Product Row ID | SKU / EAN | Category | Product type | Confidence |
 |---|---|---|---|---|
 
+## Research notes (live-research.md)
+| Date | Category / type / marketplace | Finding | Source URL | Status (OFFICIAL / LAW / UNOFFICIAL / NOT_FOUND) |
+|---|---|---|---|---|
+
+## Visual readings (image-reading.md)
+| Image / source | Role (product / competitor ref / mood) | Key findings, style tokens, conflicts | Date |
+|---|---|---|---|
+
 ## Glossary / approved terminology
 | Source term | Approved localized term (per marketplace) |
 |---|---|

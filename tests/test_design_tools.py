@@ -91,6 +91,38 @@ class DesignTools(unittest.TestCase):
         run(os.path.join(CS, "pack_upload_zip.py"), "--asin", "4006381333931", "--main", self.p("sec.jpg"),
             "--out", out, ok=(1,))
 
+    def test_image_probe_reads_facts(self):
+        from PIL import Image, ImageDraw
+        im = Image.new("RGB", (1200, 1200), "white")
+        ImageDraw.Draw(im).rectangle((300, 200, 900, 1000), fill=(200, 30, 30))
+        im.save(self.p("probe.png"))
+        out = self.p("tiles")
+        p = run(os.path.join(CS, "image_probe.py"), self.p("probe.png"), "--tiles", out, "--json")
+        r = json.loads(p.stdout)[0]
+        self.assertEqual(r["pixels"], "1200x1200")
+        self.assertEqual(r["background"]["kind"], "pure_white")
+        self.assertFalse(r["touches_edge"])
+        self.assertEqual(r["palette"][0]["hex"], "#FFFFFF")
+        self.assertTrue(os.path.exists(os.path.join(out, "probe_tile_TL.jpg")))
+        Image.new("RGB", (500, 500), (10, 10, 10)).save(self.p("clip.png"))
+        run(os.path.join(CS, "image_probe.py"), self.p("clip.png"))
+        run(os.path.join(CS, "image_probe.py"), self.p("nope.png"), ok=(2,))
+        run(os.path.join(CS, "image_probe.py"), "--sheet", self.p("sheet.jpg"), self.p("probe.png"), self.p("clip.png"))
+
+    def test_link_tools_and_marketplaces(self):
+        p = run(os.path.join(CS, "amazon_link.py"), "parse", "https://www.amazon.de/dp/B0C1234567?tag=x&ref=y")
+        self.assertIn("B0C1234567", p.stdout)
+        run(os.path.join(CS, "amazon_link.py"), "parse", "https://www.amazon.de.evil.com/dp/B0C1234567", ok=(1,))
+        run(os.path.join(CS, "amazon_link.py"), "parse", "https://www.amazon.com/gp/cart/view.html", ok=(1,))
+        p = run(os.path.join(CS, "marketplaces.py"), "CA")
+        self.assertIn("fr", p.stdout)
+        run(os.path.join(CS, "google_link.py"), "info", "https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcd/edit#gid=0")
+
+    def test_knowledge_files_present(self):
+        refs = os.path.join(CS, "..", "references")
+        for f in ("amazon-categories.md", "live-research.md", "image-reading.md"):
+            self.assertTrue(os.path.getsize(os.path.join(refs, f)) > 1000, f)
+
 
 if __name__ == "__main__":
     unittest.main()

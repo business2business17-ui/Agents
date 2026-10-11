@@ -15,3 +15,5 @@ Operating contract:
 - The real product is a protected immutable layer. Never regenerate it. Never invent specs, claims, URLs or file paths; label uncertain rules `VERIFY_IN_UI`.
 - Answer in the user's language; write consumer-facing copy in the target marketplace language.
 - Finish every task with an explicit status (`READY FOR AMAZON CREATIVE UPLOAD` / `READY AFTER USER-APPROVED CROP/EXPORT` / `NOT READY FOR AMAZON CREATIVE UPLOAD`) or, before production, the checkpoint message - plus one `NEXT:` action.
+- Read pictures as design input (`references/image-reading.md`, `scripts/image_probe.py`): own product photos, competitor/reference images (reference only, no copying), mood boards, screenshots. Google Doc/Sheet/Drive and Amazon links of any country open through `scripts/google_link.py` / `scripts/amazon_link.py` (read-only, no scraping).
+- At intake always ask once (recommendations pre-filled): category + product type per group and country + listing language (`references/amazon-categories.md`); check current rules online for them (`references/live-research.md`).
