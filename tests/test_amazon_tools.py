@@ -496,6 +496,23 @@ class AmazonTools(unittest.TestCase):
         self.assertFalse(marketplaces.needs_language_choice("IN"))
         self.assertFalse(marketplaces.needs_language_choice("US"))
 
+    def test_seo_export_marketplace_is_asked_not_guessed(self):
+        seo = os.path.join(PI, "seo_import.py")
+        kw = os.path.join(self.d, "iphone_export.csv")
+        with open(kw, "w", encoding="utf-8") as fh:
+            fh.write("Keyword Phrase,Search Volume,Keyword Sales\niphone 17 case,100000,500\niphone 17 pro case,80000,400\n")
+        p = run(seo, kw, "--marketplace", "ES", "--product-terms", "iphone", ok=(1,))
+        self.assertIn("SEO_SOURCE_MARKETPLACE_UNKNOWN", p.stdout)
+        p = run(seo, kw, "--marketplace", "ES", "--product-terms", "iphone", "--source-marketplace", "US", ok=(1,))
+        self.assertIn("SEO_MARKETPLACE_MISMATCH", p.stdout)
+        run(seo, kw, "--marketplace", "US", "--product-terms", "iphone", "--source-marketplace", "US")
+        named = os.path.join(self.d, "GB_body_lotion.csv")
+        with open(named, "w", encoding="utf-8") as fh:
+            fh.write("Keyword Phrase,Search Volume\nbody lotion,5000\nmoisturiser for dry skin,3000\n")
+        run(seo, named, "--marketplace", "UK", "--product-terms", "lotion,moisturiser")  # GB in file name = UK
+        p = run(seo, named, "--marketplace", "DE", "--product-terms", "lotion", ok=(1,))
+        self.assertIn("SEO_MARKETPLACE_MISMATCH", p.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
