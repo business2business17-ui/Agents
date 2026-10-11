@@ -37,7 +37,12 @@ def currency(code):
 
 def needs_language_choice(code):
     i = info(code)
-    return bool(i and (i.get("multi_language") or len(i["languages"]) > 1))
+    return bool(i and (i.get("multi_language") or len(i.get("primary_languages", i["languages"])) > 1))
+
+
+def secondary_languages(code):
+    i = info(code)
+    return list(i.get("secondary_languages", [])) if i else []
 
 
 def main():
@@ -47,7 +52,7 @@ def main():
         return 0
     if a[0] == "--list":
         for k, v in _DATA["marketplaces"].items():
-            print(f"{k:3} {v['domain']:16} {v['currency']}  languages={','.join(v['languages'])}{'  (choose per listing)' if v.get('multi_language') else ''}")
+            print(f"{k:3} {v['domain']:16} {v['currency']}  languages={','.join(v['languages'])}{'+'+','.join(v['secondary_languages']) if v.get('secondary_languages') else ''}{'  (choose per listing)' if v.get('multi_language') else ''}")
         return 0
     codes = [x for x in a if not x.startswith("--") and (a.index(x) == 0 or a[a.index(x) - 1] != "--language")]
     lang = a[a.index("--language") + 1].lower() if "--language" in a else None
@@ -58,9 +63,12 @@ def main():
             print(f"{c}: unknown marketplace code (add it to marketplaces.json after checking the seller account)")
             rc = 1
             continue
-        print(f"{norm(c)}: {i['domain']} {i['currency']} languages={i['languages']} choose_language_per_listing={needs_language_choice(c)} {i.get('note', '')}")
+        print(f"{norm(c)}: {i['domain']} {i['currency']} languages={i['languages']} secondary={i.get('secondary_languages', [])} choose_language_per_listing={needs_language_choice(c)} {i.get('note', '')}")
         if lang and lang not in i["languages"]:
-            print(f"  language '{lang}' is not in the table for {norm(c)}: VERIFY_IN_UI")
+            if lang in i.get("secondary_languages", []):
+                print(f"  language '{lang}' is a SECONDARY language of {norm(c)} (shopper interface / auto-translation): provide primary content, own '{lang}' listing is VERIFY_IN_UI")
+            else:
+                print(f"  language '{lang}' is not in the table for {norm(c)}: VERIFY_IN_UI")
             rc = 1
     return rc
 

@@ -56,7 +56,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 
 **Precedence and errata** (this block overrides the reference files):
 - Pricing policy is `shared-pricing-and-updates.md` (v3). A missing B2B rate/basis is NOT a blocker (0.10 on the rounded Standard Price is approved); Business Price is `NOT_APPLICABLE` only when the template has no supported B2B field. Sale Price is preserved exactly; List Price/MAP/min-max/tiers are never invented.
-- Title 75 chars, highlights 125, backend 249 bytes, 2x word repetition are the spec defaults, carried over and not re-verified against live Amazon; the Product Type rule always wins.
+- Limits: `content-limits.md` (user-supplied): title 75, highlights 125, bullets 10-255, description 2000, backend 249 B (JP 500, IN 200); template rule wins.
 - Amazon Product Type/category rules > universal rules; explicit user data > calculated values.
 
 ## 5. Scripts

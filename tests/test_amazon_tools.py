@@ -460,6 +460,42 @@ class AmazonTools(unittest.TestCase):
             self.assertIn("amazon-categories", skill)
             self.assertIn("live-research", skill)
 
+    def test_content_limits_2026(self):
+        cc = os.path.join(PI, "content_check.py")
+        title75 = "A" * 75
+        good = run(cc, "--title", "Acme Phone Case iPhone 15 Pro", "--highlights", "Shockproof, clear, MagSafe ready",
+                   "--backend", "huelle schutz", "--marketplace", "DE", "--brand", "Acme", "--json")
+        self.assertNotIn("TITLE_TOO_LONG", good.stdout)
+        p = run(cc, "--title", "x" * 76, ok=(1,))
+        self.assertIn("TITLE_TOO_LONG", p.stdout)
+        run(cc, "--title", "x" * 76, "--category", "media", ok=(0,))
+        # backend is measured in bytes and differs per marketplace
+        cyr = "кейс " * 30  # 150 chars, 270 bytes
+        self.assertIn("BACKEND_TOO_LONG", run(cc, "--title", "Acme", "--backend", cyr, "--marketplace", "DE", ok=(1,)).stdout)
+        self.assertNotIn("BACKEND_TOO_LONG", run(cc, "--title", "Acme", "--backend", cyr, "--marketplace", "JP", ok=(0, 1)).stdout)
+        self.assertIn("BACKEND_TOO_LONG", run(cc, "--title", "Acme", "--backend", "a" * 210, "--marketplace", "IN", ok=(1,)).stdout)
+        self.assertIn("BACKEND_COMMAS", run(cc, "--title", "Acme", "--backend", "case, cover", ok=(1,)).stdout)
+        # item highlights must not repeat title words
+        p = run(cc, "--title", "Acme Magnetic Phone Case", "--highlights", "Magnetic phone case, clear cover", ok=(1,))
+        self.assertIn("HIGHLIGHTS_REPEAT_TITLE", p.stdout)
+        # bullets and description
+        rec = self.write_json("cl_rec.json", {"title": "Acme Case", "bullet_points": ["Short", "ok bullet text here.", "\u2705 check mark bullet"],
+                                              "description": "<p>html</p>" + "d" * 2000})
+        p = run(cc, "--file", rec, ok=(1,))
+        for code in ("BULLET_TOO_SHORT", "BULLET_END_PUNCTUATION", "BULLET_SYMBOLS", "DESCRIPTION_TOO_LONG", "DESCRIPTION_HTML"):
+            self.assertIn(code, p.stdout)
+        run(cc, "--title", "Acme", "--bullets-max", "5", "--marketplace", "DE")  # no crash without highlights/bullets
+
+    def test_marketplace_languages_primary_secondary(self):
+        if SH not in sys.path:
+            sys.path.insert(0, SH)
+        import marketplaces
+        self.assertEqual(marketplaces.languages("EG"), ["ar"])
+        self.assertEqual(marketplaces.secondary_languages("DE"), ["en", "nl", "pl", "tr"])
+        self.assertTrue(marketplaces.needs_language_choice("AE"))
+        self.assertFalse(marketplaces.needs_language_choice("IN"))
+        self.assertFalse(marketplaces.needs_language_choice("US"))
+
 
 if __name__ == "__main__":
     unittest.main()
