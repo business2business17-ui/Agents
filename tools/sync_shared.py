@@ -21,6 +21,10 @@ PLAN = {
     "amazon-feed-error-agent": ["pricing_engine.py", "google_link.py", "amazon_link.py", "marketplaces.py", "marketplaces.json", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
                                 "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py"],
 }
+# Design agent: link tools, marketplace table, categories and live-research knowledge (no Amazon feed/pricing code).
+DESIGN = "amazon-creative-studio"
+DESIGN_SCRIPTS = ["google_link.py", "amazon_link.py", "marketplaces.py", "marketplaces.json"]
+DESIGN_REFS = ["amazon-categories.md", "live-research.md"]
 
 
 def main():
@@ -40,6 +44,14 @@ def main():
             else:
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
+    skill = ROOT / "plugins" / DESIGN / "skills" / DESIGN
+    for src, dst in ([(SH / f, skill / "scripts" / f) for f in DESIGN_SCRIPTS] +
+                     [(SH / f, skill / "references" / f) for f in DESIGN_REFS]):
+        if a.check:
+            if not dst.exists() or dst.read_bytes() != src.read_bytes():
+                stale.append(str(dst.relative_to(ROOT)))
+        else:
+            shutil.copy2(src, dst)
     if a.check:
         print("STALE:\n  " + "\n  ".join(stale) if stale else "shared copies are up to date")
         return 1 if stale else 0

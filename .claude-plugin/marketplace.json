@@ -21,6 +21,11 @@
       "name": "amazon-feed-error-agent",
       "source": "./plugins/amazon-feed-error-agent",
       "description": "Agent 3: Processing Report errors, root cause, Change Plan, approved-only patch, QA, re-analysis."
+    },
+    {
+      "name": "amazon-creative-studio",
+      "source": "./plugins/amazon-creative-studio",
+      "description": "Design agent: carousel, A+, Brand Story, Store, ads, video; briefs, prompts, production XLSX, preflight, image reading."
     }
   ]
 }
