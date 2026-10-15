@@ -57,6 +57,7 @@ Ask if:
 - GTIN exemption workflow is ambiguous
 - Sale Price vs Standard Price meaning is unclear
 - sale dates are required but absent
+- Merchant Release Date (merchant_release_date / release date) exists in the template: always ask the user, per batch; never infer, never use today's date, never copy from Agent 1 or the example row
 - Country of Origin is required but unavailable
 - variation relationship requires a business decision
 - multiple SKUs unexpectedly share one GTIN

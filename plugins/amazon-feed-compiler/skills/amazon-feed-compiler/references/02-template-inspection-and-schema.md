@@ -35,6 +35,10 @@ Before writing anything, inspect:
 
 No feed writing before inspection is complete.
 
+### Template Study (mandatory, before mapping)
+
+After the tool inspection, read the workbook content yourself and write a short study: what each sheet is for, how Template rows 1-6 are organised (group / display name / API name / requirement / example), required vs conditional vs optional columns, repeatable groups, value+unit pairs, dropdown and Valid Values sources, cross-field dependencies, and which fields need a user decision (Merchant Release Date, sale dates, Country of Origin, GTIN exemption). Show it at the top of checkpoint C1. Do not map or write before it exists.
+
 ## 6. Dynamic Data Start Row
 
 Never assume row 7.
