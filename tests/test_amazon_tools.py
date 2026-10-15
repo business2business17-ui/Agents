@@ -460,6 +460,181 @@ class AmazonTools(unittest.TestCase):
             self.assertIn("amazon-categories", skill)
             self.assertIn("live-research", skill)
 
+    def test_content_limits_2026(self):
+        cc = os.path.join(PI, "content_check.py")
+        title75 = "A" * 75
+        good = run(cc, "--title", "Acme Phone Case iPhone 15 Pro", "--highlights", "Shockproof, clear, MagSafe ready",
+                   "--backend", "huelle schutz", "--marketplace", "DE", "--brand", "Acme", "--json")
+        self.assertNotIn("TITLE_TOO_LONG", good.stdout)
+        p = run(cc, "--title", "x" * 76, ok=(1,))
+        self.assertIn("TITLE_TOO_LONG", p.stdout)
+        run(cc, "--title", "x" * 76, "--category", "media", ok=(0,))
+        # backend is measured in bytes and differs per marketplace
+        cyr = "кейс " * 30  # 150 chars, 270 bytes
+        self.assertIn("BACKEND_TOO_LONG", run(cc, "--title", "Acme", "--backend", cyr, "--marketplace", "DE", ok=(1,)).stdout)
+        self.assertNotIn("BACKEND_TOO_LONG", run(cc, "--title", "Acme", "--backend", cyr, "--marketplace", "JP", ok=(0, 1)).stdout)
+        self.assertIn("BACKEND_TOO_LONG", run(cc, "--title", "Acme", "--backend", "a" * 210, "--marketplace", "IN", ok=(1,)).stdout)
+        self.assertIn("BACKEND_COMMAS", run(cc, "--title", "Acme", "--backend", "case, cover", ok=(1,)).stdout)
+        # item highlights must not repeat title words
+        p = run(cc, "--title", "Acme Magnetic Phone Case", "--highlights", "Magnetic phone case, clear cover", ok=(1,))
+        self.assertIn("HIGHLIGHTS_REPEAT_TITLE", p.stdout)
+        # bullets and description
+        rec = self.write_json("cl_rec.json", {"title": "Acme Case", "bullet_points": ["Short", "ok bullet text here.", "\u2705 check mark bullet"],
+                                              "description": "<p>html</p>" + "d" * 2000})
+        p = run(cc, "--file", rec, ok=(1,))
+        for code in ("BULLET_TOO_SHORT", "BULLET_END_PUNCTUATION", "BULLET_SYMBOLS", "DESCRIPTION_TOO_LONG", "DESCRIPTION_HTML"):
+            self.assertIn(code, p.stdout)
+        run(cc, "--title", "Acme", "--bullets-max", "5", "--marketplace", "DE")  # no crash without highlights/bullets
+
+    def test_marketplace_languages_primary_secondary(self):
+        if SH not in sys.path:
+            sys.path.insert(0, SH)
+        import marketplaces
+        self.assertEqual(marketplaces.languages("EG"), ["ar"])
+        self.assertEqual(marketplaces.secondary_languages("DE"), ["en", "nl", "pl", "tr"])
+        self.assertTrue(marketplaces.needs_language_choice("AE"))
+        self.assertFalse(marketplaces.needs_language_choice("IN"))
+        self.assertFalse(marketplaces.needs_language_choice("US"))
+
+    def test_seo_export_marketplace_is_asked_not_guessed(self):
+        seo = os.path.join(PI, "seo_import.py")
+        kw = os.path.join(self.d, "iphone_export.csv")
+        with open(kw, "w", encoding="utf-8") as fh:
+            fh.write("Keyword Phrase,Search Volume,Keyword Sales\niphone 17 case,100000,500\niphone 17 pro case,80000,400\n")
+        p = run(seo, kw, "--marketplace", "ES", "--product-terms", "iphone", ok=(1,))
+        self.assertIn("SEO_SOURCE_MARKETPLACE_UNKNOWN", p.stdout)
+        p = run(seo, kw, "--marketplace", "ES", "--product-terms", "iphone", "--source-marketplace", "US", ok=(1,))
+        self.assertIn("SEO_MARKETPLACE_MISMATCH", p.stdout)
+        run(seo, kw, "--marketplace", "US", "--product-terms", "iphone", "--source-marketplace", "US")
+        named = os.path.join(self.d, "GB_body_lotion.csv")
+        with open(named, "w", encoding="utf-8") as fh:
+            fh.write("Keyword Phrase,Search Volume\nbody lotion,5000\nmoisturiser for dry skin,3000\n")
+        run(seo, named, "--marketplace", "UK", "--product-terms", "lotion,moisturiser")  # GB in file name = UK
+        p = run(seo, named, "--marketplace", "DE", "--product-terms", "lotion", ok=(1,))
+        self.assertIn("SEO_MARKETPLACE_MISMATCH", p.stdout)
+
+    def test_analytics_import_reports(self):
+        an = os.path.join(PI, "analytics_import.py")
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Display Order", "Product Details", "ASIN", "URL", "Brand", "Price  \u20ac", "ASIN Sales", "ASIN Revenue", "Title Char. Count",
+                   "BSR", "Ratings", "Review Count", "Images", "Fulfillment", "Creation Date", "Sponsored"])
+        ws.append(["1.", "Alpha Dog Oil", "B000000001", "https://www.amazon.de/dp/B000000001", "Alpha", "16,99", "45", "1\u00a0015,50", "90",
+                   "13\u00a0666", "4,2", "264", "7", "FBA", "Jan 4, 2022", ""])
+        ws.append(["2.", "Beta Dog Oil", "B000000002", "https://www.amazon.de/dp/B000000002", "Beta", "24,90", "10", "249", "60",
+                   "5\u00a0000", "4,5", "19", "6", "FBM", "Jan 4, 2022", ""])
+        x = self.p("xray.xlsx")
+        wb.save(x)
+        p = run(an, x, "--out", self.p("an.json"), ok=(0, 1))
+        rep = json.load(open(self.p("an.json"), encoding="utf-8"))["reports"][0]
+        self.assertEqual((rep["kind"], rep["marketplace"], rep["currency"]), ("XRAY", "DE", "\u20ac"))
+        self.assertEqual(rep["price"]["max"], 24.9)
+        self.assertEqual(rep["monthly_revenue_total"], 1264.5)  # "1 015,50" read with the German format
+        self.assertEqual(rep["title_over_75"], 1)
+        self.assertIn("ESTIMATES", rep["source"])
+        self.assertEqual(rep["category_scope"], "UNKNOWN")
+        run(an, x, "--out", self.p("an_c.json"), "--category", "Pet Supplies > Dogs > Vitamins", ok=(0, 1))
+        self.assertIn("LEAF", json.load(open(self.p("an_c.json"), encoding="utf-8"))["reports"][0]["category_scope"])
+        cat = self.p("GB_catalog.csv")
+        with open(cat, "w", encoding="utf-8-sig") as fh:
+            fh.write('Reporting range=["Quarterly"],Select year=["2026"],Select quarter=["1"],Brand=["Acme"],Category=["Beauty"]\n'
+                     '"ASIN title",ASIN,Category,"Impressions: Impressions","Clicks: Clicks","Basket Adds: Basket Adds","Purchases: Purchases","Reporting Date"\n'
+                     '"A","B0AAAAAAA1","Beauty","1000","50","5","0","2026-03-31"\n"B","B0AAAAAAA2","Beauty","1000","50","5","10","2026-03-31"\n')
+        sqp = self.p("GB_sqp.csv")
+        with open(sqp, "w", encoding="utf-8-sig") as fh:
+            fh.write('Brand=["Acme"],Reporting range=["Quarterly"],Select year=["2025"],Select quarter=["1"]\n'
+                     '"Search query","Search query score","Search query volume","Impressions: Brand Share %","Impressions: Brand Count","Clicks: Brand Count","Purchases: Brand Count"\n'
+                     '"camel milk cream","3","900","1.5","10","4","0"\n')
+        seo = self.p("sqp_seo.csv")
+        p = run(an, cat, sqp, "--out", self.p("an2.json"), "--emit-seo-csv", seo, ok=(1,))
+        self.assertIn("PERIOD_MISMATCH", p.stdout)
+        data = json.load(open(self.p("an2.json"), encoding="utf-8"))
+        cat_items = {i["asin"]: i for i in next(r for r in data["reports"] if r["kind"] == "BA_CATALOG")["items"]}
+        self.assertIn("CLICKS_NO_PURCHASE", " ".join(cat_items["B0AAAAAAA1"]["diagnosis"]))
+        self.assertEqual(data["reports"][0]["marketplace"], "UK")  # GB_ in the file name
+        self.assertIn("camel milk cream", open(seo, encoding="utf-8").read())
+        run(os.path.join(PI, "seo_import.py"), seo, "--marketplace", "UK", "--source-marketplace", "UK", "--product-terms", "cream")
+        unk = self.p("whatever.csv")
+        open(unk, "w").write("a,b\n1,2\n")
+        self.assertIn("UNKNOWN_REPORT", run(an, unk, ok=(1,)).stdout)
+        nomp = self.p("catalog_nomp.csv")
+        open(nomp, "w", encoding="utf-8").write(open(cat, encoding="utf-8-sig").read())
+        self.assertIn("MARKETPLACE_UNKNOWN", run(an, nomp, ok=(1,)).stdout)
+
+    def test_processing_summary_status_layout_and_change_plan(self):
+        """Current Seller Central report: 3 leading status columns, per-code and per-SKU tables, impacted cell = status cell."""
+        import openpyxl
+        keys = ["contribution_sku#1.value", "product_type#1.value", "generic_keyword[marketplace_id=ATVPDKIKX0DER][language_tag=en_US]#1.value",
+                "other_product_image_locator_1[marketplace_id=ATVPDKIKX0DER]#1.media_location"]
+
+        def template(with_status):
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Template"
+            pre = ["::submission_status", "::number_of_attributes_with_errors", "::number_of_attributes_with_other_suggestions"] if with_status else []
+            ws.append(["settings=feedType=256&timestamp=2026-10-11T10%3A00%3A00.000Z"])
+            ws.append(["Use ENGLISH"])
+            ws.append([])
+            ws.append(["Status"] * len(pre) + ["SKU", "Product Type", "Keywords", "Image 1"])
+            ws.append(pre + keys)
+            ws.append(([None] * len(pre)) + ["ABC123", "ACCESSORY", "", ""])
+            rows = [("S1", "air pod procase pods", "https://h.example/a.jpg"), ("S2", "case cover", "https://h.example/b.jpg")]
+            for sku, kw, url in rows:
+                st = (["SUCCESS (OTHER ERROR)", 1, 0] if sku == "S1" else ["SUCCESS", 0, 0]) if with_status else []
+                ws.append(st + [sku, "PORTABLE_ELECTRONIC_DEVICE_COVER", kw, url])
+            return wb
+        rep, feed = self.p("rep_status.xlsx"), self.p("orig_feed.xlsx")
+        wb = template(True)
+        sm = wb.create_sheet("Feed Processing Summary", 0)
+        for r in ([], [], ["Summary"], ["Number of SKUs processed", "", "", 2], ["Number of SKUs successful", "", "", 1],
+                  ["Number of SKUs successful with other errors", "", "", 1], [],
+                  ["Errors and Warnings per Error Code"],
+                  ["#", "Error code", "Category of error", "Store", "Error message", "Affected field (Impacted column)", "Number of errors"],
+                  [1, "5561", "ERROR", "US", "Your generic_keyword contains Trademarked terms [PROCASE]. Remove any trademark terms and resubmit your listing.",
+                   "Number of attributes with errors (B)", 1],
+                  [2, "20000", "ERROR", "US", "Your media at https://h.example/a.jpg couldn't be downloaded due to a timeout.", "Number of attributes with errors (B)", 1],
+                  ["Total number of errors", 2], [],
+                  ["Errors and Warnings per SKU"],
+                  ["#", "Error code", "Category of error", "Store", "Error message", "Affected field (Impacted cell)", "SKU"],
+                  [1, "5561", "ERROR", "US", "Your generic_keyword contains Trademarked terms [PROCASE]. Remove any trademark terms and resubmit your listing.",
+                   "Number of attributes with errors (B7)", "S1"],
+                  [2, "20000", "ERROR", "US", "Your media at https://h.example/a.jpg couldn't be downloaded due to a timeout.",
+                   "Number of attributes with errors (B7)", "S1"]):
+            sm.append(r)
+        wb.save(rep)
+        template(False).save(feed)
+        parsed = self.p("status.json")
+        p = run(os.path.join(ER, "parse_processing_report.py"), rep, "--marketplace", "US", "--json", parsed)
+        self.assertIn("STATUS layout", p.stdout)
+        d = json.load(open(parsed, encoding="utf-8"))
+        by = {f["error_code"]: f for f in d["findings"]}
+        self.assertEqual(by["5561"]["proposed_value"], "air pod pods")
+        self.assertTrue(by["5561"]["attribute"].startswith("generic_keyword"))
+        self.assertTrue(by["20000"]["attribute"].startswith("other_product_image_locator_1"))
+        self.assertEqual(d["submission_status_counts"], {"SUCCESS (OTHER ERROR)": 1, "SUCCESS": 1})
+        self.assertEqual(by["5561"]["cell"], "F7")  # report letters include the 3 status columns ...
+        plan = self.p("plan.json")
+        cells = self.p("plan_cells.json")
+        run(os.path.join(ER, "build_change_plan.py"), parsed, "--feed", feed, "--out", plan, "--approve", "ALL", "--cells-out", cells)
+        pl = json.load(open(plan, encoding="utf-8"))
+        chg = [i for i in pl["items"] if i["kind"] == "CELL_CHANGE"]
+        self.assertEqual((chg[0]["cell"], chg[0]["proposed"]), ("C7", "air pod pods"))  # ... the original feed does not
+        self.assertEqual([i["error_code"] for i in pl["items"] if i["kind"] == "ACTION_ONLY"], ["20000"])
+        out = self.p("orig_feed_v2.xlsx")
+        run(os.path.join(ER, "xlsm_patch.py"), "--source", feed, "--cells", cells, "--out", out, "--sheet", "Template", "--min-row", "7")
+        run(os.path.join(ER, "workbook_guard.py"), "--source", feed, "--output", out, "--sheet", "Template", "--approved", cells)
+        self.assertEqual(openpyxl.load_workbook(out)["Template"]["C7"].value, "air pod pods")
+        # same upload twice is not a re-upload
+        self.assertIn("SAME_REPORT", run(os.path.join(ER, "compare_reports.py"), parsed, parsed, ok=(1,)).stdout)
+        # a changed feed (value differs from the report) is not patched
+        wb2 = openpyxl.load_workbook(feed)
+        wb2["Template"]["C7"] = "edited later"
+        edited = self.p("edited.xlsx")
+        wb2.save(edited)
+        p = run(os.path.join(ER, "build_change_plan.py"), parsed, "--feed", edited, "--out", self.p("plan2.json"), ok=(1,))
+        self.assertIn("'mismatches': 1", p.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

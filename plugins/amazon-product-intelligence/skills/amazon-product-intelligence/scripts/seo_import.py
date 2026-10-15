@@ -42,9 +42,9 @@ from datetime import date, datetime
 from content_check import FORBIDDEN, STRICT_CLAIMS, STOP, find_terms, meaningful, norm_token, tokens
 
 try:  # shared marketplace table (domain, currency, content languages)
-    from marketplaces import info as mp_info, languages as mp_languages, needs_language_choice
+    from marketplaces import info as mp_info, languages as mp_languages, needs_language_choice, norm as mp_norm
 except ImportError:  # pragma: no cover
-    mp_info = mp_languages = needs_language_choice = None
+    mp_info = mp_languages = needs_language_choice = mp_norm = None
 
 SYN = {
     "keyword": ["keyword phrase", "keyword", "keywords", "phrase", "search term", "search query", "suchbegriff", "suchanfrage",
@@ -181,10 +181,19 @@ def read_rows(path):
 
 
 def detect_language(keywords):
+    """Share of each language among the keywords that CAN be classified (brands, models and numbers are neutral).
+    Returns (shares, classified_count)."""
     sample = keywords[:300]
     votes = Counter(l for l in (kw_lang(k) for k in sample) if l)
-    n = max(1, len(sample))
-    return {l: round(c / n, 3) for l, c in votes.most_common()}
+    n = sum(votes.values())
+    return ({l: round(c / n, 3) for l, c in votes.most_common()} if n else {}), n
+
+
+def file_marketplace_hint(path, known):
+    """Marketplace code written in the file name (DE_..., GB_..., ..._US.xlsx); None if absent or ambiguous."""
+    toks = {t.upper() for t in re.split(r"[^A-Za-z]+", os.path.basename(path)) if 2 <= len(t) <= 3}
+    codes = {mp_norm(t) for t in toks if mp_norm and mp_info and mp_info(t)}
+    return codes.pop() if len(codes) == 1 else None
 
 
 def main():
@@ -193,6 +202,8 @@ def main():
     ap.add_argument("--marketplace", required=True, help="any Amazon marketplace code (see marketplaces.py --list)")
     ap.add_argument("--language", help="content language of THIS listing (ISO 639-1). Required when the marketplace has several "
                                        "(CA en/fr, BE fr/nl, AE/SA/EG ar/en, IN en/hi); defaults to the marketplace language otherwise")
+    ap.add_argument("--source-marketplace", default="", help="marketplace the export was taken from (Cerebro/Magnet files carry no marketplace column); "
+                                                                  "if omitted it is read from the file name, else SEO_SOURCE_MARKETPLACE_UNKNOWN")
     ap.add_argument("--allow-languages", default="", help="extra keyword languages to keep as loanwords, e.g. en for DE")
     ap.add_argument("--product-terms", default="", help="comma-separated product-type / model / key attribute terms from the verified TTX")
     ap.add_argument("--competitors", default="")
@@ -255,15 +266,26 @@ def main():
         seen = {str(m).strip().upper() for m in mcols}
         if not any(mp == s or s.endswith(mp) or mp in s for s in seen):
             flags.append(dict(code="SEO_MARKETPLACE_MISMATCH", detail=f"file says {sorted(seen)[:5]}, target {mp}"))
-    shares = detect_language([str(r["keyword"]) for r in sorted(rows, key=lambda r: -(num(r.get("search_volume")) or 0))
-                              if r.get("keyword")])
-    if target_lang and shares:
+    else:
+        declared = mp_norm(a.source_marketplace) if (a.source_marketplace and mp_norm) else None
+        for f in a.files:
+            src_mp = declared or file_marketplace_hint(f, True)
+            if not src_mp:
+                flags.append(dict(code="SEO_SOURCE_MARKETPLACE_UNKNOWN", detail=f"{os.path.basename(f)}: Cerebro/Magnet exports carry no marketplace; "
+                                  "ask the user which marketplace this export is from (or pass --source-marketplace) before using it"))
+            elif src_mp != mp_norm(mp):
+                flags.append(dict(code="SEO_MARKETPLACE_MISMATCH", detail=f"{os.path.basename(f)} is an export from {src_mp}, target is {mp_norm(mp)}: "
+                                  "another market's SEO is never translated or reused"))
+    shares, classified = detect_language([str(r["keyword"]) for r in sorted(rows, key=lambda r: -(num(r.get("search_volume")) or 0))
+                                          if r.get("keyword")])
+    top_share = next(iter(shares.values()), 0)
+    if target_lang and shares and classified >= (2 if top_share >= 0.9 else 15):
         top_lang, top_share = next(iter(shares.items()))
         tgt_share = shares.get(target_lang, 0)
-        if top_lang != target_lang and top_share >= 0.4 and tgt_share < 0.15:
+        if top_lang != target_lang and top_share >= 0.6 and tgt_share < 0.2:
             code = "SEO_LANGUAGE_MISMATCH" if top_lang in allowed_langs else "SEO_MARKETPLACE_MISMATCH"
-            flags.append(dict(code=code, detail=f"keywords look {top_lang} ({top_share:.0%}), but {mp} / language '{target_lang}' "
-                                                f"expects {target_lang} ({tgt_share:.0%}): wrong marketplace or language export?"))
+            flags.append(dict(code=code, detail=f"keywords look {top_lang} ({top_share:.0%} of {classified} classifiable), but {mp} / language "
+                                                f"'{target_lang}' expects {target_lang} ({tgt_share:.0%}): wrong marketplace or language export?"))
 
     # merge exact duplicates
     merged, exact_dups = {}, 0
@@ -420,7 +442,7 @@ def main():
     print(f"SEO SANITIZATION REPORT [{mp}] source date {seo_date} ({date_basis})")
     for k, v in report.items():
         print(f"  {k:32} {v}")
-    print("  language shares:", shares, "| marketplace languages:", allowed_langs, "| target:", target_lang)
+    print("  language shares (of classifiable keywords):", shares, "| marketplace languages:", allowed_langs, "| target:", target_lang)
     for f in flags:
         print(f"  FLAG {f['code']}: {f['detail']}")
     for x in out_items[:12]:

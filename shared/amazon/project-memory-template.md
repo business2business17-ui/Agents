@@ -1,5 +1,12 @@
 # Amazon Project Memory
 
+## Project identity
+- Project name:
+- Brand:
+- Seller account label (no credentials):
+- Marketplaces / listing languages:
+- Category / product type per product group:
+
 ## Mode
 `SMART` <!-- AUTOPILOT | SMART | GUIDED (per agent if different) -->
 

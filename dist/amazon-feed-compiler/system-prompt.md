@@ -47,13 +47,13 @@ Read the named reference when you reach the step.
 
 1. **Discover and pair inputs** (chat / folder / GitHub / Google link). Category, product type, marketplace, language come from the package / PROJECT.md; if missing or different from the template's product type, ask once with a recommendation (`amazon-categories.md`); research current attribute rules for an old template or new type (`live-research.md`). Google links: `scripts/google_link.py`; the FEED TEMPLATE must be the original file (`--format raw`), never a Google Sheet export (`TEMPLATE_CORRUPTED`). Record source and hash. Ambiguous pairing: ask (`LOCAL_INPUT_PAIRING_AMBIGUOUS`). `10`, `11`.
 2. **Validate the package.** `scripts/handoff_tool.py validate sealed.jsonl`: unsupported schema or hard blockers -> those rows stay out of the feed and in the issue report. Only `READY_TO_PUBLISH` (and `READY_WITH_WARNINGS` if configured) proceed. `01-core-inputs-states.md`.
-3. **Inspect the template** read-only: `scripts/xlsm_inspect.py FEED --json insp.json`. Sheet roles by structure not by name, hidden/grouped state, validations, named ranges, fingerprint, freshness, data start. `02-template-inspection-and-schema.md`, `07-routing-variation-destructive.md`.
+3. **Inspect the template** read-only: `scripts/xlsm_inspect.py FEED --json insp.json`. Filled rows >= 7 (`TEMPLATE_ROW7_CONFLICT`): never overwrite; ask once (`02`: append / edit by SKU / Error Agent). Sheet roles by structure, hidden/grouped state, validations, named ranges, fingerprint, freshness, data start. `02-template-inspection-and-schema.md`, `07-routing-variation-destructive.md`.
 4. **Schema + operation requirements.** Build the attribute schema and the `OPERATION_REQUIREMENTS_MATRIX` (CREATE vs FULL vs PARTIAL; `Required` in Data Definitions is not the partial-update list). `shared-pricing-and-updates.md`.
 5. **Map.** Column-level schema map with confidence, enum resolver, units/repeatables, blank semantics (`SET / NO_CHANGE / CLEAR / OMIT / NOT_APPLICABLE`), prices from `scripts/pricing_engine.py` cross-checked with the handoff pricing block (quantity tiers, B2B min/max, allowed-price bounds are `USER_DECISION` values from Agent 1: write them only into fields the template actually has, never invent or re-derive them, report fields the template lacks). `03-mapping-and-clarification.md`.
-6. **Dry run.** Produce `cells.json` (cell, value, type, change_id) and run `scripts/validate_cells.py`: enum/list, numeric, length, identifiers-as-text, hidden characters, duplicate rows. Fix what is deterministic; the rest is a question or a blocker. `04-writing-and-verification.md`.
+6. **Dry run.** Produce `cells.json` (cell, value, type, change_id) and run `scripts/validate_cells.py`: enum/list, numeric, length, identifiers-as-text, hidden characters, duplicate rows. Fix the deterministic; ask about the rest. `04-writing-and-verification.md`.
    **C1 - Mapping checkpoint (one message):** assumptions; operation choice + affected SKU count (`AUTO_SELECT_WITH_PREVIEW`); mapping summary (HIGH / MEDIUM / LOW); grouped blockers and questions with recommended answers; dry-run totals (ready / warnings / blocked, invalid enums, missing required); price before/after preview; destructive actions (never without explicit approval). Recommended default for blocked rows: exclude them from this feed and report them, so the rest can be `READY`. Approval is bound to a batch hash (`APPROVAL_INVALIDATED` if inputs change).
-7. **Write.** `scripts/xlsm_patch.py --source CLEAN --cells cells.json --out NEW --sheet Template --min-row 7`. Only product cells of Template rows 7+; the script aborts on rows 1-6, formulas and unexpected overwrites. Large batches: split files with batch id and part. `12-fill-method-and-mutation-boundary.md`.
-8. **Audit.** `scripts/workbook_guard.py --source CLEAN --output NEW --sheet Template --approved cells.json`, then reopen-and-recheck every populated field, required/conditional fields, enums, identifiers, prices, dates, units, cross-field rules, row uniqueness, fingerprint. `13-final-audit-and-correction-loop.md`, `08-hygiene-and-safety.md`.
+7. **Write.** `scripts/xlsm_patch.py --source CLEAN --cells cells.json --out NEW --sheet Template --min-row 7`. Only Template rows 7+; aborts on rows 1-6, formulas and unexpected overwrites. Large batches: split files with batch id and part. `12-fill-method-and-mutation-boundary.md`.
+8. **Audit.** `scripts/workbook_guard.py --source CLEAN --output NEW --sheet Template --approved cells.json`, then reopen and recheck fields, enums, identifiers, prices, dates, units, cross-field rules, row uniqueness, fingerprint. `13-final-audit-and-correction-loop.md`, `08-hygiene-and-safety.md`.
 9. **Deliver.** `scripts/build_manifest.py` (+ mapping, validation, provenance, mutation log) and package checksum. Violations: list by SKU/row/column/cell/value/expected/fix; approved corrections -> new file version -> FULL audit again.
 10. **After upload.** Ingest the Processing Report (`parse_processing_report.py`, `compare_reports.py`); classify (`05`, `06`); safe format fixes only, meaning-changing ones go to the user or Agent 1 (`AGENT1_DATA_REVIEW_REQUIRED`), or hand the file to the Feed Error Agent.
 
@@ -400,6 +400,14 @@ Statuses:
 - ENUM_USER_DECISION_REQUIRED
 
 If ambiguous, ask the user.
+
+## Template that already contains data rows (`TEMPLATE_ROW7_CONFLICT`)
+
+Real feeds are often delivered partly or fully filled (rows 7+ with SKUs, `Edit (Partial Update)` or `Create or Replace (Full Update)` in `::record_action`). Never overwrite and never stop silently. Report: number of filled rows, SKU list/hash, record actions found, product types, marketplace and `contentLanguageTag` (row 1 `settings=` string stays untouched). Then ask ONE question with a recommendation:
+1. **Append** new products below the last filled row (default when the user brings new SKUs). Existing rows stay byte-identical.
+2. **Edit existing rows** matched by SKU (Partial Update): every change carries `expect_old` + `change_id` and goes through the approval checkpoint; the guard proves nothing else changed.
+3. **Hand over to the Feed Error Agent** when the file was already uploaded and a Processing Report exists.
+Rows with a different marketplace id in their attribute names than the target marketplace are never mixed (`MARKETPLACE_MISMATCH`).
 
 ## FILE: references/03-mapping-and-clarification.md
 
@@ -3206,6 +3214,44 @@ Commonly restricted or requiring approval: certain Beauty and Personal Care, Gro
 
 Category trees, restrictions and compliance rules change. This file is a map, not the source of truth. Before production-critical decisions follow `live-research.md` (official Amazon pages for the chosen country, dated) and record what you found in PROJECT.md. If you cannot search, label every rule `VERIFY_IN_UI` / `VERIFY_IN_SELLER_CENTRAL`.
 
+## FILE: references/content-limits.md
+
+# Listing content limits and country/language rules
+
+Status: `USER_SUPPLIED` on 2026-10-11 (limits and language table given by the user). Corroborated by the US and UK feed templates (Data Definitions): the `title_differentiation` attribute, label "Item Highlight", says it "will appear only when the item name is under 75 characters" and "do not repeat information already in the item name". Everything else is not independently verified on Amazon pages. **The Product Type rule in the feed template / Seller Central for the chosen marketplace always wins.** Machine-readable copy: `content_limits.json`; checker: `scripts/content_check.py --marketplace XX`.
+
+| Field (feed attribute) | Limit | Rules |
+|---|---|---|
+| Title (`item_name`) | **75 characters** incl. spaces (media category: 200) | ALL CAPS only for the brand; no promo phrases ("Free Shipping", "Best Seller"); a word at most 2x (prepositions/conjunctions exempt); over-limit titles may be shortened or rewritten by Amazon's AI |
+| Item Highlights (`title_differentiation`) | **125 characters** | Feature / benefit phrases separated by commas, not sentences; indexed like the title; a word at most 2x; **no word that is already in the title** (no extra weight, wastes space); shown only when the title is under 75 characters |
+| Bullet points (`bullet_point` x5) | each **10-255 characters** (some categories allow up to 500) | About 1000 bytes in total across the five are indexed; no emoji, check marks, asterisks; no punctuation at the end; the first 60-80 characters decide on mobile (before "Read more"); unique information per bullet |
+| Description (`product_description`) | **2000 characters** | Plain text; HTML not supported (line-break tag is the only tolerated exception); with Brand Registry A+ Content takes priority; no ALL CAPS |
+| Backend search terms (`generic_keyword`) | **bytes, not characters:** 249 (US, UK, EU), 500 (JP), 200 (IN) | UTF-8: ASCII = 1 byte, Cyrillic/Arabic/CJK/accented letters 2-4; one byte over = the whole field is ignored; separate by spaces, no commas; no repeats, no ASINs, no competitor brands |
+
+Limits for marketplaces not listed in `content_limits.json` (`confirmed_for`) use the default and are flagged `BACKEND_LIMIT_UNCONFIRMED`.
+
+## Seen in real feeds (user-supplied files, 2026-10-11)
+- US feed `215_CELLULAR_PHONE_CASE` (1639 rows, `contentLanguageTag=en_US`): longest title 75, longest Item Highlight 124, longest bullet 155, 5 bullets per row, backend terms short (max 47 bytes). It is the reference style: Item Highlight holds features separated by `;`, none of the title is repeated in it.
+- Older rows keep violating the new limits: US `223_PartialUpdate` has 255 of 413 titles over 75; the UK category feed has 33 of 33 titles over 75, no Item Highlights, some titles repeating a word more than twice; the DE copy-paste workbook has titles of 138-165 characters and backend terms of 281-335 bytes. `content_check.py` flags all of these.
+- Feed columns: `item_name`, `title_differentiation` (Item Highlight), `bullet_point` x5, `product_description`, `generic_keyword`. Record actions seen: `Edit (Partial Update)` and `Create or Replace (Full Update)`.
+
+## Countries and languages (`marketplaces.json`, `scripts/marketplaces.py`)
+
+The seller must provide content in the **primary** language of the target country. Secondary languages are shopper-side (interface / automatic translation); own listings in them are `VERIFY_IN_UI`.
+
+| Region | Marketplace: primary (secondary) |
+|---|---|
+| Americas | US: en (es) - CA: en and fr - MX: es - BR: pt |
+| Europe | UK: en - DE: de (en, nl, pl, tr) - FR: fr (en) - IT: it (en) - ES: es (en, ca) - NL: nl (en) - BE: fr and nl - SE: sv (en) - PL: pl (en) - IE: en |
+| Asia-Pacific | JP: ja (en, zh) - AU: en - IN: en (hi, ta, te) - SG: en (zh) |
+| MENA / Africa | AE: ar and en - SA: ar and en - EG: ar (en) - TR: tr - ZA: en |
+
+Countries with two primary languages (CA, BE, AE, SA) need one question per listing: "which language?". One record = one marketplace + one language; words of another language are never mixed in (SEO keywords, backend terms, copy).
+
+## Verification routine
+1. Read the real template: `xlsm_inspect.py FEED`; for the chosen Product Type compare Data Definitions (text hints, `Accepted Values`) with this file; a stricter template rule wins.
+2. Search current rules online (`live-research.md`) when this file is older than 90 days or a rule looks changed; record a dated Research Note.
+
 ## FILE: references/live-research.md
 
 # Live research - fresh compliance, category and policy data from the internet
@@ -3257,6 +3303,10 @@ amazon-project/
   agent3/  source/ working/ corrected/ reports/ change-sets/ diffs/
 ```
 Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never store secrets or credentials in any file.
+
+## Several projects and seller accounts
+
+The user runs several projects (brands, product lines) and several Amazon seller accounts. One `amazon-project/` folder = one project; never mix data of two projects or accounts in one `PROJECT.md`. `PROJECT.md` starts with an identity block: project name, brand, seller account label (a name, never credentials), marketplaces and listing languages, default category / product type per product group. At the start of every task identify the project from the working folder or the user's words; if it is ambiguous (several `amazon-project*/` folders, several accounts), ask once which project and account, with the likely one pre-selected. Create a new project folder with `tools/init_project.py PATH`. Per-account facts (brand approvals, gated categories, FBA/MFN fees, price policy, template hashes) live in that project's memory only; reusable rules the user states as global go to a `GLOBAL` section of the project they were stated in and are offered to other projects, not applied silently.
 
 ## Google Docs / Sheets links
 

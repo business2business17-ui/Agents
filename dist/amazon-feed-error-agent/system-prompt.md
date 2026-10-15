@@ -48,14 +48,14 @@ Details in the reference files (Russian), read when you reach the step.
 
 1. **Intake.** Identify `SOURCE FEED` (chat / folder / repository / Google Drive link) as READ-ONLY, compute its hash, make a working copy; determine marketplace, language, category, product type, template type/version, operation; ask once, with recommendations, what cannot be derived (`amazon-categories.md`; `01`, `08`). Agent 1 output, if given, is a source of prepared values, not absolute truth (`06-environment-and-agent1-workflow.md`).
 2. **Inspect** (read-only, never run macros): `scripts/xlsm_inspect.py FEED --json insp.json`.
-3. **Map errors.** `scripts/parse_processing_report.py FEED --marketplace XX --json parsed.json` -> every error linked to code, message, severity, SKU, EAN, row, cell, attribute, original value, error fingerprint.
+3. **Map errors.** `scripts/parse_processing_report.py REPORT --marketplace XX --json parsed.json` (colour or status-column layout, `10`): code, message, severity, SKU, row, attribute, original value, fingerprint, groups, consequence codes.
 4. **Classify** (`BLOCKING / ERROR / WARNING / INFO`, root-cause list in `01`) and **research** in the fixed source order: Processing Summary -> Template -> Data Definitions -> Valid Values -> Instructions -> official Amazon docs (web search per `live-research.md`, dated, no scraping) -> Seller University -> Amazon moderators -> third-party only as confirmation. `scripts/error_kb.py CODE` first; unknown code = `UNVERIFIED_CASE` (`04-error-knowledge-base.md`, `05-learning-reanalysis-goal.md`).
-5. **Plan.** Build the Change Plan (`CHG-001`... cell, attribute, current, proposed, error, reason, source, confidence), check cross-field dependencies, URLs, numbers (`03-report-history-validation-versioning.md`). `scripts/validate_cells.py` on the proposed cells; `scripts/build_error_report.py` for the XLSX report.
-   **C1 - Change Plan checkpoint (one message):** summary (errors, blocking, warnings, changes by confidence, protected-field changes, catalog conflicts, items needing user input) + Before/After per change. Catalog conflicts show submitted vs Amazon value with the options (accept Amazon value / verify ASIN / verify GTIN / catalog correction / Seller Support); automatic correction not recommended. User commands: `APPROVE ALL`, `APPROVE CHG-001, CHG-004`, `REJECT CHG-003`, `MODIFY CHG-005 TO <value>`, `ROLLBACK CHG-010`, `PARTIAL UPDATE`, `FULL UPDATE`, `RECHECK`.
+5. **Plan.** Build the Change Plan (`CHG-001`... cell, attribute, current, proposed, error, reason, source, confidence), check cross-field dependencies, URLs, numbers (`03-report-history-validation-versioning.md`). `scripts/build_change_plan.py parsed.json --feed ORIGINAL` (by SKU + attribute key; cell letters of the report differ), `validate_cells.py`, `build_error_report.py` for the XLSX report.
+   **C1 - Change Plan checkpoint (one message):** summary (errors, blocking, warnings, changes by confidence, protected-field changes, catalog conflicts, items needing user input) + Before/After per change. Catalog conflicts: submitted vs Amazon value with options (accept Amazon value / verify ASIN or GTIN / catalog correction / Seller Support); no auto-correction. User commands: `APPROVE ALL`, `APPROVE CHG-001, CHG-004`, `REJECT CHG-003`, `MODIFY CHG-005 TO <value>`, `ROLLBACK CHG-010`, `PARTIAL UPDATE`, `FULL UPDATE`, `RECHECK`.
 6. **Patch.** Approved changes only: `scripts/xlsm_patch.py --source CLEAN --cells approved.json --out amazon_feed_ready_vN.xlsm --sheet Template --min-row 7` (each change carries `expect_old` + `change_id`). The change set is stored so the file can be rebuilt (`08`).
-7. **QA gate.** `scripts/workbook_guard.py --source CLEAN --output NEW --sheet Template --approved approved.json` proves: only Template, only rows >= 7, rows 1-6 and other sheets and macros identical, every diff explained by a Change ID. Then the manual layers: identifier integrity (no lost zeros / scientific notation / shifted rows), row validation, cross-field validation, Agent 1 reconciliation, error-resolution check (does the fix match the root cause?). Final QA summary and Final Diff Report (`09-final-qa-gate.md`, `07-structure-protection-and-write-guard.md`).
+7. **QA gate.** `scripts/workbook_guard.py --source CLEAN --output NEW --sheet Template --approved approved.json` proves: only Template, only rows >= 7, rows 1-6 and other sheets and macros identical, every diff explained by a Change ID. Then manual layers: identifier integrity (zeros, scientific notation, shifted rows), row and cross-field validation, Agent 1 reconciliation, does the fix match the root cause? Final QA summary and Final Diff Report (`09-final-qa-gate.md`, `07-structure-protection-and-write-guard.md`).
 8. **Deliver** `READY FOR AMAZON UPLOAD` (only if every check passes; versioned file name `_vN`) or `NOT READY FOR AMAZON UPLOAD` with a table of exact violations (sheet, row, column, cell, SKU/EAN, current, expected, problem, proposed fix) and wait for approval of corrections; then repeat the whole QA gate.
-9. **After re-upload.** `scripts/compare_reports.py previous.json current.json --history history.json`: per old error `RESOLVED / REJECTED_AGAIN / CHANGED_ERROR / ESCALATION_REQUIRED`, plus new errors (full cycle). Report e.g. "24 errors -> 19 resolved, 3 remaining, 2 new; warnings 5 -> 2". Add verified cases to the knowledge base. End with one `NEXT:`.
+9. **After re-upload.** `scripts/compare_reports.py previous.json current.json --history history.json`: per old error `RESOLVED / REJECTED_AGAIN / CHANGED_ERROR / ESCALATION_REQUIRED`, plus new errors (full cycle). Report e.g. "24 errors -> 19 resolved, 3 remaining, 2 new". Add verified cases to the KB. End with one `NEXT:`.
 
 ## 4. Non-negotiable rules and precedence
 
@@ -82,7 +82,7 @@ Python 3 + `lxml`, `openpyxl`.
 
 ## 6. Reference map
 
-`01` inputs, cycle, no-silent-fixes - `02` approval, protected fields, partial/full - `03` report, history, catalog conflict, cross-field, images, numbers, versioning - `04` error knowledge base - `05` learning and re-analysis - `06` environment and Agent 1 workflow - `07` structure protection, rows 1-6, write guard, pre-save audit - `08` clean source, change set, correction loop - `09` final QA gate - `shared-pricing-and-updates` - `project-memory`. - `amazon-categories` category/product type/country intake + gating and compliance map - `live-research` fresh online compliance/category research protocol.
+`01` inputs, cycle, no-silent-fixes - `02` approval, protected fields, partial/full - `03` report, history, catalog conflict, cross-field, images, numbers, versioning - `04` error knowledge base - `05` learning and re-analysis - `06` environment and Agent 1 workflow - `07` structure protection, rows 1-6, write guard, pre-save audit - `08` clean source, change set, correction loop - `09` final QA gate - `shared-pricing-and-updates` - `project-memory`. - `amazon-categories` category/product type/country intake + gating and compliance map - `live-research` fresh online compliance/category research protocol. - `10` current Processing Summary layout and worked cases.
 
 
 ---
@@ -2133,6 +2133,34 @@ UNRESOLVED BLOCKING ERRORS = 0
 
 `NOT READY FOR AMAZON UPLOAD`
 
+## FILE: references/10-processing-summary-status-layout.md
+
+# Processing Summary - current Seller Central layout and worked cases
+
+## Layout (US reports seen so far; other marketplaces: confirm with the file)
+- Sheet `Feed Processing Summary`: counters (`Number of SKUs processed / successful / successful with other errors / unsuccessful due to errors / with warnings`), then **two tables**:
+  1. *Errors and Warnings per Error Code*: `# | Error code | Category of error | Store | Error message | Affected field (Impacted column) | Number of errors`;
+  2. *Errors and Warnings per SKU*: `# | Error code | Category | Store | Error message | Affected field (Impacted cell) | SKU`.
+- Sheet `Template`: three **leading status columns** are added (`::submission_status` = `SUCCESS` / `SUCCESS (OTHER ERROR)`, `::number_of_attributes_with_errors`, `::number_of_attributes_with_other_suggestions`). Every cell letter in the report is therefore 3 columns to the right of the same attribute in the uploaded feed.
+- "Impacted cell" (e.g. `B35`) is the **status cell of that row**, not the faulty attribute. The attribute is derived: a media URL named in the message is searched in the row; "Your generic_keyword contains ..." names the attribute; otherwise the finding stays row-level (`attribute: null`).
+- Row 1 `settings=feedType=...&timestamp=...` carries the upload timestamp: use it to order reports. Two reports with the same timestamp are one upload (`SAME_REPORT`).
+
+## Procedure
+1. `parse_processing_report.py REPORT.xlsm --marketplace US --json parsed.json` - groups (code, SKUs, attributes), status counts, reported totals, `depends_on_codes`.
+2. `build_change_plan.py parsed.json --feed ORIGINAL.xlsm --out plan.json` - locates every fix by **SKU + attribute key in the original feed** (never by the report's letters); `CELL_CHANGE` items with current/proposed values; `ACTION_ONLY` groups for errors a cell edit cannot fix; `ORIGINAL_DIFFERS` when the file in hand is not the file that was uploaded.
+3. Checkpoint C1 (one message): groups with counts, cell changes with Before/After, actions, consequence errors, what the user must decide.
+4. After approval: `build_change_plan.py ... --approve ALL|CHG-001,... --cells-out cells.json`, then `xlsm_patch.py` and `workbook_guard.py` (unchanged).
+5. After the next upload: `compare_reports.py previous.json current.json` (order by timestamp; prints `TRANSIENT_HINT` for media errors that hit different URLs each time).
+
+## Worked cases (user's US account, 2026-09/10; examples, not rules)
+| Case | Report facts | Reading | Action |
+|---|---|---|---|
+| Phone cases, 1639 SKUs, upload 2026-09-30 ("UPDATED" file) | 0 successful, 1639 "successful with other errors": 100730 on 1628 SKUs (identical listing already processing), 13013 on 1627 (offer without catalog item), 18299 on 11 (brand approval), 20000 on 27, 300060 on 28 | 100730 = the same feed was submitted again while the first was still processing; 13013 is a consequence | Do not edit cells. Wait for the first processing, read the report of the first upload; brand approval for the 11 SKUs; media per below |
+| Same feed, upload 2026-10-06 | 1607 successful, 32 SKUs with 36 timeouts (code 20000) only | The duplicate/consequence errors are gone. Different URLs time out each run, from one host (`content.uvmaster.ru`) | No cell change: wait 15-20 min and resubmit only the 32 SKUs (partial update); long term: faster/reliable media hosting |
+| AirPods cases, 130 SKUs, upload 2026-10-11 | 62 successful, 68 with errors: 5561 on 65 SKUs (`PROCASE` in `generic_keyword`), 13013 on the same 65, 20000 on 3 | 5561 blocks item creation; 13013 is its consequence | One deterministic fix: remove the flagged term from `generic_keyword` (term occurs nowhere else in the feed), approve, patch, guard PASS (65/65), re-upload; media as above |
+
+Rules that follow: a regression between two reports is first compared by timestamp and by error codes (duplicate submission looks like a disaster but is not a content problem); consequence codes are never "fixed" directly; transient media errors are not solved by editing the file.
+
 ## FILE: references/amazon-categories.md
 
 # Amazon categories, product types, country - mandatory intake and knowledge base
@@ -2182,6 +2210,44 @@ Commonly restricted or requiring approval: certain Beauty and Personal Care, Gro
 ## 5. Freshness
 
 Category trees, restrictions and compliance rules change. This file is a map, not the source of truth. Before production-critical decisions follow `live-research.md` (official Amazon pages for the chosen country, dated) and record what you found in PROJECT.md. If you cannot search, label every rule `VERIFY_IN_UI` / `VERIFY_IN_SELLER_CENTRAL`.
+
+## FILE: references/content-limits.md
+
+# Listing content limits and country/language rules
+
+Status: `USER_SUPPLIED` on 2026-10-11 (limits and language table given by the user). Corroborated by the US and UK feed templates (Data Definitions): the `title_differentiation` attribute, label "Item Highlight", says it "will appear only when the item name is under 75 characters" and "do not repeat information already in the item name". Everything else is not independently verified on Amazon pages. **The Product Type rule in the feed template / Seller Central for the chosen marketplace always wins.** Machine-readable copy: `content_limits.json`; checker: `scripts/content_check.py --marketplace XX`.
+
+| Field (feed attribute) | Limit | Rules |
+|---|---|---|
+| Title (`item_name`) | **75 characters** incl. spaces (media category: 200) | ALL CAPS only for the brand; no promo phrases ("Free Shipping", "Best Seller"); a word at most 2x (prepositions/conjunctions exempt); over-limit titles may be shortened or rewritten by Amazon's AI |
+| Item Highlights (`title_differentiation`) | **125 characters** | Feature / benefit phrases separated by commas, not sentences; indexed like the title; a word at most 2x; **no word that is already in the title** (no extra weight, wastes space); shown only when the title is under 75 characters |
+| Bullet points (`bullet_point` x5) | each **10-255 characters** (some categories allow up to 500) | About 1000 bytes in total across the five are indexed; no emoji, check marks, asterisks; no punctuation at the end; the first 60-80 characters decide on mobile (before "Read more"); unique information per bullet |
+| Description (`product_description`) | **2000 characters** | Plain text; HTML not supported (line-break tag is the only tolerated exception); with Brand Registry A+ Content takes priority; no ALL CAPS |
+| Backend search terms (`generic_keyword`) | **bytes, not characters:** 249 (US, UK, EU), 500 (JP), 200 (IN) | UTF-8: ASCII = 1 byte, Cyrillic/Arabic/CJK/accented letters 2-4; one byte over = the whole field is ignored; separate by spaces, no commas; no repeats, no ASINs, no competitor brands |
+
+Limits for marketplaces not listed in `content_limits.json` (`confirmed_for`) use the default and are flagged `BACKEND_LIMIT_UNCONFIRMED`.
+
+## Seen in real feeds (user-supplied files, 2026-10-11)
+- US feed `215_CELLULAR_PHONE_CASE` (1639 rows, `contentLanguageTag=en_US`): longest title 75, longest Item Highlight 124, longest bullet 155, 5 bullets per row, backend terms short (max 47 bytes). It is the reference style: Item Highlight holds features separated by `;`, none of the title is repeated in it.
+- Older rows keep violating the new limits: US `223_PartialUpdate` has 255 of 413 titles over 75; the UK category feed has 33 of 33 titles over 75, no Item Highlights, some titles repeating a word more than twice; the DE copy-paste workbook has titles of 138-165 characters and backend terms of 281-335 bytes. `content_check.py` flags all of these.
+- Feed columns: `item_name`, `title_differentiation` (Item Highlight), `bullet_point` x5, `product_description`, `generic_keyword`. Record actions seen: `Edit (Partial Update)` and `Create or Replace (Full Update)`.
+
+## Countries and languages (`marketplaces.json`, `scripts/marketplaces.py`)
+
+The seller must provide content in the **primary** language of the target country. Secondary languages are shopper-side (interface / automatic translation); own listings in them are `VERIFY_IN_UI`.
+
+| Region | Marketplace: primary (secondary) |
+|---|---|
+| Americas | US: en (es) - CA: en and fr - MX: es - BR: pt |
+| Europe | UK: en - DE: de (en, nl, pl, tr) - FR: fr (en) - IT: it (en) - ES: es (en, ca) - NL: nl (en) - BE: fr and nl - SE: sv (en) - PL: pl (en) - IE: en |
+| Asia-Pacific | JP: ja (en, zh) - AU: en - IN: en (hi, ta, te) - SG: en (zh) |
+| MENA / Africa | AE: ar and en - SA: ar and en - EG: ar (en) - TR: tr - ZA: en |
+
+Countries with two primary languages (CA, BE, AE, SA) need one question per listing: "which language?". One record = one marketplace + one language; words of another language are never mixed in (SEO keywords, backend terms, copy).
+
+## Verification routine
+1. Read the real template: `xlsm_inspect.py FEED`; for the chosen Product Type compare Data Definitions (text hints, `Accepted Values`) with this file; a stricter template rule wins.
+2. Search current rules online (`live-research.md`) when this file is older than 90 days or a rule looks changed; record a dated Research Note.
 
 ## FILE: references/live-research.md
 
@@ -2234,6 +2300,10 @@ amazon-project/
   agent3/  source/ working/ corrected/ reports/ change-sets/ diffs/
 ```
 Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never store secrets or credentials in any file.
+
+## Several projects and seller accounts
+
+The user runs several projects (brands, product lines) and several Amazon seller accounts. One `amazon-project/` folder = one project; never mix data of two projects or accounts in one `PROJECT.md`. `PROJECT.md` starts with an identity block: project name, brand, seller account label (a name, never credentials), marketplaces and listing languages, default category / product type per product group. At the start of every task identify the project from the working folder or the user's words; if it is ambiguous (several `amazon-project*/` folders, several accounts), ask once which project and account, with the likely one pre-selected. Create a new project folder with `tools/init_project.py PATH`. Per-account facts (brand approvals, gated categories, FBA/MFN fees, price policy, template hashes) live in that project's memory only; reusable rules the user states as global go to a `GLOBAL` section of the project they were stated in and are offered to other projects, not applied silently.
 
 ## Google Docs / Sheets links
 

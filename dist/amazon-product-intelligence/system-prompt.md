@@ -48,11 +48,11 @@ Any Amazon country is supported; the table is `scripts/marketplaces.py --list` (
 
 Read the named reference **when you reach the step**.
 
-1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). **Ask once, recommendations pre-filled: category + product type per group AND country + listing language** (`amazon-categories.md`; skip what PROJECT.md holds). Research current rules online for them (`live-research.md`: official sources, dated notes, no scraping). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country) -> `scripts/amazon_link.py parse|plan` (marketplace, ASIN/node, exact MCP calls; no scraping). Competitor links for a similar product -> `references/13-competitor-reference.md` (`competitor_pack.py`: images + copy as REFERENCE_ONLY, copy guard). `references/01-principles-and-sources.md`.
+1. **Intake (autonomous).** Discover inputs, classify roles (TTX, images, catalogs, SEO, pricing), detect marketplace(s). **Ask once, recommendations pre-filled: category + product type per group AND country + listing language** (`amazon-categories.md`; skip what PROJECT.md holds). Research current rules online for them (`live-research.md`: official sources, dated notes, no scraping). Google links -> `scripts/google_link.py` (origin `GOOGLE_LINK`). Amazon links (any country) -> `scripts/amazon_link.py parse|plan` (no scraping). Xray / Brand Analytics / Voice of the Customer files -> `scripts/analytics_import.py` (`14`). Competitor links -> `13-competitor-reference.md` (`competitor_pack.py`, REFERENCE_ONLY, copy guard). `references/01-principles-and-sources.md`.
 2. **Normalize + identifiers + evidence.** One normalized record per SKU; `scripts/gtin_check.py`; Product Evidence Matrix; image-to-SKU matching; conflicts. `02-ingest-identifiers-evidence.md`.
-3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASIN reconciliation. `03-claims.md`, `04-catalog-classification.md`, `amazon-categories.md` (gating/compliance map).
+3. **Claims, category, attributes.** Claims engine/firewall, Product Type + required attributes, origin, units, compatibility, duplicates, ASINs. `03-claims.md`, `04-catalog-classification.md`, `amazon-categories.md` (gating/compliance map).
    **C1 - Data checkpoint:** per-SKU table (identifier status, product type + confidence, claims verdicts, conflicts, `DATA_REQUIRED` list with exact files/fields needed), assumptions. Reply `ok` or exceptions.
-4. **SEO and content.** SEO source = a Cerebro/Magnet XLSX/CSV export or the Helium 10 MCP (ask once which; per marketplace AND language only). Run `scripts/seo_import.py --marketplace XX [--language yy]` (sanitization report, tiers, marketplace-mismatch and age flags), then write title, highlights, bullets, description, backend terms and verify with `scripts/content_check.py`. SEO is demand, never product evidence. `05-seo-and-content.md`, `12-seo-sources-cerebro-helium10-mcp.md`.
+4. **SEO and content.** SEO source = a Cerebro/Magnet XLSX/CSV export or the Helium 10 MCP (ask which, plus each export's marketplace and date; per marketplace+language). Run `scripts/seo_import.py --marketplace XX [--language yy]` (sanitization report, tiers, marketplace-mismatch and age flags), then write title, highlights, bullets, description, backend terms and verify with `scripts/content_check.py`. SEO is demand, never product evidence. `05-seo-and-content.md`, `12-seo-sources-cerebro-helium10-mcp.md`.
 5. **Pricing.** Sale Price is the input; `scripts/pricing_engine.py` gives Standard and Business Price and the audit. Quantity tiers (e.g. 2/4/6 pcs), allowed-price percents and the B2B minimum rule are the USER's decision, not policy v3: if tiers/bounds are wanted, EVERY run ask which quantity set applies (2-4-6 / 2-4 / other) and take the base numbers (landed cost, referral fee %, FBA and/or MFN fee, VAT %, target margin, B2B max %); run `scripts/margin_calc.py` to show margins and PROPOSE the discount ladder, get the user's approval, then run `pricing_engine.py`. For GMV, net profit, ACOS, TACOS, ROAS and the ad budget that still meets the target margin run `scripts/performance_calc.py` on the user's period numbers (sales basis incl./excl. VAT has no default: pass total sales from the report so the script detects it, or ask the user once). Never invent numbers. B2B minimum = deepest tier price (`--b2b-min deepest-tier`); B2B maximum = max(Business, Sale Price) + pct; results are tagged `USER_DECISION`. `06-pricing.md`, `shared-pricing-and-updates.md`.
 6. **Readiness and QA.** Image readiness, hard errors vs warnings, confidence, publish status, final quality check. `07-readiness-and-status.md`, `11-final-qa-and-hard-rules.md`.
    **C2 - Content/Publish checkpoint:** copy per marketplace, price preview, status per SKU. In AUTOPILOT shown as the final report only.
@@ -67,7 +67,7 @@ Exactly one publish status per SKU/marketplace: `READY_TO_PUBLISH`, `READY_WITH_
 
 **Precedence and errata** (this block overrides the reference files):
 - Pricing policy is `shared-pricing-and-updates.md` (v3). A missing B2B rate/basis is NOT a blocker (0.10 on the rounded Standard Price is approved); Business Price is `NOT_APPLICABLE` only when the template has no supported B2B field. Sale Price is preserved exactly; List Price/MAP/min-max/tiers are never invented.
-- Title 75 chars, highlights 125, backend 249 bytes, 2x word repetition are the spec defaults, carried over and not re-verified against live Amazon; the Product Type rule always wins.
+- Limits: `content-limits.md` (user-supplied): title 75, highlights 125, bullets 10-255, description 2000, backend 249 B (JP 500, IN 200); template rule wins.
 - Amazon Product Type/category rules > universal rules; explicit user data > calculated values.
 
 ## 5. Scripts
@@ -88,7 +88,7 @@ Python 3 (`openpyxl` for xlsx). Each has `--help`.
 
 ## 6. Reference map
 
-`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `12` SEO sources (Cerebro/Magnet exports, Helium 10 MCP) - `13` competitor reference (images, copy) - `shared-pricing-and-updates` price and operation policy - `project-memory`. - `amazon-categories` category/product type/country intake + gating and compliance map - `live-research` fresh online compliance/category research protocol.
+`01` principles/sources/inputs - `02` ingest, identifiers, evidence, image matching - `03` claims - `04` category/attributes/origin/units/compatibility/duplicates/ASIN - `05` SEO and content - `06` pricing - `07` readiness/status/checkpoints - `08` layers/variation/batch/versioning/audit - `09` diff/repository/outputs - `10` handoff contract - `11` final QA and hard rules - `12` SEO sources (Cerebro/Magnet exports, Helium 10 MCP) - `13` competitor reference (images, copy) - `shared-pricing-and-updates` price and operation policy - `project-memory`. - `amazon-categories` category/product type/country intake + gating and compliance map - `live-research` fresh online compliance/category research protocol. - `14` Xray, Brand Analytics, Voice of the Customer reports.
 
 
 ---
@@ -934,6 +934,8 @@ Target maximum:
 
 `75 characters including spaces`
 
+(2026 rule, media category 200; see `content-limits.md`.)
+
 If Product Type rules specify another applicable requirement, use the Product Type rule.
 
 Preferred structure:
@@ -1001,7 +1003,7 @@ Do not simply repeat the Title.
 
 ## 35. Bullet Points
 
-Create up to 5 bullets unless Product Type rules require another structure.
+Create up to 5 bullets unless Product Type rules require another structure. Each bullet is 10-255 characters, no symbols or end punctuation; limits in `content-limits.md`.
 
 Each bullet must provide unique information.
 
@@ -1039,7 +1041,7 @@ Target:
 
 Safe maximum:
 
-`249 bytes`
+`249 bytes` (US/UK/EU; JP 500, IN 200; see `content-limits.md`)
 
 Prioritize:
 
@@ -2553,6 +2555,10 @@ The user may paste an Amazon product, category or search link of any country. Ru
 5. **Quota.** Every call consumes MCP quota: check `get_mcp_usage_info` before large batches and pull once per (marketplace, ASIN/seed), not once per SKU of a variation family.
 6. **Provenance.** Record per source: tool or export name, marketplace, ASIN/seed, `time_period`, retrieval or export date, row count. This becomes `seo_source_date`, `seo_version` and the SEO sheet. A file's modification time is NOT the data date: ask.
 
+## Cerebro / Magnet files carry no marketplace
+
+An exported Cerebro/Magnet XLSX has columns like `Keyword Phrase`, `Search Volume`, `Keyword Sales`, `Cerebro IQ Score`, `Title Density`, per-ASIN rank columns, but **no marketplace or country column and no export date**. So for every file the agent needs two facts and asks once (all files in one question, recommendation taken from the file name such as `DE_...`, `GB_...`): which marketplace the export is from and the export date. `seo_import.py` reads a marketplace code from the file name, accepts `--source-marketplace XX`, and otherwise raises `SEO_SOURCE_MARKETPLACE_UNKNOWN`; an export from another marketplace than the target raises `SEO_MARKETPLACE_MISMATCH` (e.g. a US export is never used for ES). Language shares are computed over classifiable keywords only (brands, models and numbers are neutral); a large US export contains Spanish keywords, which does not make it a Spanish-market export. Several files of the same marketplace are merged; files of different marketplaces are processed separately.
+
 ## From data to content
 
 1. Run `scripts/seo_import.py FILES --marketplace XX --product-terms "<from verified TTX>" --competitors "<brands>" --verified-claims "<claims with evidence>" --seo-date YYYY-MM-DD --out seo.json`. `--product-terms` come from the verified TTX / product type (never from the keyword list itself).
@@ -2593,6 +2599,34 @@ Purpose: study a competitor's listing (images, title, bullets, description, pric
 3. **Claims and certifications** seen on the competitor (waterproof, MIL-STD, IP rating, "organic", ...) are NOT carried over: each needs evidence for our product in the Evidence Matrix.
 4. **IP review.** A similar product must not copy the competitor's design, trade dress, trademarks or patented features. Flag `IP_REVIEW_REQUIRED` in the handoff warnings and tell the user that a legal check of design / trademark / patents is theirs to do; this tool cannot judge infringement.
 5. Record sources (tool, marketplace, ASIN, date) in project memory; competitor files stay in `agent1/competitors/` and are never sent to Amazon.
+
+## FILE: references/14-xray-brand-analytics-voc.md
+
+# Market and performance reports: Xray, Brand Analytics, Voice of the Customer
+
+Tool: `scripts/analytics_import.py FILE... [--marketplace XX] [--out analytics.json] [--emit-seo-csv F] [--emit-competitors F]`. It identifies each file by its headers (not by name), reads the metadata, applies the number format of the marketplace (DE/FR/IT/ES... use `16,99` and `13 666`) and returns facts plus relative signals. It never invents a marketplace: Brand Analytics and CX files carry none, so the agent asks (or reads `GB_`, `DE_`... from the file name).
+
+| Report (how the user gets it) | Kind | What it gives | What the agent does with it |
+|---|---|---|---|
+| Helium 10 Xray of a category (top-100 products, XLSX) | `XRAY` | price spread (quartiles), monthly units and revenue (Helium 10 estimates), brand concentration, review barrier, rating, images, title length vs the 75-char rule, FBA share, new entrants, candidate competitor ASINs | Market entry view: price band for the pricing step (`margin_calc.py` for margins at that band), review barrier to plan, what the leaders show; competitor list is `REFERENCE_ONLY` and feeds `competitor_pack.py` via MCP calls, never copied |
+| Brand Analytics - Search Catalog Performance (CSV, per ASIN) | `BA_CATALOG` | impressions -> clicks -> basket adds -> purchases, CTR, conversion, price median per ASIN | Diagnosis per ASIN vs the median of the file: `LOW_VISIBILITY` (indexing/keywords), `LOW_CTR` (main image, title start, price), `LOW_CONVERSION` / `CLICKS_NO_PURCHASE` (price, content, reviews, delivery), `LOW_SAMPLE` (fewer than 5 clicks: no conclusions). Turns into content/image tasks (Design agent) |
+| Brand Analytics - Search Query Performance, brand view (CSV, per query) | `BA_SQP_BRAND` | query volume, brand impression / click / purchase share | Opportunity queries (high volume, low brand share), clicks without purchase; `--emit-seo-csv` makes a keyword file that `seo_import.py` accepts (SQP is verified demand for the brand, NOT the full market: add Cerebro/Magnet for breadth) |
+| Brand share by quarter (CSV: total vs brand impressions, clicks, purchases) | `BA_BRAND_SHARE` | share and its change in percentage points between quarters | Trend statement only; missing quarters are named, never interpolated |
+| Voice of the Customer / CX Health (CSV, per ASIN/SKU) | `VOC_CX` | negative-experience rate, star rating, return rate, health | Flags non-Excellent health and any NCX with its top reason; `LOW_SAMPLE` below 10 orders (an "Excellent" with 1 order means only "no complaints yet") |
+
+Example files: the reports the user has shared so far are **samples from different accounts and businesses, a methodology for the format, not data about the current project**. Never copy their numbers into a project's memory or into another project's analysis.
+
+An Xray export is taken from a **leaf (final) category**: the products in it are the market the new product enters. The file itself often does not name that category (blank `Category` column): ask for the full category path once, store it in `PROJECT.md` and use the same leaf for the browse node / Product Type choice (`amazon-categories.md`). A mixed export (several leaf categories) is a `CATEGORY_SCOPE_MIXED` finding: split it before computing benchmarks.
+
+Every statement made from these reports carries its source label (printed by the tool): `Helium 10 Xray - ESTIMATES` vs `Amazon Brand Analytics - Amazon data`.
+
+Rules
+1. Ask what you cannot read from the file: marketplace and date of each report (one question, all files), the category of an Xray export whose Category column is blank, the brand the Brand Analytics files belong to.
+2. Compare only same-period files (`PERIOD_MISMATCH`) and same-marketplace files (`MARKETPLACE_MISMATCH`). A 2025 query report and a 2026 catalog report describe different times.
+3. Xray revenue and unit numbers are estimates; Brand Analytics numbers are Amazon's, for the brand and period given. Label which is which in every statement.
+4. Thresholds (half of the file median, minimum clicks) are the tool's configuration, not Amazon rules. Small numbers are noisy: say so instead of drawing conclusions.
+5. Nothing here is product evidence. Competitor titles, bullets, images and claims are never copied; claims need the seller's own evidence.
+6. Reports of several accounts or projects are not mixed: each belongs to the project whose `PROJECT.md` names the brand.
 
 ## FILE: references/amazon-categories.md
 
@@ -2643,6 +2677,44 @@ Commonly restricted or requiring approval: certain Beauty and Personal Care, Gro
 ## 5. Freshness
 
 Category trees, restrictions and compliance rules change. This file is a map, not the source of truth. Before production-critical decisions follow `live-research.md` (official Amazon pages for the chosen country, dated) and record what you found in PROJECT.md. If you cannot search, label every rule `VERIFY_IN_UI` / `VERIFY_IN_SELLER_CENTRAL`.
+
+## FILE: references/content-limits.md
+
+# Listing content limits and country/language rules
+
+Status: `USER_SUPPLIED` on 2026-10-11 (limits and language table given by the user). Corroborated by the US and UK feed templates (Data Definitions): the `title_differentiation` attribute, label "Item Highlight", says it "will appear only when the item name is under 75 characters" and "do not repeat information already in the item name". Everything else is not independently verified on Amazon pages. **The Product Type rule in the feed template / Seller Central for the chosen marketplace always wins.** Machine-readable copy: `content_limits.json`; checker: `scripts/content_check.py --marketplace XX`.
+
+| Field (feed attribute) | Limit | Rules |
+|---|---|---|
+| Title (`item_name`) | **75 characters** incl. spaces (media category: 200) | ALL CAPS only for the brand; no promo phrases ("Free Shipping", "Best Seller"); a word at most 2x (prepositions/conjunctions exempt); over-limit titles may be shortened or rewritten by Amazon's AI |
+| Item Highlights (`title_differentiation`) | **125 characters** | Feature / benefit phrases separated by commas, not sentences; indexed like the title; a word at most 2x; **no word that is already in the title** (no extra weight, wastes space); shown only when the title is under 75 characters |
+| Bullet points (`bullet_point` x5) | each **10-255 characters** (some categories allow up to 500) | About 1000 bytes in total across the five are indexed; no emoji, check marks, asterisks; no punctuation at the end; the first 60-80 characters decide on mobile (before "Read more"); unique information per bullet |
+| Description (`product_description`) | **2000 characters** | Plain text; HTML not supported (line-break tag is the only tolerated exception); with Brand Registry A+ Content takes priority; no ALL CAPS |
+| Backend search terms (`generic_keyword`) | **bytes, not characters:** 249 (US, UK, EU), 500 (JP), 200 (IN) | UTF-8: ASCII = 1 byte, Cyrillic/Arabic/CJK/accented letters 2-4; one byte over = the whole field is ignored; separate by spaces, no commas; no repeats, no ASINs, no competitor brands |
+
+Limits for marketplaces not listed in `content_limits.json` (`confirmed_for`) use the default and are flagged `BACKEND_LIMIT_UNCONFIRMED`.
+
+## Seen in real feeds (user-supplied files, 2026-10-11)
+- US feed `215_CELLULAR_PHONE_CASE` (1639 rows, `contentLanguageTag=en_US`): longest title 75, longest Item Highlight 124, longest bullet 155, 5 bullets per row, backend terms short (max 47 bytes). It is the reference style: Item Highlight holds features separated by `;`, none of the title is repeated in it.
+- Older rows keep violating the new limits: US `223_PartialUpdate` has 255 of 413 titles over 75; the UK category feed has 33 of 33 titles over 75, no Item Highlights, some titles repeating a word more than twice; the DE copy-paste workbook has titles of 138-165 characters and backend terms of 281-335 bytes. `content_check.py` flags all of these.
+- Feed columns: `item_name`, `title_differentiation` (Item Highlight), `bullet_point` x5, `product_description`, `generic_keyword`. Record actions seen: `Edit (Partial Update)` and `Create or Replace (Full Update)`.
+
+## Countries and languages (`marketplaces.json`, `scripts/marketplaces.py`)
+
+The seller must provide content in the **primary** language of the target country. Secondary languages are shopper-side (interface / automatic translation); own listings in them are `VERIFY_IN_UI`.
+
+| Region | Marketplace: primary (secondary) |
+|---|---|
+| Americas | US: en (es) - CA: en and fr - MX: es - BR: pt |
+| Europe | UK: en - DE: de (en, nl, pl, tr) - FR: fr (en) - IT: it (en) - ES: es (en, ca) - NL: nl (en) - BE: fr and nl - SE: sv (en) - PL: pl (en) - IE: en |
+| Asia-Pacific | JP: ja (en, zh) - AU: en - IN: en (hi, ta, te) - SG: en (zh) |
+| MENA / Africa | AE: ar and en - SA: ar and en - EG: ar (en) - TR: tr - ZA: en |
+
+Countries with two primary languages (CA, BE, AE, SA) need one question per listing: "which language?". One record = one marketplace + one language; words of another language are never mixed in (SEO keywords, backend terms, copy).
+
+## Verification routine
+1. Read the real template: `xlsm_inspect.py FEED`; for the chosen Product Type compare Data Definitions (text hints, `Accepted Values`) with this file; a stricter template rule wins.
+2. Search current rules online (`live-research.md`) when this file is older than 90 days or a rule looks changed; record a dated Research Note.
 
 ## FILE: references/live-research.md
 
@@ -2695,6 +2767,10 @@ amazon-project/
   agent3/  source/ working/ corrected/ reports/ change-sets/ diffs/
 ```
 Raw sources (templates, user files, Agent 1 raw inputs) are READ-ONLY. Never store secrets or credentials in any file.
+
+## Several projects and seller accounts
+
+The user runs several projects (brands, product lines) and several Amazon seller accounts. One `amazon-project/` folder = one project; never mix data of two projects or accounts in one `PROJECT.md`. `PROJECT.md` starts with an identity block: project name, brand, seller account label (a name, never credentials), marketplaces and listing languages, default category / product type per product group. At the start of every task identify the project from the working folder or the user's words; if it is ambiguous (several `amazon-project*/` folders, several accounts), ask once which project and account, with the likely one pre-selected. Create a new project folder with `tools/init_project.py PATH`. Per-account facts (brand approvals, gated categories, FBA/MFN fees, price policy, template hashes) live in that project's memory only; reusable rules the user states as global go to a `GLOBAL` section of the project they were stated in and are offered to other projects, not applied silently.
 
 ## Google Docs / Sheets links
 
