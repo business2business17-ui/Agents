@@ -11,6 +11,15 @@
 
 Подробно кто за что отвечает: [`docs/AGENTS_OVERVIEW.md`](docs/AGENTS_OVERVIEW.md). Amazon-агенты: [`docs/AMAZON_AGENTS.md`](docs/AMAZON_AGENTS.md). Локальная установка в терминал: [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md) (`install.sh` / `install.ps1`).
 
+## Обязательные правила заполнения Feed Amazon
+
+Действуют для `amazon-feed-compiler` и `amazon-feed-error-agent`:
+
+- **Brand** — при заполнении Feed бренд дополнительно проставляется на **все SKU**.
+- **Tax code**:
+  - **US** — `A_GEN_TAX`
+  - **EU** — `A_GEN_Standard`
+
 ## Design
 
 Карусель (MAIN + 2-7), A+, Brand Story, Store, реклама, видео, 3D: план, копирайт, локализация, ТЗ дизайнеру, промпты для ИИ-генераторов, production XLSX, preflight. Реальный товар не перерисовывается. Вход для Claude Code локально: папка с картинками, названными по GTIN/EAN/UPC, + XLSX (строка = товар: ТТХ и, если есть, преимущества; если нет, агент составляет их из ТТХ и согласует в чекпоинте) — `scripts/match_inputs.py` сопоставляет файлы со строками.
