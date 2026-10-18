@@ -8,24 +8,24 @@
   },
   "plugins": [
     {
-      "name": "amazon-product-intelligence",
-      "source": "./plugins/amazon-product-intelligence",
-      "description": "Agent 1: product data, SEO content, claims, GTIN, deterministic pricing, sealed handoff."
-    },
-    {
-      "name": "amazon-feed-compiler",
-      "source": "./plugins/amazon-feed-compiler",
-      "description": "Agent 2: fills Amazon feed templates safely (Template rows 7+), dry run, workbook guard, manifest."
-    },
-    {
-      "name": "amazon-feed-error-agent",
-      "source": "./plugins/amazon-feed-error-agent",
-      "description": "Agent 3: Processing Report errors, root cause, Change Plan, approved-only patch, QA, re-analysis."
-    },
-    {
       "name": "amazon-creative-studio",
       "source": "./plugins/amazon-creative-studio",
-      "description": "Design agent: carousel, A+, Brand Story, Store, ads, video; briefs, prompts, production XLSX, preflight, image reading."
+      "description": "Design agent (AMZ-DESIGN): carousel, A+, Brand Story, Store, ads creatives, video; briefs, prompts, production XLSX, preflight, image reading."
+    },
+    {
+      "name": "amazon-seo-listings",
+      "source": "./plugins/amazon-seo-listings",
+      "description": "SEO & Listings agent: product data, claims, SEO content (Cerebro / Helium 10), localized listing text, pricing and margin, sealed package for the Feeds agent."
+    },
+    {
+      "name": "amazon-ppc",
+      "source": "./plugins/amazon-ppc",
+      "description": "PPC agent: campaign build, search term analysis, harvest and negatives, bids / budgets / placements, ACOS-TACOS-ROAS from real margins, diagnosis and reviews."
+    },
+    {
+      "name": "amazon-feeds",
+      "source": "./plugins/amazon-feeds",
+      "description": "Feeds agent: fill feed templates (Template rows 7+ only), analyze feed errors from Processing Reports, apply approved corrections with QA and re-analysis."
     }
   ]
 }

@@ -1,0 +1,209 @@
+# Report coverage, row inclusion and selection effects
+
+Load this shared reference when a decision assumes that rows returned by an Amazon Ads report represent the full underlying entity/query population, when totals from reports with different inclusion rules are compared, or when the requested report configuration itself determines whether a metric/dimension can exist.
+
+The goal is to prevent **report selection rules, invalid request configurations and incomplete extraction** from being mistaken for business behavior.
+
+## 1. Separate request compatibility, generation, extraction and population coverage
+
+A report request can be incompatible before any metric exists. A compatible report can be valid according to its own row contract and still be population-incomplete by design. Separately, a successfully generated report can be only partially acquired by a connector/client because pagination stopped early, a response was truncated, a download was incomplete, or a downstream ingestion omitted pages.
+
+Keep these states distinct:
+
+- `request_compatibility_status` — compatible, incompatible, partial, unknown, or not_applicable for the exact reporting generation and request configuration;
+- `generation_status` — whether the upstream report job/artifact completed successfully;
+- `pagination_status` — complete, partial, not_applicable, or unknown for the acquisition path;
+- `truncation_status` — not_truncated, truncated, suspected, or unknown;
+- `row_inclusion_rule` — clicked-only, impression-qualified, delivered-only, active-only, full-enumeration, or unknown;
+- `population_coverage` — whether the returned rows can answer the logical population question being asked.
+
+Therefore:
+
+```text
+request configuration compatible
+!= report generation completed successfully
+!= extraction completed successfully
+!= every logical entity/query appears as a row
+```
+
+An unsupported request configuration is **not evidence of metric zero**, no activity, or unsupported advertising behavior. A partial/truncated extraction is not evidence of zero for omitted members and is not evidence of full population coverage. Do not treat a missing metric/column/row as zero until the exact request contract and acquisition path prove that interpretation.
+
+## 2. Validate report-request compatibility before metric interpretation
+
+For Reporting API v3 and any other generation with request-specific field rules, bind compatibility to the exact `reportTypeId`, `groupBy`, `columns`, `timeUnit`, filters, ad product and current platform-capability evidence. Do not assume that a column supported by one report type, grain or grouping is supported by another merely because the display label is the same.
+
+Current Amazon Reporting API v3 documentation reviewed on 2026-09-22 establishes several generic request-contract rules:
+
+- every report request requires `groupBy`, and supported `groupBy` values are report-type specific;
+- requested `columns` must be supported by that report type/configuration rather than inferred from another report;
+- with `timeUnit=DAILY`, include the `date` column;
+- with `timeUnit=SUMMARY`, `startDate` and `endDate` may be used for the period identity instead of assuming daily rows;
+- a filter is valid only when it is supported by **every requested `groupBy`** value in the configuration.
+
+Treat these as dated platform-capability evidence, not eternal constants. Reconcile exact current combinations through `platform-capability-lineage.md` when the decision depends on them.
+
+If compatibility is `incompatible`, `partial`, or `unknown` for a decision-required metric/dimension:
+
+- do not coerce the absent/rejected column into numeric zero;
+- do not substitute a nearby metric, dimension, report type, grouping or time grain without declaring and validating the semantic change;
+- preserve the request failure/unsupported state separately from advertiser performance;
+- retry only with a documented compatible request when the same decision question and metric semantics are preserved;
+- otherwise return `Alternate Source`, `Missing Data`, `Hold`, or `Manual Review` as appropriate.
+
+A report job that never becomes valid cannot establish a business-performance observation. Conversely, successful generation proves only that the accepted request produced an artifact; population coverage and extraction completeness still require their own checks.
+
+## 3. Track row-inclusion and extraction semantics explicitly
+
+When coverage matters, capture when available:
+
+- `report_type` / dataset identity;
+- exact request configuration when compatibility matters: `reportTypeId`, `groupBy`, `columns`, `timeUnit`, filters and ad product;
+- `request_compatibility_status`;
+- `generation_status`;
+- `row_inclusion_rule` — e.g. clicked-only, impression-qualified, delivered-only, active-only, unknown;
+- `eligibility_scope` — campaign/ad product/account/profile/marketplace constraints;
+- `lookback_limit`;
+- requested date range and supported time grain;
+- `pagination_status`, including whether every expected page/token/chunk was consumed;
+- `truncation_status`, including connector/client row caps or incomplete downloads when known;
+- whether zero-activity entities can appear;
+- whether report totals are expected to reconcile to a parent/canonical total;
+- known metric availability or attribution differences.
+
+If request compatibility is unknown and the conclusion depends on a missing field, downgrade confidence rather than infer zero. If generation succeeded but pagination/truncation is unknown, do not promote that success to extraction completeness. If the inclusion rule is unknown and a conclusion depends on population completeness, downgrade confidence rather than infer completeness.
+
+### Unified Reporting historical availability is time-grain scoped
+
+Historical availability is **time-grain scoped** as well as source/reporting-generation scoped. Amazon Unified Reporting evidence reviewed on 2026-09-23 documents different maximum histories by grain: **hourly** reporting extends back **two weeks**, daily or weekly reporting up to **15 months**, and monthly, yearly, or summary-grain reporting up to **six years**.
+
+Do not collapse those boundaries into one generic Unified Reporting retention value. In particular:
+
+- a connector successfully returning six months of daily data does not prove that six months of hourly rows exist;
+- missing older hourly rows are not zero performance, zero spend, zero clicks, or evidence that the campaign was inactive;
+- do not silently coarsen an hourly question to daily/weekly/monthly merely to obtain a longer history; changing grain changes the observable question and can hide intraday effects;
+- if a requested interval exceeds the verified history for the required grain, bound the conclusion to the supported interval or use a lineage-compatible retained source; otherwise return `Alternate Source`, `Missing Data`, `Hold`, or `Manual Review`;
+- bind the evidence to acquisition channel, reporting generation, requested grain, metric/dimension semantics, account/profile/marketplace scope and current platform-capability evidence.
+
+These are dated platform capabilities, not eternal constants. Revalidate them when the decision materially depends on the exact retention window.
+
+## 4. Search-term report selection effect
+
+A clicked-only search-term report is useful for query conversion, spend, harvest and negative analysis among **observed clicked queries**. It is not, by itself, a complete census of every query impression opportunity.
+
+Consequences:
+
+- missing search terms cannot be labeled `0 impressions` or `0 clicks` merely because they are absent;
+- summed search-term impressions may differ from Campaign Manager / campaign-level impressions because no-click search-term rows are not represented;
+- account/query-level CTR denominators cannot be reconstructed from clicked-only rows unless a compatible complete impression denominator is supplied;
+- “top/bottom search terms” means top/bottom **within the represented clicked population**, unless another source establishes full query coverage;
+- absence from the report is not evidence that a query never served.
+
+This does **not** make the report unusable for negatives or harvesting. It changes what population-level claims are justified.
+
+### Sponsored Products historical-availability boundary
+
+Historical availability is **acquisition-channel and reporting-generation scoped**, not a single Sponsored Products Search Term constant. Current Amazon official evidence reviewed on 2026-09-22 exposes two different boundaries:
+
+- the Sponsored Products Search Term **console/help** surface, updated May 18, 2026, documents a **65-day lookback window** and `summary` / `daily` time units;
+- the current Sponsored Ads **Reporting API v3** report-type reference lists `spSearchTerm` with **95-day data retention**, a **31-day maximum request period**, and `SUMMARY` / `DAILY` time units.
+
+These values are not interchangeable. A 31-day maximum request period is not the same concept as 95-day historical retention, and console/help availability must not be silently imposed on Reporting API v3 (or vice versa). Treat both as dated platform-capability evidence, not eternal repository constants. When an exact current limit matters, bind the evidence to `source_system + acquisition_channel + reporting_generation + report_type`, then reconcile it through `platform-capability-lineage.md` against current official/API/account evidence. **Do not silently choose** 65 or 95 merely because one number is more convenient for the requested window.
+
+When the requested Sponsored Products search-term window extends beyond the historical availability verified for the **actual acquisition channel**:
+
+- mark the unsupported portion as `historical-availability = unavailable` or `unknown` according to the evidence; do not fabricate coverage;
+- missing older search-term rows are **not zero clicks, zero spend, zero orders, or proof that the term did not exist**;
+- bound rankings, harvest/negative conclusions, trend claims, and denominators to the verified available interval;
+- if the older interval is decision-critical, request a verified alternate source such as a retained historical export/warehouse snapshot with compatible lineage, or return `Alternate Source`, `Missing Data`, `Hold`, or `Manual Review` rather than silently shortening the requested history;
+- do not splice an alternate source into the current report without checking source system, acquisition channel, reporting generation, metric/date-attribution semantics, row eligibility, grain, marketplace/profile identity, freshness and backfill maturity through `data-lineage.md`.
+
+A connector successfully returning the newest interval does not prove it can answer a longer search-term question. Connector capability, acquisition channel, reporting generation and upstream historical availability are separate evidence dimensions.
+
+## 5. Targeting and other delivered-only views
+
+An impression-qualified target report can support performance analysis for targets that actually delivered. It cannot, alone, distinguish among all possible reasons why another configured target is absent, such as:
+
+- zero delivery;
+- state/status exclusions;
+- date/filter mismatch;
+- campaign/ad-product eligibility;
+- report contract differences;
+- missing or incomplete source extraction.
+
+For configured-but-not-delivering diagnostics, reconcile with a trusted entity/configuration inventory when available rather than inferring configuration state from the performance report alone.
+
+## 6. Reconciliation by purpose
+
+Choose a denominator/source that matches the question.
+
+### Query efficiency among clicked traffic
+
+A clicked-only Search Term report can be appropriate when the decision is explicitly limited to observed clicked search terms.
+
+### Total campaign/account impressions or CTR
+
+Use a compatible campaign/account total or another source whose inclusion contract covers the required population. Do not force clicked-only search-term rows to reproduce the parent impression total.
+
+### Search-term share of voice / impression competition
+
+Use the Search Term Impression Share report or another compatible source when the question specifically depends on impression share/rank. Do not assume ordinary Search Term report coverage is equivalent to SIS coverage.
+
+### Configured target inventory / zero-delivery analysis
+
+Use trusted entity/configuration state plus an eligible performance view. Performance-report row absence alone is insufficient.
+
+## 7. Selection-aware ranking
+
+Population rank claims require population coverage.
+
+If rows are selected by clicks, impressions, delivery, status or another outcome-related condition, state the ranking universe explicitly, for example:
+
+- `highest spend among clicked search terms represented in this report`;
+- `lowest CVR among impression-qualified delivered targets`;
+- `top opportunity within returned rows; full population rank unavailable`.
+
+Do not silently shorten those labels to `worst search term in the account` or `all non-performing targets`.
+
+## 8. Cross-report comparisons
+
+Before joining or reconciling two reports, compare their:
+
+- request compatibility for the decision-required metric/dimension;
+- report generation status;
+- pagination/truncation/acquisition completeness;
+- row-inclusion / eligibility rules;
+- account/profile/marketplace scope;
+- ad-product coverage;
+- dimensions/grain;
+- attribution and metric semantics;
+- lookback/time boundaries.
+
+Two reports generated from the same console or API are not automatically request-compatible or population-equivalent, and two successful report jobs are not automatically equally complete extractions.
+
+When material, route these differences through `data-lineage.md` and classify the comparison as `Comparable / Reconcilable / Directional / Not Comparable / Unknown`.
+
+## 9. Action gate
+
+When an action depends on a metric/dimension whose request compatibility is not established, rows that the report contract may systematically omit, or extraction completeness that is not verified:
+
+- do not manufacture zero metrics or rows;
+- do not make full-population rankings from a selected or partially acquired subset;
+- do not infer no-delivery configuration state from performance-report absence alone;
+- do not equate upstream report-job success with complete connector/client acquisition;
+- request/reconcile a compatible report configuration, source, or remaining pages needed for the missing evidence;
+- or keep the recommendation explicitly bounded to the represented and verified-acquired rows.
+
+This is especially important for account audits, query coverage claims, CTR/impression diagnostics, pruning decisions and “all waste / all opportunities” language.
+
+## 10. Safety boundary
+
+This reference governs evidence coverage only. It does not authorize Amazon Ads writes. Any eventual mutation remains subject to the repository's `Read-only / Suggest / Shadow / Execute` boundary and an external authorized Connector/Executor.
+
+## Conversion Path Reporting top-path coverage
+
+When a Conversion Path report exposes only the **top 5** paths or another selected subset, treat that as bounded **population coverage**, not the full path population.
+
+- A path omitted from the selected subset is **not zero**.
+- Do not infer that unlisted paths do not exist.
+- Preserve the observed subset limit and report-generation context.
+- Do not claim whole-population ranking, shares, or exhaustive path composition unless full path population coverage is verified.

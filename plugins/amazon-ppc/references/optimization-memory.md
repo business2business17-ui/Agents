@@ -1,0 +1,127 @@
+# Optimization Memory Contract
+
+Load this shared reference when a decision touches an entity with prior optimization activity, when a previous action may still be maturing, or when the user asks for historical context.
+
+The goal is not to create a generic long-term memory system. Preserve enough decision lineage to prevent duplicate, contradictory, stale, cross-scope, or falsely attributed Amazon Ads optimizations. Use `schemas/optimization-event.json` for event records, `schemas/entity-history.json` for derived history, `references/data-lineage.md` for measurement comparability, `references/cross-account-identity.md` when history can span advertiser/account/country/region or account-identity generations, and `references/realized-ad-identity.md` when shopper-facing realization can confound attribution.
+
+## Core model
+
+Treat memory as an append-first event ledger plus derived summaries. Events record proposed, approved, applied, readback, evaluated, failed, rolled-back, corrected, or unknown states. Summaries are retrieval aids, not source of truth. Never overwrite an old event because a later dataset or conclusion changed; append a linked correction/re-evaluation.
+
+## Read-before-recommend gate
+
+Before a material bid, budget, placement, negative, state, or structural recommendation, retrieve when available: latest same-control event; pending validation; recent failed/unknown events; latest trusted readback and outcome; rollback conditions; overlapping parent/child actions or experiments; material evidence restatements; and relevant realization snapshots. If history cannot be retrieved, say `history unavailable`; do not infer no prior action.
+
+## Collision-safe identity
+
+Preferred identity is a verified account identity envelope plus:
+
+```text
+marketplace + profile/account scope + entity type + entity id + control dimension
+```
+
+Names and locally normalized IDs alone are not collision-safe. When marketplace/profile/account identity is incomplete, ambiguous, or colliding, do not merge histories or transfer outcomes/readbacks; downgrade to Hold, Directional, or Manual Review until scope resolves. When global, regional, legacy advertiser IDs or regional profiles coexist, apply `references/cross-account-identity.md` before history retrieval or deduplication and preserve `account_identity` from `schemas/optimization-event.json` when known.
+
+Verified predecessor/successor migration can preserve bounded lineage, but predecessor live state is never successor current state. Cross-marketplace predecessor performance is directional by default: do not directly transfer bids, CPC/CVR/CTR/ACOS/ROAS baselines, budgets, placement multipliers, profitability thresholds, sample thresholds, or validation clocks without successor-market calibration.
+
+## Lifecycle and anti-thrashing
+
+Typical lifecycle:
+
+```text
+proposed → approved(optional) → applied|failed|unknown → readback → evaluated → keep|monitor|rollback_proposed|follow-up
+```
+
+Keep these distinctions explicit: proposed ≠ applied; applied ≠ readback-confirmed; readback-confirmed ≠ worked; worked ≠ proven causal; rollback-proposed ≠ rolled-back.
+
+While a material action is still attribution/sample-maturity pending, avoid contradictory or large overlapping edits unless a safety guardrail requires intervention. Flag oscillation, unknown application, overlapping experiments, and parent-level confounding. Do not use a universal waiting period.
+
+## Campaign-objective lineage
+
+For a material optimization action, preserve the **action-time campaign objective** carried by the source `optimization-event` when known. The objective belongs to the decision context that justified the action; a later strategy change must not silently rewrite it in derived history.
+
+Treat a change between the action-time objective and the current campaign objective as **objective drift**:
+
+- evaluate the historical action against its action-time objective, declared `primary_metric`, `guardrail_metrics`, expected mechanism, and contemporaneous constraints;
+- evaluate future recommendations against the current objective separately;
+- **do not retroactively** call an earlier Growth/Discovery/Defense/Experiment action successful or failed solely because the campaign is now governed by a different Profit/Control/Growth objective;
+- do not copy the old objective forward as current truth after an explicit strategy change;
+- if the action-time objective is `Unknown` or absent, keep that uncertainty rather than inferring it from later ACOS/TACOS, campaign name, rank movement, or current strategy.
+
+When `schemas/entity-history.json` exposes `latest_action`, preserve the source action event's `campaign_objective` inside that bounded summary when known. The append-first event remains authoritative; the summary is only a retrieval aid. An evaluation/review event may carry the objective applicable at evaluation time, but it must remain linked to the original action so action-time intent is not lost.
+
+## Decision-time evidence identity
+
+Mutable reporting history creates two separate questions: what evidence was available when the decision was made, and what the latest/restated history says now. Preserve both.
+
+For material evaluated/corrected events, `evidence_snapshot` should preserve available decision-relevant measurement identity rather than only a dataset label. Canonical fields are defined in `schemas/optimization-event.json`; capture when known:
+
+- snapshot identity and capture timestamp;
+- `source_system` and `source_dataset`;
+- `acquisition_channel`;
+- `reporting_generation`;
+- `semantic_version`;
+- per-metric `metric_semantics` when the outcome depends on conversion/attribution identity; for the decision-driving outcome metric, preserve `outcome_metric_semantics` with metric family, attribution family, and semantic version when known;
+- `date_attribution_semantics`;
+- `historical_availability_status`;
+- `comparability_status`;
+- `available_through` and attribution/backfill maturity;
+- compact evidence hash or immutable artifact reference.
+
+These fields are nullable because an older connector or artifact may not expose them. Missing lineage is uncertainty, not permission to guess. In particular, `historical_availability_status = unavailable|retired_or_deleted|unknown` must never be interpreted as a zero historical metric or no historical activity.
+
+When reporting generation, date attribution, acquisition channel, semantic version, or historical availability differs across replay windows, apply `references/data-lineage.md` before reusing the old outcome. A stored `Worked` result does not become action-safe evidence under a new measurement identity merely because campaign/entity IDs match.
+
+If history later restates enough to change an outcome, append a correction/re-evaluation linked to the original event and preserve both evidence identities. Reconcile before using the changed conclusion for another aggressive optimization.
+
+## Measurement-comparison audit lineage
+
+When post-change evaluation uses `scripts/compare_measurement_composition.py`, an `evaluated` or `corrected` optimization event should preserve the bounded comparator output in `measurement_comparison` when available:
+
+- `comparator_id` — stable repository-owned comparator contract identity;
+- `classification` — `Comparable`, `Directional`, `Not Comparable`, or `Unknown`;
+- `changed_fields` — the bounded composition fields that differed;
+- `reasons` — deterministic evidence-quality/explanation strings returned by the comparator;
+- `baseline_snapshot_id` and `post_snapshot_id` — source evidence identities when known.
+
+This is audit lineage, not a replacement for raw evidence. Preserve the source snapshots/events and never reconstruct missing snapshot IDs from timestamps, entity IDs, metric values, or a newer connector response. A null snapshot ID remains unknown.
+
+Do not collapse an `Inconclusive` outcome into a bare label when the machine comparator materially gated causality. Later reviewers should be able to distinguish, for example, lower-grain allocation drift from a modeled-inclusion or allocation-grain incompatibility without rerunning against unavailable historical inputs. If a later correction changes the comparison, append a linked `corrected` event with the new `measurement_comparison`; do not overwrite the original audit record.
+
+## Derived measurement-state projection
+
+`schemas/entity-history.json` may expose `latest_measurement_state` as a bounded retrieval projection of the newest decision-relevant evidence identity. Populate it from a traceable event/evidence snapshot; do not synthesize missing lineage from entity IDs, metric values, or a newer connector response.
+
+Keep the event ledger authoritative. The projection should carry the evidence snapshot identity, observed time, source system/dataset, acquisition channel, reporting generation, dataset-level semantic version, per-metric `metric_semantics`, the same event's `outcome_metric_semantics`, date-attribution semantics, historical-availability state, comparability state, and warnings when known. Metric-level attribution family/version is not interchangeable with the dataset-level `semantic_version`; if metric semantics were absent in the selected event/snapshot, keep `metric_semantics = []` and `outcome_metric_semantics = null` rather than inferring them. A later `unknown`, `unavailable`, or `retired_or_deleted` observation must not silently become zero, and a previous `Comparable` state must not be assumed current after a reporting-generation or attribution change.
+
+Fail closed when the projection carries material uncertainty. `Worked / Keep` describes a historical outcome; it must not override `comparability_status = Not Comparable|Unknown` or `historical_availability_status = unavailable|retired_or_deleted|unknown`. In those cases, downgrade reuse to bounded/directional evidence, Hold, or Manual Review as appropriate until comparability is re-established. Do not let a compact entity summary erase the uncertainty preserved by its source events.
+
+## Realization-aware memory
+
+When platform-managed surface/product/creative/message realization can affect causal interpretation, preserve the bounded `realization_snapshot` defined in `schemas/optimization-event.json`. Missing realization fields are not evidence that realization was unchanged or zero.
+
+Keep separate:
+
+```text
+control readback confirmed?
+realization comparable?
+outcome moved as expected?
+```
+
+If realization comparability is Directional, Not Comparable, or Unknown, do not upgrade to strong single-action causal attribution solely because the advertiser control applied.
+
+## Partial-memory warnings
+
+Expose incomplete-history conditions such as local-only history, external executor history unavailable, platform-managed mutation history unavailable, missing transition actor/reason, missing readback, unknown write result, event gap, identity-scope ambiguity, account-identity mapping unavailable, migration mapping partial, historical evidence restated, retired/deleted historical source, or realization comparability unresolved. Never treat a partial ledger as complete account history. In particular, a complete local/external Executor ledger is not proof that Amazon automation or another authorized actor made no state transition.
+
+## Retrieval order
+
+Resolve account identity generation/mapping plus marketplace/profile scope first; retrieve same entity + same control newest-first; then verified predecessor history; overlapping other controls; parent changes; active experiments; account/portfolio constraints; and relevant realization snapshots. Keep the slice bounded rather than dumping account history into context.
+
+## Output contract
+
+When memory materially affects a decision, report history status, identity scope, latest relevant action/time, application/readback status, validation maturity, latest outcome, decision-time evidence identity, latest measurement state/comparability, latest restatement status, realization comparability when relevant, unresolved warnings, and next decision point.
+
+## Safety boundary
+
+This memory contract stores decision evidence and state. It does not authorize live Amazon Ads mutation. Write/retry/idempotency/reconciliation/executor mechanics remain outside this repository in an explicitly authorized Connector/Executor.

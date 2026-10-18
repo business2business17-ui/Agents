@@ -18,6 +18,7 @@ Exact Decimal arithmetic only. Exit code 0 = all PRICE_VALID, 1 = conflicts/data
 import argparse
 import csv
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -36,18 +37,46 @@ MARKETPLACE_CURRENCY = {
 ZERO_DECIMAL = {"JPY", "KRW", "VND", "CLP", "ISK"}
 
 
+def _normalize_number(s):
+    """Locale-tolerant number text -> plain '1234.50'. Raises ValueError when the text is ambiguous.
+
+    '24,99' -> 24.99    '1,234.50' -> 1234.50    '1.234,50' -> 1234.50    '1 234,50' -> 1234.50
+    '1,234,567' -> 1234567     a lone 'x,ddd' such as '1,500' -> ValueError (thousands or decimals?):
+    reading JPY 1,500 as 1.5 would silently misprice by 1000x, so the user must disambiguate.
+    """
+    s = s.replace("\u00a0", "").replace("\u202f", "").replace(" ", "").replace("'", "")
+    has_c, has_d = "," in s, "." in s
+    if has_c and has_d:
+        dec_sep = "," if s.rfind(",") > s.rfind(".") else "."
+        th_sep = "." if dec_sep == "," else ","
+        if not re.fullmatch(r"[+-]?\d{1,3}(?:%s\d{3})+%s\d*" % (re.escape(th_sep), re.escape(dec_sep)), s):
+            raise ValueError("ambiguous separators")
+        return s.replace(th_sep, "").replace(dec_sep, ".")
+    if has_c:
+        if s.count(",") > 1:
+            if not re.fullmatch(r"[+-]?\d{1,3}(,\d{3})+", s):
+                raise ValueError("ambiguous commas")
+            return s.replace(",", "")  # 1,234,567
+        head, _, tail = s.partition(",")
+        if len(tail) == 3 and head.lstrip("+-").isdigit():
+            raise ValueError("ambiguous: a single comma followed by 3 digits (thousands or decimals?); "
+                             "write the number with a dot as decimal separator and no thousands separator")
+        return head + "." + tail
+    if s.count(".") > 1:
+        if not re.fullmatch(r"[+-]?\d{1,3}(\.\d{3})+", s):
+            raise ValueError("ambiguous dots")
+        return s.replace(".", "")  # 1.234.567
+    return s
+
+
 def dec(value, name="value"):
     if value is None or str(value).strip() == "":
         return None
     try:
-        s = str(value).strip().replace(" ", "").replace(" ", "")
-        if "," in s and "." not in s:
-            s = s.replace(",", ".")  # 24,99 -> 24.99
-        elif "," in s and "." in s:
-            s = s.replace(",", "")  # 1,234.50
-        d = Decimal(s)
-    except InvalidOperation:
-        raise ValueError(f"{name}: not a number: {value!r}")
+        d = Decimal(_normalize_number(str(value).strip()))
+    except (InvalidOperation, ValueError) as e:
+        detail = f" ({e})" if isinstance(e, ValueError) and not isinstance(e, InvalidOperation) else ""
+        raise ValueError(f"{name}: not a number: {value!r}{detail}")
     if not d.is_finite():
         raise ValueError(f"{name}: not finite: {value!r}")
     return d
@@ -127,7 +156,6 @@ def compute(sale, marketplace=None, currency=None, precision=None, b2b_applicabl
             issues.append(f"explicit {name} {explicit} differs from policy value {calc}; user review required")
 
     lo, hi = dec(min_price, "min_price"), dec(max_price, "max_price")
-    _explicit_lo, _explicit_hi = lo, hi
     if lo is not None and hi is not None and lo > hi:
         status = "PRICE_CONFLICT"
         issues.append("minimum_seller_allowed_price > maximum_seller_allowed_price")

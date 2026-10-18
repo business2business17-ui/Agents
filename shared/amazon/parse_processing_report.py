@@ -12,6 +12,15 @@ Extracts
      with SKU, EAN/ID and the flagged cells;
   3. an Error Fingerprint per (marketplace, sku, code, attribute, original value) when the summary names an impacted
      column; otherwise a row-level finding with code UNMAPPED.
+Two report layouts are supported:
+  LEGACY  summary table per error code + status colours on Template cells (above);
+  STATUS  (current Seller Central download "Feed Processing Summary"): the Template gets leading status columns
+          (::submission_status, ::number_of_attributes_with_errors, ::number_of_attributes_with_other_suggestions) and the
+          summary sheet carries two tables - per error code and per SKU (code, message, SKU, "impacted cell" = the STATUS cell of
+          that row, e.g. B35, NOT the faulty attribute). The offending attribute is derived from the message (media URL found in
+          the row, "Your generic_keyword contains ..."); when it cannot be derived the finding is row-level (attribute null).
+          Because of the 3 leading columns, cell letters of this workbook differ from the originally uploaded feed: patches
+          must address attributes by key (header row 5) + SKU, never by the letters in this report.
 Colour is evidence, never the only truth: every colour finding is labelled source=FILL and must be matched to the
 summary / error message before it is treated as an error. Rows are NOT edited; this script never writes.
 """
@@ -22,7 +31,7 @@ import json
 import re
 import sys
 
-from xlsx_core import M, TEMPLATE_NAME_HINTS, Book, col_to_idx, idx_to_col, parse_xml, split_ref
+from xlsx_core import M, TEMPLATE_NAME_HINTS, Book, parse_xml, split_ref
 
 SYN = {
     "code": ["error code", "fehlercode", "code d'erreur", "codice errore", "código de error", "codigo de error",
@@ -35,6 +44,7 @@ SYN = {
               "dotyczy pola", "betrokken veld", "berörd fält", "поле"],
     "column": ["impacted column", "betroffene spalte", "colonne concernée", "colonna interessata", "columna afectada",
                "kolumna", "betrokken kolom", "berörd kolumn", "столбец"],
+    "sku": ["sku"],
     "count": ["number of errors", "anzahl", "nombre d'erreurs", "numero di errori", "número de errores",
               "liczba błędów", "aantal fouten", "antal fel", "количество"],
 }
@@ -110,8 +120,168 @@ def find_summary(book):
     return None, None, []
 
 
+URL_RX = re.compile(r"https?://[^\s\"'<>]+")
+ATTR_RX = re.compile(r"\bYour ([a-z][a-z0-9_]+) contains\b", re.I)
+TERMS_RX = re.compile(r"\[([^\]]+)\]")
+CELL_RX = re.compile(r"\(([A-Z]{1,3})(\d+)?\)\s*$")
+DEPENDS = {"13013": ["100730", "18299", "5461", "8541", "8542"]}  # consequence codes: fix the cause, not the offer
+
+
+def all_sections(book):
+    """Every error table of the summary sheet -> (sheet, [ {kind, header_row, lines} ], reported_totals)."""
+    for s in book.sheets:
+        rows = list(book.rows(s["name"], 1, 60000))
+        out, totals = [], {}
+        i = 0
+        while i < len(rows):
+            r, cells = rows[i]
+            labels = {c: str(v[1]).strip().lower() for c, v in cells.items() if v[0] == "text"}
+            first = next(iter(labels.values()), "")
+            if first.startswith("number of skus") or first.startswith("total number of"):
+                nums = [v[1] for v in cells.values() if v[0] != "text" or re.fullmatch(r"-?\d+", str(v[1]))]
+                if nums:
+                    totals[first] = nums[-1]
+            hit = {}
+            for col, lab in labels.items():
+                for key, syns in SYN.items():
+                    if any(lab == x or lab.startswith(x) for x in syns):
+                        hit.setdefault(key, col)
+            if "code" in hit and ("message" in hit or "field" in hit):
+                lines, j = [], i + 1
+                while j < len(rows):
+                    r2, c2 = rows[j]
+                    rec = {k: (c2.get(c, (None, None))[1]) for k, c in hit.items()}
+                    f0 = str(next(iter(c2.values()))[1]).strip().lower() if c2 else ""
+                    if not c2 or rec.get("code") is None and rec.get("message") is None or f0.startswith(("total", "errors and warnings")):
+                        break
+                    lines.append(dict(rec, summary_row=r2))
+                    j += 1
+                out.append(dict(kind="per_sku" if "sku" in hit else "per_code", header_row=r, lines=lines))
+                i = j
+                continue
+            i += 1
+        if out:
+            return s["name"], out, totals
+    return None, [], {}
+
+
+def status_columns(headers):
+    return {k: c for c, k in headers.items() if str(k).startswith("::")}
+
+
+def infer_attribute(message, row_vals, headers):
+    """Find the faulty attribute of one SKU from the error message. row_vals: {col: value}. Returns dict or None."""
+    msg = str(message or "")
+    by_col = {c: str(headers.get(c, "")) for c in row_vals}
+    for url in URL_RX.findall(msg):
+        url = url.rstrip(".,;)")
+        for c, v in row_vals.items():
+            if v is not None and str(v).strip() == url:
+                return dict(attribute=by_col[c], column=c, original_value=v, how="MEDIA_URL_FOUND_IN_ROW", confidence="HIGH")
+    m = ATTR_RX.search(msg)
+    if m:
+        key = m.group(1).lower()
+        for c, k in headers.items():
+            if k.lower() == key or k.lower().startswith(key + "[") or k.lower().startswith(key + "#"):
+                v = row_vals.get(c)
+                out = dict(attribute=k, column=c, original_value=v, how="NAMED_IN_MESSAGE", confidence="HIGH")
+                terms = TERMS_RX.findall(msg)
+                if terms and v:
+                    bad = [t.strip() for t in re.split(r"[,;]", ",".join(terms)) if t.strip()]
+                    new = str(v)
+                    for t in bad:
+                        new = re.sub(r"(?<!\w)" + re.escape(t) + r"(?!\w)", "", new, flags=re.I)
+                    new = re.sub(r"\s{2,}", " ", new).strip()
+                    out.update(terms=bad, proposed_value=new, proposed_how="remove the flagged term(s) only; user approval required")
+                return out
+    return None
+
+
 def fp(*parts):
     return hashlib.sha1("|".join("" if p is None else str(p) for p in parts).encode("utf-8")).hexdigest()[:16]
+
+
+def parse_status_layout(a, book, sheet, sum_sheet, per_code, per_sku, reported, headers):
+    sku_col = next((c for c, k in headers.items() if k == "contribution_sku#1.value"), None) or \
+        next((c for c, k in headers.items() if re.search(r"sku", k, re.I) and not k.startswith("::")), None)
+    st = status_columns(headers)
+    rows = {}
+    for r, cells in book.rows(sheet, a.min_row):
+        rows[r] = {c: v[1] for c, v in cells.items()}
+    status_col = st.get("::submission_status")
+    sku_row = {}
+    for r, vals in rows.items():
+        if sku_col and vals.get(sku_col) is not None:
+            sku_row.setdefault(str(vals[sku_col]).strip(), r)
+    status_counts = {}
+    for r, vals in rows.items():
+        if status_col and vals.get(status_col) is not None:
+            k = str(vals[status_col])
+            status_counts[k] = status_counts.get(k, 0) + 1
+    findings, unmatched = [], 0
+    for ln in per_sku["lines"]:
+        sku = str(ln.get("sku") or "").strip()
+        m = CELL_RX.search(str(ln.get("field") or ""))
+        row = int(m.group(2)) if m and m.group(2) else sku_row.get(sku)
+        if row is not None and sku and sku_row.get(sku) not in (None, row):
+            row = sku_row[sku]  # the SKU decides, the cell in the report is only a status cell
+        vals = rows.get(row, {})
+        if sku and not vals:
+            unmatched += 1
+        inf = infer_attribute(ln.get("message"), vals, headers) or {}
+        code = str(ln.get("code"))
+        f = dict(marketplace=a.marketplace, sku=sku or None, row=row, report_cell=(f"{m.group(1)}{m.group(2)}" if m and m.group(2) else None),
+                 cell=(f"{inf['column']}{row}" if inf.get("column") and row else None), attribute=inf.get("attribute"),
+                 original_value=inf.get("original_value"), error_code=code, error_message=ln.get("message"), category=ln.get("category"),
+                 severity="ERROR" if str(ln.get("category", "")).upper().startswith("ERR") else
+                 ("WARNING" if str(ln.get("category", "")).upper().startswith("WARN") else "UNKNOWN"),
+                 source="SUMMARY_SKU+TEMPLATE", attribute_source=inf.get("how") or "NOT_DERIVABLE (row-level)",
+                 confidence=inf.get("confidence"), depends_on_codes=DEPENDS.get(code, []),
+                 fingerprint=fp(a.marketplace, sku, code, inf.get("attribute"), inf.get("original_value") or ln.get("message")))
+        for k in ("terms", "proposed_value", "proposed_how"):
+            if k in inf:
+                f[k] = inf[k]
+        findings.append(f)
+    # groups: same code + message shape (URLs/terms stripped)
+    groups = {}
+    for f in findings:
+        shape = URL_RX.sub("<URL>", str(f["error_message"] or ""))
+        g = groups.setdefault((f["error_code"], shape), dict(error_code=f["error_code"], category=f["category"], message_shape=shape[:300],
+                                                            errors=0, skus=set(), attributes=set(), depends_on_codes=f["depends_on_codes"]))
+        g["errors"] += 1
+        if f["sku"]:
+            g["skus"].add(f["sku"])
+        if f["attribute"]:
+            g["attributes"].add(f["attribute"].split("[")[0])
+    grp = [dict(g, skus=len(g["skus"]), sku_examples=sorted(g["skus"])[:5], attributes=sorted(g["attributes"])) for g in groups.values()]
+    grp.sort(key=lambda g: -g["errors"])
+    # settings line of the template (first row, first cell): feed timestamp / type / marketplace
+    first = next(iter(book.rows(sheet, 1, 1)), (1, {}))[1]
+    settings = str(first.get("A", (None, ""))[1]) if first else ""
+    ts = re.search(r"timestamp=([^&]+)", settings)
+    res = dict(file=a.file, marketplace=a.marketplace, layout="STATUS", template_sheet=sheet, summary_sheet=sum_sheet,
+               feed_timestamp=ts.group(1) if ts else None, status_columns=list(st.keys()), reported_totals=reported,
+               submission_status_counts=status_counts, rows_in_template=len(rows),
+               per_code_lines=len(per_code["lines"]) if per_code else 0, per_sku_lines=len(per_sku["lines"]), groups=grp, findings=findings,
+               warnings_on_use=["Cell letters in this report include 3 leading status columns that the uploaded feed does not have: "
+                                "address attributes by key + SKU when patching the original feed.",
+                                "Errors that depend on another error (depends_on_codes) are consequences: fix the cause first."],
+               totals=dict(errors=sum(f["severity"] == "ERROR" for f in findings), warnings=sum(f["severity"] == "WARNING" for f in findings),
+                           unknown=sum(f["severity"] == "UNKNOWN" for f in findings),
+                           row_level_without_attribute=sum(1 for f in findings if not f["attribute"]), sku_not_found_in_template=unmatched))
+    if per_code and sum(int(x.get("count") or 0) for x in per_code["lines"]) != len(findings):
+        res["warnings_on_use"].append(f"per-code table counts {sum(int(x.get('count') or 0) for x in per_code['lines'])} errors, "
+                                      f"per-SKU table lists {len(findings)}: check for truncation")
+    if a.json:
+        open(a.json, "w", encoding="utf-8").write(json.dumps(res, ensure_ascii=False, indent=2, default=str) + "\n")
+    print(f"STATUS layout | summary '{sum_sheet}' | template '{sheet}' {len(rows)} rows | reported: "
+          + "; ".join(f"{k}={v}" for k, v in reported.items()))
+    print(f"submission status counts: {status_counts}")
+    print(f"findings: {res['totals']}")
+    for g in grp:
+        print(f"  {g['errors']:5} errors / {g['skus']:5} SKUs  code {g['error_code']:7} {g['category']}  attrs={g['attributes'] or '-'}"
+              f"{'  depends_on=' + ','.join(g['depends_on_codes']) if g['depends_on_codes'] else ''}  {g['message_shape'][:90]}")
+    return 0
 
 
 def main():
@@ -156,6 +326,12 @@ def main():
         if flagged:
             rows_out.append(dict(row=rn, sku=texts.get(sku_col), ids=[texts.get(c) for c in id_cols if texts.get(c)],
                                  flagged_cells=flagged))
+
+    sec_sheet, sections, reported = all_sections(book)
+    per_sku = next((x for x in sections if x["kind"] == "per_sku"), None)
+    per_code = next((x for x in sections if x["kind"] == "per_code"), None)
+    if per_sku and per_sku["lines"]:
+        return parse_status_layout(a, book, sheet, sec_sheet, per_code, per_sku, reported, headers)
 
     # map summary lines to rows via impacted column
     findings = []

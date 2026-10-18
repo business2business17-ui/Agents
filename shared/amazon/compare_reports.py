@@ -25,14 +25,26 @@ def main():
     ap.add_argument("--history")
     ap.add_argument("--out")
     a = ap.parse_args()
-    prev = json.load(open(a.previous, encoding="utf-8"))["findings"]
-    cur = json.load(open(a.current, encoding="utf-8"))["findings"]
-    hist = json.load(open(a.history, encoding="utf-8")) if a.history else {}
+    def load(path):
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+
+    prev_doc, cur_doc = load(a.previous), load(a.current)
+    prev, cur = prev_doc["findings"], cur_doc["findings"]
+    pt, ct = prev_doc.get("feed_timestamp"), cur_doc.get("feed_timestamp")
+    if pt and ct and pt == ct:
+        print(f"SAME_REPORT: both files carry the feed timestamp {pt}: this is one upload, not a re-upload. Nothing to compare "
+              "(attempt counters are not increased).")
+        return 1
+    if pt and ct and ct < pt:
+        print(f"WARNING order: PREVIOUS ({pt}) is newer than CURRENT ({ct}): swap the arguments.")
+    hist = load(a.history) if a.history else {}
     cur_by = {}
     for f in cur:
         cur_by.setdefault(key(f), []).append(f)
     res, counts = [], dict(RESOLVED=0, REJECTED_AGAIN=0, CHANGED_ERROR=0, ESCALATION_REQUIRED=0, NEW=0)
     seen = set()
+    bumped = set()  # several errors on one cell share a key: count ONE failed attempt per key per run
     for f in prev:
         if f["severity"] == "UNKNOWN":
             continue
@@ -42,12 +54,11 @@ def main():
         attempts = hist.get(k, 1)
         if not now:
             st = "RESOLVED"
-        elif any(x.get("error_code") == f.get("error_code") for x in now):
-            st = "REJECTED_AGAIN"
-            hist[k] = attempts + 1
         else:
-            st = "CHANGED_ERROR"
-            hist[k] = attempts + 1
+            st = "REJECTED_AGAIN" if any(x.get("error_code") == f.get("error_code") for x in now) else "CHANGED_ERROR"
+            if k not in bumped:
+                hist[k] = attempts + 1
+                bumped.add(k)
         if st != "RESOLVED" and hist.get(k, attempts) >= 3:
             st = "ESCALATION_REQUIRED"
         counts[st] += 1
@@ -55,6 +66,15 @@ def main():
                         attempts=hist.get(k, attempts), cell=f.get("cell"), attribute=f.get("attribute"), sku=f.get("sku")))
     new = [f for f in cur if key(f) not in seen and f["severity"] != "UNKNOWN"]
     counts["NEW"] = len(new)
+    # transient media errors: do the same URLs fail again, or other ones?
+    for code in ("20000", "300060"):
+        pu = {f.get("original_value") for f in prev if str(f.get("error_code")) == code and f.get("original_value")}
+        cu = {f.get("original_value") for f in cur if str(f.get("error_code")) == code and f.get("original_value")}
+        if pu and cu:
+            same = len(pu & cu) / len(pu)
+            print(f"MEDIA code {code}: {len(pu & cu)} of {len(pu)} previously failing URLs fail again ({same:.0%}); {len(cu - pu)} new failing URLs. "
+                  + ("Mostly different URLs each time: the host is unstable/slow (TRANSIENT_HINT), not these files." if same < 0.3 else
+                     "The same URLs fail again: check those files/URLs (not found, firewall, wrong path)."))
     pe = sum(f["severity"] == "ERROR" for f in prev)
     ce = sum(f["severity"] == "ERROR" for f in cur)
     pw = sum(f["severity"] == "WARNING" for f in prev)
@@ -62,7 +82,8 @@ def main():
     out = dict(previous_errors=pe, current_errors=ce, previous_warnings=pw, current_warnings=cw, counts=counts,
                items=res, new_errors=new, history=hist)
     if a.out:
-        json.dump(out, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        with open(a.out, "w", encoding="utf-8") as fh:
+            json.dump(out, fh, ensure_ascii=False, indent=2)
     print(f"Previous errors: {pe} | Resolved: {counts['RESOLVED']} | Remaining: "
           f"{counts['REJECTED_AGAIN'] + counts['CHANGED_ERROR'] + counts['ESCALATION_REQUIRED']} | New: {counts['NEW']}")
     print(f"Warnings: {pw} -> {cw}")

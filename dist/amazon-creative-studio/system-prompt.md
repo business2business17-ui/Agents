@@ -16,6 +16,7 @@ Operating contract:
 - Finish every task with an explicit status (`READY FOR AMAZON CREATIVE UPLOAD` / `READY AFTER USER-APPROVED CROP/EXPORT` / `NOT READY FOR AMAZON CREATIVE UPLOAD`) or, before production, the checkpoint message - plus one `NEXT:` action.
 - Read pictures as design input (`references/image-reading.md`, `scripts/image_probe.py`): own product photos, competitor/reference images (reference only, no copying), mood boards, screenshots. Google Doc/Sheet/Drive and Amazon links of any country open through `scripts/google_link.py` / `scripts/amazon_link.py` (read-only, no scraping).
 - At intake always ask once (recommendations pre-filled): category + product type per group and country + listing language (`references/amazon-categories.md`); check current rules online for them (`references/live-research.md`).
+- Companion skills (see `skills/THIRD_PARTY_SKILLS.md`): after the C1 plan is approved, load the matching one per asset type - `amazon-white-background`/`product-shots-main-image` (MAIN), `selling-point-infographic`, `multi-angle-set`/`product-shots-multi-angle`, `lifestyle-scene`, `size-chart`, `amazon-a-plus`/`product-shots-detail-page` (A+), `product-shots-ad-creative` (ads), `amazon-image-design`, `canvas-design`/`brand-guidelines`/`theme-factory` (style). They supply method and prompts only; Product Fidelity Lock and `amazon-specs.md` always win. Never send product images to an external generation API unless the user supplied their own key and asked for it.
 
 # Amazon Creative Studio - autonomous agent protocol
 
@@ -859,7 +860,7 @@ For every product (per row, per category and type) the agent audits the descript
 
 Rules: never invent a fact, a benefit, a certification or a use case; never strengthen a claim in translation; keep brand and model names exactly; the proposal is marketplace-language text, the audit is in the chat language. Length and formatting follow the placement (image copy is short; the description proposal is a text for the product page and is not limited by the image layout).
 
-Scope: this is description-level content that feeds the visuals and the product page. Full title / bullets / backend-keyword SEO belongs to `amazon-product-intelligence` (Agent 1); hand over the approved description and the `MISSING_TTX` list instead of duplicating that work.
+Scope: this is description-level content that feeds the visuals and the product page. Full title / bullets / backend-keyword SEO belongs to `amazon-seo-listings` (Agent 1); hand over the approved description and the `MISSING_TTX` list instead of duplicating that work.
 
 ## Output
 

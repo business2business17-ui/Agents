@@ -1,14 +1,15 @@
-# Amazon-агенты (Product Intelligence, Feed Compiler, Feed Error Agent)
+# Amazon-агенты (SEO-Listings, Feeds, PPC)
 
-Три агента из `Amazon_Agents_Universal_v3.zip`. Дизайн (верстка, ТЗ, визуальный контент) - отдельный агент `amazon-creative-studio`, живёт в своей ветке/PR и с этими агентами не пересекается.
+Три агента из `Amazon_Agents_Universal_v3.zip` плюс PPC. Дизайн (верстка, ТЗ, визуальный контент) - отдельный агент `amazon-creative-studio` (ветка `AMZ-DESIGN`).
 
 | Агент | Плагин | Задача |
 |---|---|---|
-| Agent 1 | `amazon-product-intelligence` | Сбор ТТХ, сопоставления, тексты и SEO, claims, цены, запечатанный пакет для Feed. |
-| Agent 2 | `amazon-feed-compiler` | Заполнение Feed Amazon: инспекция шаблона, маппинг, dry run, запись только в Template с 7-й строки, аудит, манифест. |
-| Error Agent | `amazon-feed-error-agent` | Исправление ошибок уже загруженного Feed: Processing Report, причины, Change Plan, правки только после подтверждения, QA, повторный анализ. |
+| SEO-Listings (бывш. Agent 1) | `amazon-seo-listings` (ветка `SEO-Listings`) | Сбор ТТХ, сопоставления, тексты и SEO, claims, цены, запечатанный пакет для Feeds. |
+| Feeds, режим FILL (бывш. Agent 2) | `amazon-feeds` (ветка `Feeds`) | Заполнение Feed Amazon: инспекция шаблона, маппинг, dry run, запись только в Template с 7-й строки, аудит, манифест. |
+| Feeds, режим ERRORS (бывш. Error Agent) | `amazon-feeds` | Ошибки и корректировки загруженного Feed: Processing Report, причины, Change Plan, правки только после подтверждения, QA, повторный анализ. |
+| PPC | `amazon-ppc` (ветка `PPC`) | Реклама: кампании, search term отчёты, harvest и минус-слова, ставки, бюджеты, ACOS / TACOS / ROAS. |
 
-Цепочка: **Agent 1 -> Agent 2 -> загрузка в Amazon -> Error Agent -> исправленный feed -> загрузка -> Error Agent ...** Все три делят папку `amazon-project/` и файл памяти `PROJECT.md`.
+Цепочка: **SEO-Listings -> Feeds FILL -> загрузка в Amazon -> Feeds ERRORS -> исправленный feed -> загрузка -> Feeds ERRORS ...** PPC работает рядом (листинг, ключи и маржа из SEO-Listings). Все делят папку `amazon-project/` и файл памяти `PROJECT.md`.
 
 ## Как работают
 - Один чекпоинт на пакет вместо россыпи вопросов; вопросы только по блокерам, сгруппированно, с рекомендуемым ответом. Режимы `AUTOPILOT` / `SMART` / `GUIDED` (у Agent 2 ещё `SIMULATION_MODE`).
@@ -30,9 +31,9 @@
 **Claude Code** (после слияния ветки в `main`):
 ```
 /plugin marketplace add business2business17-ui/Agents
-/plugin install amazon-product-intelligence@business2business17-agents
-/plugin install amazon-feed-compiler@business2business17-agents
-/plugin install amazon-feed-error-agent@business2business17-agents
+/plugin install amazon-seo-listings@business2business17-agents
+/plugin install amazon-ppc@business2business17-agents
+/plugin install amazon-feeds@business2business17-agents
 ```
 До слияния: `git clone -b claude/amz-agents-feed-products <репозиторий>` и `/plugin marketplace add ./Agents`. Нужны `pip install openpyxl lxml`.
 

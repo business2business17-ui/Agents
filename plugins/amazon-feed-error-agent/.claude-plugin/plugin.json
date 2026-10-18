@@ -1,7 +1,0 @@
-{
-  "name": "amazon-feed-error-agent",
-  "version": "2.0.0",
-  "description": "Amazon feed error agent: parse Processing Report, root cause, Change Plan, approved-only patch of a clean feed, QA gate, re-analysis.",
-  "author": { "name": "business2business17-ui" },
-  "keywords": ["amazon", "seller", "feed", "listing"]
-}

@@ -25,3 +25,10 @@ Gem manager -> New Gem -> Instructions: `system-prompt.md` (если не пом
 
 ## Проверка
 «Сделай план карусели для товара: шампунь Brand X 250 мл, рынок DE» + фото. Правильная реакция: один сводный план с допущениями и просьбой `ok`, а не десяток вопросов.
+
+## Остальные агенты (SEO-Listings, PPC, Feeds)
+
+Файлы: `dist/amazon-seo-listings/`, `dist/amazon-ppc/`, `dist/amazon-feeds/` и одноимённые `.zip`. Подключение к Claude.ai, ChatGPT, Gemini и Codex такое же, как выше (`system-prompt.md` или `instructions-short.md` + `knowledge/`).
+
+- **Feeds** — один агент с двумя режимами. В `knowledge/` файлы лежат по скиллам: `knowledge/amazon-feed-compiler/...` (FILL) и `knowledge/amazon-feed-error-agent/...` (ERRORS). `instructions-short.md` содержит роутер режима; протоколы `amazon-feed-compiler/SKILL.md` и `amazon-feed-error-agent/SKILL.md` загрузите как знания и откройте нужный в начале задачи.
+- **PPC** — в `dist/` только основной протокол и его references / scripts (`ppc_search_terms.py`, `performance_calc.py`). 24 дополнительных скилла (zerlinpi, nospicyplease, nexscope, Marketplace Ad Pros) работают в Claude Code как плагин и в `dist/` не включаются.

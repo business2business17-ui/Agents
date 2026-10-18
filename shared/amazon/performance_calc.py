@@ -67,9 +67,14 @@ def main():
     e = Econ(a, a.channel)
     vat = e.vat
     lines = []
-    for chunk in a.lines.split(","):
-        p, u = chunk.split(":")
-        lines.append((D(p.replace(",", ".")), D(u)))
+    for chunk in (x for x in a.lines.split(",") if x.strip()):
+        try:
+            p, u = chunk.split(":")
+        except ValueError:
+            sys.exit(f"--lines: bad entry {chunk!r}; expected price:units, e.g. \"24.99:300,22.49:120\"")
+        lines.append((d(p, "line price"), d(u, "line units")))
+    if not lines:
+        sys.exit("--lines: no price:units entries")
     units = sum(u for _, u in lines)
     gmv_gross = sum(p * u for p, u in lines)
     gmv_net = gmv_gross / (1 + vat)
