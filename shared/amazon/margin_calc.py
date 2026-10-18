@@ -25,6 +25,8 @@ import json
 import sys
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 
+from pricing_engine import dec
+
 D = Decimal
 CENT = D("0.01")
 
@@ -33,9 +35,9 @@ def d(v, name):
     if v is None:
         return None
     try:
-        return D(str(v).replace(",", "."))
-    except Exception:  # noqa: BLE001
-        sys.exit(f"{name}: not a number: {v!r}")
+        return dec(v, name)
+    except ValueError as e:
+        sys.exit(str(e))
 
 
 class Econ:
@@ -90,7 +92,8 @@ def pct(x):
 
 
 def levels_from_pricing(path):
-    j = json.load(open(path, encoding="utf-8"))
+    with open(path, encoding="utf-8") as fh:
+        j = json.load(fh)
     j = j[0] if isinstance(j, list) else j
     out = []
     for key, label in (("sale_price", "Sale Price"), ("standard_price", "Standard Price"), ("business_price", "Business Price"),
@@ -126,7 +129,7 @@ def main():
 
     target = d(a.target_margin, "target_margin") / 100 if a.target_margin else None
     channels = ["fba", "mfn"] if a.channel == "both" else [a.channel]
-    levels = [(f"price {p}", D(p.replace(",", "."))) for p in a.price]
+    levels = [(f"price {p}", d(p, "price")) for p in a.price]
     if a.from_pricing:
         levels += levels_from_pricing(a.from_pricing)
     result, below = {}, False
@@ -145,7 +148,7 @@ def main():
         entry = dict(channel=ch, break_even_price=str(q2(be)) if be else None,
                      min_price_for_target_margin=str(q2(pmin)) if pmin else None, levels=rows)
         if a.basis_price and pmin:
-            basis = D(a.basis_price.replace(",", "."))
+            basis = d(a.basis_price, "basis_price")
             dmax = 1 - pmin / basis
             buf = d(a.buffer_pp, "buffer_pp") / 100
             usable = dmax - buf

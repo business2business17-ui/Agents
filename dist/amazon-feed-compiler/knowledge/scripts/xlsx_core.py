@@ -86,6 +86,7 @@ class Book:
                                                hidden=n.get("hidden"), ref=(n.text or "")))
         self.workbook_root = wb
         self._shared = None
+        self._roots = {}
 
     @property
     def has_macros(self):
@@ -108,7 +109,11 @@ class Book:
         raise KeyError(f"sheet not found: {name!r}; sheets: {[s['name'] for s in self.sheets]}")
 
     def sheet_root(self, name):
-        return parse_xml(self.entries[self.sheet_part(name)])
+        """Parsed sheet XML, cached per Book (parsing a large sheet is the expensive step). Treat as READ-ONLY."""
+        part = self.sheet_part(name)
+        if part not in self._roots:
+            self._roots[part] = parse_xml(self.entries[part])
+        return self._roots[part]
 
     def cell_value(self, c):
         """(kind, value) of a <c> element. kind in text|number|bool|error|formula|empty."""

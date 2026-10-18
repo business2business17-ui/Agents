@@ -77,7 +77,7 @@ Python 3 + `lxml`, `openpyxl`.
 - `google_link.py fetch URL --format raw` - download the original feed from a Drive link (a native Google Sheet export is NOT a feed: macros are lost); Google Docs/Sheets with notes or Agent 1 data -> txt/xlsx/csv. Read-only.
 - `xlsm_inspect.py` - read-only structure. - `parse_processing_report.py` - errors by code/SKU/row/cell with colour evidence and fingerprints.
 - `error_kb.py` + `assets/error_kb.json` - structured knowledge base. - `validate_cells.py` - checks proposed values against the template's validations.
-- `xlsm_patch.py` - writes approved cells (expect_old / change_id) without touching anything else. - `workbook_guard.py` - diff proof.
+- `feed_pipeline.py` - dry run+patch+guard in one run (after the user's ok). - `xlsm_patch.py` - writes approved cells (expect_old / change_id) without touching anything else. - `workbook_guard.py` - diff proof.
 - `compare_reports.py` - re-analysis with attempt history. - `build_error_report.py` - XLSX error report + Change Plan sheet.
 - `pricing_engine.py` - exact price recalculation for price errors.
 

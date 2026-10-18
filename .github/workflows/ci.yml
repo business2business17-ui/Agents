@@ -1,0 +1,21 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pyflakes
+      - name: Shared copies and dist bundles are in sync
+        run: |
+          python3 tools/sync_shared.py --check
+          python3 tools/build_portable.py --check
+      - name: Lint (undefined names, syntax)
+        run: python3 -m pyflakes shared tools tests | grep -E "undefined name|syntax error" && exit 1 || true
+      - name: Tests
+        run: python3 -m unittest discover -s tests -v

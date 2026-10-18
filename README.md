@@ -58,7 +58,9 @@ dist/amazon-creative-studio/       собирается: python3 tools/build_por
 tests/test_design_tools.py
 ```
 
-После правок: `python3 tools/build_portable.py && python3 -m unittest discover -s tests`.
+После правок: `python3 tools/sync_shared.py && python3 tools/build_portable.py && python3 -m unittest discover -s tests` (то же самое проверяет CI: `.github/workflows/ci.yml`).
+
+Запись фида одной командой: `shared/amazon/feed_pipeline.py` (dry run → патч → write guard → вердикт `PASS_TO_FULL_AUDIT` / `NOT_READY`; при провале файл не создаётся).
 
 ## Ограничения
 

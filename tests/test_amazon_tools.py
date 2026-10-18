@@ -4,7 +4,6 @@ Run:  python3 -m unittest discover -s tests -v      (needs openpyxl, lxml)
 Builds a synthetic Amazon-like workbook (Template with example row 6, list validation via a defined name, hidden
 sheet, merged cells, fake macro part) and checks the safety guarantees of patch / guard / dry-run / report parsing.
 """
-import csv
 import json
 import os
 import subprocess

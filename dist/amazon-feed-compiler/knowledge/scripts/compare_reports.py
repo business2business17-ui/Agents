@@ -25,14 +25,19 @@ def main():
     ap.add_argument("--history")
     ap.add_argument("--out")
     a = ap.parse_args()
-    prev = json.load(open(a.previous, encoding="utf-8"))["findings"]
-    cur = json.load(open(a.current, encoding="utf-8"))["findings"]
-    hist = json.load(open(a.history, encoding="utf-8")) if a.history else {}
+    def load(path):
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+
+    prev = load(a.previous)["findings"]
+    cur = load(a.current)["findings"]
+    hist = load(a.history) if a.history else {}
     cur_by = {}
     for f in cur:
         cur_by.setdefault(key(f), []).append(f)
     res, counts = [], dict(RESOLVED=0, REJECTED_AGAIN=0, CHANGED_ERROR=0, ESCALATION_REQUIRED=0, NEW=0)
     seen = set()
+    bumped = set()  # several errors on one cell share a key: count ONE failed attempt per key per run
     for f in prev:
         if f["severity"] == "UNKNOWN":
             continue
@@ -42,12 +47,11 @@ def main():
         attempts = hist.get(k, 1)
         if not now:
             st = "RESOLVED"
-        elif any(x.get("error_code") == f.get("error_code") for x in now):
-            st = "REJECTED_AGAIN"
-            hist[k] = attempts + 1
         else:
-            st = "CHANGED_ERROR"
-            hist[k] = attempts + 1
+            st = "REJECTED_AGAIN" if any(x.get("error_code") == f.get("error_code") for x in now) else "CHANGED_ERROR"
+            if k not in bumped:
+                hist[k] = attempts + 1
+                bumped.add(k)
         if st != "RESOLVED" and hist.get(k, attempts) >= 3:
             st = "ESCALATION_REQUIRED"
         counts[st] += 1
@@ -62,7 +66,8 @@ def main():
     out = dict(previous_errors=pe, current_errors=ce, previous_warnings=pw, current_warnings=cw, counts=counts,
                items=res, new_errors=new, history=hist)
     if a.out:
-        json.dump(out, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        with open(a.out, "w", encoding="utf-8") as fh:
+            json.dump(out, fh, ensure_ascii=False, indent=2)
     print(f"Previous errors: {pe} | Resolved: {counts['RESOLVED']} | Remaining: "
           f"{counts['REJECTED_AGAIN'] + counts['CHANGED_ERROR'] + counts['ESCALATION_REQUIRED']} | New: {counts['NEW']}")
     print(f"Warnings: {pw} -> {cw}")
