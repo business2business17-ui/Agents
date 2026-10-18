@@ -1,9 +1,15 @@
-# Lifestyle v3 — generation status
+# ZAptieka — lifestyle v3, 18.10.2026
 
-2026-10-18: User explicitly authorized OpenAI API fallback. Installed OpenAI SDK in isolated workspace .venv-imagegen. Invoked the bundled imagegen CLI with gpt-image-2, quality high, 2048×2048 for scene 02.
+Созданы 13 изображений: карусель 7 × 4000×4000, A+ Basic 3 × 970×600, A+ Premium 3 × 1464×600. JPG RGB, встроенный sRGB. Все технические проверки пройдены; каждый файл менее 10 МБ.
 
-Result: HTTP 401, invalid_api_key. No usable generated image returned. Remaining 11 jobs not submitted. No secrets stored in this report.
+Начиная с №2 используются бытовые сцены ванной/душа. Люди — вымышленные фотореалистичные AI-модели. Только №5 показывает открытый брусок. Остальные 12 изображений содержат исходную фотографию упакованного товара. Надписи на упаковке не перерисованы.
 
-Prepared: generation_jobs.jsonl (12 scenes), remaining_jobs.jsonl, hero_prompt.txt. Product compositing and final exports must wait for valid image generation outputs. Only image 05 may show unpackaged soap. All other carousel and A+ assets must use original packaged-product photography. People are fictional photorealistic AI models.
+Ингредиенты взяты из подтверждённой пользователем таблицы, включая Boswellia Carterii Oil. Старый текст этикетки отличается от таблицы; исходная этикетка сохранена. Размеры и масса: 8 × 5 × 2.5 cm, 100 g.
 
-Next action: replace OPENAI_API_KEY securely in the environment used by Codex, refresh the app environment if needed, then rerun scene 02 using the bundled CLI. No further API-mode approval is required.
+Фоны сгенерированы провайдером; часть исходных фонов имеет разрешение ниже итогового 4000×4000 и увеличена при композиции. Текст и исходный товар наложены отдельно. Сцены проверены на посторонние открытые бруски, перекрытие текста и размещение товара.
+
+Файлы готовы для визуального согласования. Общий статус загрузки: NOT READY FOR AMAZON CREATIVE UPLOAD — размеры конкретных модулей A+ и мобильные кадрирования ещё нужно проверить в редакторе Amazon; число слотов карусели по категории не проверено. Уменьшенные ингредиентные подписи следует проверить в мобильном предпросмотре. Это не блокирует передачу подготовленных макетов.
+
+Перед публикацией: подтвердить модуль A+ и мобильный вид, а также соответствие действующей упаковки составу из таблицы. Состав в новых надписях выполнен по указанию пользователя.
+
+Материалы: manifest.json, PREFLIGHT.json, PREVIEW.jpg, ZAptieka_Production_v3.xlsx и ZAptieka_13_images_v3.zip в папке проекта. Оригиналы и предыдущая версия v2 сохранены.

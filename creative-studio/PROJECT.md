@@ -1,16 +1,17 @@
-# ZAptieka — project memory
+# ZAptieka — lifestyle v3, 18.10.2026
 
-API FALLBACK AUTHORIZED by user "Запускай" on 2026-10-18. First real gpt-image-2 request failed HTTP 401 invalid_api_key. No v3 images generated; remaining jobs not submitted. Replace invalid environment key, then continue without requesting API permission again. See v3/STATUS.md and saved 12-scene prompts.
+Созданы 13 изображений: карусель 7 × 4000×4000, A+ Basic 3 × 970×600, A+ Premium 3 × 1464×600. JPG RGB, встроенный sRGB. Все технические проверки пройдены; каждый файл менее 10 МБ.
 
-CONFIRMED FOLLOW-UP: User selected #5 as the only unwrapped-soap asset and photorealistic AI models. These choices are resolved. API key variable exists; API generation requires explicit fallback opt-in under imagegen skill. No v3 raster production yet.
+Начиная с №2 используются бытовые сцены ванной/душа. Люди — вымышленные фотореалистичные AI-модели. Только №5 показывает открытый брусок. Остальные 12 изображений содержат исходную фотографию упакованного товара. Надписи на упаковке не перерисованы.
 
-LATEST USER REVISION (2026-10-18): Replace v2's product-only concept with lifestyle from carousel image 2 onward: people, bathroom, shower. Across all 13 assets show packaged soap in 12; exactly one image may show an unwrapped bar (proposed #5, awaiting selection). This overrides the older unwrapped-product direction below. See LIFESTYLE_V3.md. Clarify whether people must be actual photography or photorealistic AI models. No v3 images created yet; current generation tools unavailable.
+Ингредиенты взяты из подтверждённой пользователем таблицы, включая Boswellia Carterii Oil. Старый текст этикетки отличается от таблицы; исходная этикетка сохранена. Размеры и масса: 8 × 5 × 2.5 cm, 100 g.
 
-Updated 2026-10-18. Mode SMART. Marketplace UK / EN from supplied Google Sheet.
-GTIN 4751045862134; ASIN B0GVSWRBWV; SKU WJ-9EH3-NUHN.
-User explicitly confirmed images/ZAptieka-amazon and composition as in the table. INCI source of truth: Sodium Palmate, Sodium Palm Kernelate, Aqua, Butyrospermum Parkii Butter, Cocos Nucifera Oil, Boswellia Carterii Oil. The conflicting old label is not the source of truth for new ingredient copy. Original packshot retained unchanged for MAIN; packaging mismatch remains a product data issue.
-Style: minimalist niche skincare, pale limestone, ivory, forest green, serif/italic/sans, thin dividers. Hero copy verbatim per user.
-Real unwrapped product photographs are immutable layers; no generated product. Existing originals and old output preserved.
-New series: creative-studio/zaptieka-frankincense-4751045862134/v2, 13 review artworks, production workbook, ZIP and report. Final visual approval has not been received.
-Image generation was called twice but returned no usable file. Actual production uses user photographic background and deterministic compositing, not a generated substitute.
-Pending: actual A+ module/mobile crop, final visual review; MAIN label composition mismatch. Do not claim Amazon upload readiness.
+Фоны сгенерированы провайдером; часть исходных фонов имеет разрешение ниже итогового 4000×4000 и увеличена при композиции. Текст и исходный товар наложены отдельно. Сцены проверены на посторонние открытые бруски, перекрытие текста и размещение товара.
+
+Файлы готовы для визуального согласования. Общий статус загрузки: NOT READY FOR AMAZON CREATIVE UPLOAD — размеры конкретных модулей A+ и мобильные кадрирования ещё нужно проверить в редакторе Amazon; число слотов карусели по категории не проверено. Уменьшенные ингредиентные подписи следует проверить в мобильном предпросмотре. Это не блокирует передачу подготовленных макетов.
+
+Перед публикацией: подтвердить модуль A+ и мобильный вид, а также соответствие действующей упаковки составу из таблицы. Состав в новых надписях выполнен по указанию пользователя.
+
+Материалы: manifest.json, PREFLIGHT.json, PREVIEW.jpg, ZAptieka_Production_v3.xlsx и ZAptieka_13_images_v3.zip в папке проекта. Оригиналы и предыдущая версия v2 сохранены.
+
+Project path: zaptieka-frankincense-4751045862134. Branch: AMZ-DESIGN. UK / EN. GTIN 4751045862134; ASIN B0GVSWRBWV; SKU WJ-9EH3-NUHN. Approved: only image 05 unwrapped, fictional AI adults, composition per source table. No generation remains pending.
