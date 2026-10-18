@@ -13,13 +13,17 @@ ROOT = Path(__file__).resolve().parent.parent
 SH = ROOT / "shared" / "amazon"
 MD = "shared-pricing-and-updates.md"
 REFS = [MD, "amazon-categories.md", "live-research.md", "content-limits.md"]
+FEED_COMMON = ["pricing_engine.py", "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py", "xlsx_core.py", "xlsm_inspect.py",
+               "xlsm_patch.py", "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py", "feed_pipeline.py"]
+REFS_BY = {("amazon-ppc", "amazon-ppc"): ["amazon-categories.md", "live-research.md"]}  # PPC does not need pricing / content-limit policy
+# (plugin, skill) -> shared scripts copied into skills/<skill>/scripts
 PLAN = {
-    "amazon-product-intelligence": ["pricing_engine.py", "margin_calc.py", "performance_calc.py", "handoff_tool.py",
-                                    "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py", "content_limits.json"],
-    "amazon-feed-compiler": ["pricing_engine.py", "handoff_tool.py", "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
-                             "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py", "feed_pipeline.py"],
-    "amazon-feed-error-agent": ["pricing_engine.py", "google_link.py", "amazon_link.py", "marketplaces.py", "marketplaces.json", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
-                                "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py", "feed_pipeline.py"],
+    ("amazon-seo-listings", "amazon-seo-listings"): [
+        "pricing_engine.py", "margin_calc.py", "performance_calc.py", "handoff_tool.py", "marketplaces.py", "marketplaces.json",
+        "google_link.py", "amazon_link.py", "content_limits.json"],
+    ("amazon-feeds", "amazon-feed-compiler"): FEED_COMMON + ["handoff_tool.py"],
+    ("amazon-feeds", "amazon-feed-error-agent"): FEED_COMMON,
+    ("amazon-ppc", "amazon-ppc"): ["performance_calc.py", "margin_calc.py", "ppc_search_terms.py", "marketplaces.py", "marketplaces.json"],
 }
 # Design agent: link tools, marketplace table, categories and live-research knowledge (no Amazon feed/pricing code).
 DESIGN = "amazon-creative-studio"
@@ -32,9 +36,9 @@ def main():
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
     stale = []
-    for name, scripts in PLAN.items():
-        skill = ROOT / "plugins" / name / "skills" / name
-        pairs = ([(SH / s, skill / "scripts" / s) for s in scripts] + [(SH / m, skill / "references" / m) for m in REFS] + [
+    for (plugin, name), scripts in PLAN.items():
+        skill = ROOT / "plugins" / plugin / "skills" / name
+        pairs = ([(SH / s, skill / "scripts" / s) for s in scripts] + [(SH / m, skill / "references" / m) for m in REFS_BY.get((plugin, name), REFS)] + [
                  (SH / "project-memory.md", skill / "references" / "project-memory.md"),
                  (SH / "project-memory-template.md", skill / "assets" / "project-memory-template.md")])
         for src, dst in pairs:

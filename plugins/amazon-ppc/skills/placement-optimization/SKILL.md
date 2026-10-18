@@ -1,0 +1,171 @@
+---
+name: placement-optimization
+description: 分析 Amazon Ads Sponsored Products 等广告的 Top of Search、Product Pages、Rest of Search 版位表现与 modifier，识别高效版位、浪费和竞价放大风险。适用于 placement 调整和流量结构优化。
+license: MIT
+metadata:
+  author: "zerlinpi"
+  version: "0.1.0"
+  display_name_zh: "广告版位优化"
+  display_name_en: "Placement Optimization"
+  description_zh: "分析不同广告版位效率并生成安全的 placement modifier 建议。"
+  description_en: "Analyze Amazon Ads placement performance and modifiers across Top of Search, Product Pages and Rest of Search."
+---
+
+# Placement Optimization
+
+## Connector capability gate
+
+When a conclusion depends on live MCP/API/connector data, load `../../references/connector-capability.md` before interpreting missing or empty fields. If a machine-readable capability snapshot is available, identify the exact required capability IDs and run `../../scripts/evaluate_connector_capability_gate.py` **before metric interpretation**.
+
+- `Pass` — continue with the Skill's normal evidence, sufficiency, lineage and safety checks.
+- `Degraded` — do not make a high-confidence dependent recommendation; keep the result to `Directional`, `Hold`, `Alternate Source`, `Missing Data`, or `Manual Review`.
+- `Blocked` — do not treat the dependent observation as action-safe until the capability is resolved or an allowed alternate source is verified.
+- `missing_evidence_policy = never_zero` — `Partial`, `Unsupported`, `Unknown`, or absent connector capability is never a numeric zero, unchanged state, or proof that the platform lacks the feature.
+
+This gate is read-only and does not authorize live Amazon Ads mutation.
+
+## Campaign objective gate
+
+Before converting placement efficiency into an increase/decrease modifier proposal, load `../../references/campaign-objective.md` and preserve `campaign_objective`, `primary_metric`, and `guardrail_metrics` whenever campaign mission changes the interpretation or acceptable trade-off.
+
+- Prefer explicit user/account strategy, structured campaign metadata, or a documented operating plan as objective evidence.
+- **Do not infer** campaign objective from ACOS, TACOS, campaign name, spend level, placement mix, bidding strategy, organic/rank movement, or a short performance window.
+- `Growth` still requires marginal placement headroom plus retail/economic readiness; high historical placement ROAS is not proof that a larger modifier is incremental.
+- `Profit` is constrained by contribution economics and marginal efficiency, not by a universal placement ACOS rule.
+- `Discovery` may accept controlled learning cost, but exploratory traffic is not automatically a placement-scaling candidate.
+- `Defense` must expose strategic rationale, cannibalization risk, and opportunity cost before paying more for protected traffic.
+- `Experiment` preserves treatment/control integrity and declared primary/guardrail metrics; do not contaminate a placement experiment with opportunistic modifier changes.
+- `Control` favors stable, interpretable traffic ownership and should not be amplified from one efficient placement window alone.
+- `Unknown` stays unresolved. If modifier direction, tolerance, or sizing depends on mission, cap the result at `Hold`, `Directional`, `Shadow`, `Experiment`, or `Manual Review`; do not emit an action-safe exact modifier solely from ambiguous objective evidence.
+
+This gate is additive to connector capability, realized-exposure, control-interaction, confounder, action-sizing and platform-capability checks. It does not authorize live writes.
+
+## 默认模式
+
+`Suggest`。输出 placement modifier 候选，不直接修改 campaign。
+
+## 输入
+
+需要尽量包含：
+- placement name；
+- impressions、clicks、spend、orders、sales；
+- CPC、CVR、ACOS/ROAS；
+- current base/target bid；
+- current placement modifier；
+- campaign bidding strategy；
+- current audience bid adjustment state when the campaign/surface supports it；
+- current Sponsored Products video bid adjustment state when applicable；
+- active schedule/event bid rules or other material modifiers；
+- material control-change timestamps；
+- 日期窗口和目标。
+
+当 recommendation 依赖 base bid、placement modifier、dynamic/rule-based bidding、audience bid adjustment、schedule/event rules 等控制的交互时，按需加载：
+
+`references/realized-bid-exposure.md`
+
+当 recommendation 依赖 Amazon 当前 placement adjustment 范围、dynamic bidding 的精确平台行为、audience/video/other bid boost capability、rule eligibility，或 console/API 是否支持某项控制时，再加载：
+
+`../../references/platform-capability-lineage.md`
+
+平台规则发生版本/来源冲突时，先完成 capability lineage reconciliation；不要把旧 guide、launch announcement、不同 ad product 或不同 control surface 的数值直接当成当前 action-safe rule。
+
+## 分析思路
+
+### 1. 看效率，不只看销售额
+
+高销售额版位可能只是获得更多流量。比较：
+- spend share vs sales share；
+- CPC；
+- CVR；
+- ACOS/ROAS；
+- 样本量；
+- query/target/product/audience mix 是否可比。
+
+### 2. 区分配置控制与 realized exposure
+
+Base/target bid、placement adjustment、campaign bidding strategy、audience bid adjustment、video bid adjustment、schedule/event rule 都是配置控制；placement report 中的实际流量、CPC、CVR 和效率是 realized outcome。
+
+不要从配置值自行发明一个精确 auction-level effective bid。控制组合与 Amazon 的 auction-time logic 共同影响实际 exposure，应该通过控制时间线 + placement delivery/CPC 来诊断。
+
+当“Amazon 会如何自动提高/降低 bid、某 placement 最大 adjustment、某 audience control 是否可用、某 control 是否在当前 surface/marketplace 可用”等事实影响推理时，先按 `../../references/platform-capability-lineage.md` 标记 capability scope 和 conflict status。`Conflicted` / `Unknown` 的 exact platform rule 不能支撑精确 effective-bid 推断或 modifier 建议。
+
+### 3. 看增量潜力
+
+高效 Top of Search 不代表应该立即大幅提高 modifier。需要判断：
+- 当前 impression/click 规模；
+- base bid 是否本身偏低/偏高；
+- modifier 提升可能带来的边际 CPC；
+- dynamic/rule-based bidding、audience bid adjustment、video bid adjustment 或 bid rules 是否已经改变 exposure；
+- 目标是否偏增长还是利润；
+- 是否存在可解释的 marginal headroom，而不只是历史平均 ROAS/ACOS 好看。
+
+### 4. 识别放大与归因风险
+
+Base bid、dynamic/rule-based bidding、placement modifier、audience bid adjustment、video bid adjustment、schedule/event rules 可能共同影响实际竞价。不要把 modifier 当作独立旋钮。
+
+如果多个 material controls 在同一 attribution/measurement window 内变化，placement 结果只能 `Directional / Confounded`，除非有额外设计能分离影响。尤其不要把 audience bid adjustment 引起的 traffic/audience mix 变化归因为 placement modifier 的独立效果。
+
+## 常见状态
+
+### High-efficiency / underexposed
+
+可考虑提高 modifier、调整 base bid 或设计实验，但需判断哪一个控制最可解释，并确认没有重叠的 pending control change。
+
+### High-efficiency / already dominant
+
+继续扩量可能边际效率下降，先观察，不追涨。
+
+### Low-efficiency / high-spend
+
+检查 query mix、CVR、retail state 和 coupled controls 后，再判断降低 modifier、base bid 或其他控制。
+
+### Low-volume
+
+样本不足，不做强结论。
+
+### Coupled / confounded
+
+多个竞价控制或规则同时变化，或当前 control state 不完整。优先 `Hold / Shadow / Experiment`，不要输出假精度 modifier。
+
+## 变更原则
+
+- 一次只做可归因的单一/最小控制变化，除非实验明确设计组合 treatment；
+- 若同时需要改 base bid 和 placement，优先分阶段；
+- 已有 base bid / placement / bidding-strategy / audience bid adjustment / video bid adjustment / bid-rule 变化 pending evaluation 时，不叠加同一路由上的另一个 material change；
+- 数值幅度需要账户策略、校准响应或明确实验约束；必要时加载 `../../references/action-sizing.md`；
+- 平台允许范围/自动 multiplier 与 advertiser-specific sizing 分开；前者按 `../../references/platform-capability-lineage.md` 验证，后者按 action-sizing 决定；
+- 设验证窗口，避免短期反向调整；
+- 大促、event rule active window、零售状态变化需要单独解释。
+
+## 输出
+
+每个 placement：
+- current modifier；
+- current base/target bid；
+- bidding strategy / audience bid adjustment / video bid adjustment / active bid-rule state；
+- control state as-of / material change timeline；
+- platform capability scope / conflict status（当平台规则影响结论时）；
+- spend share / sales share；
+- CPC/CVR/ACOS；
+- baseline comparison；
+- interaction risk；
+- causal attribution: Supported / Directional / Confounded / Unknown；
+- recommendation: increase/decrease/hold/investigate/experiment；
+- recommended control；
+- proposed modifier（仅证据和 sizing basis 充分时）；
+- confidence；
+- evidence；
+- guardrails；
+- validation window；
+- rollback condition。
+
+## 禁止
+
+- 不因为 Top of Search CVR/ROAS 高就默认提高 modifier；
+- 不忽略 dynamic/rule-based bidding、audience bid adjustment、video bid adjustment、schedule/event rules 或其他 material bidding controls；
+- 不把配置值拼成未经平台行为证实的精确 effective-bid 公式；
+- 不把历史 placement 平均效率当成增加 modifier 后的保证边际效率；
+- 不在 placement 样本很小的时候做大幅动作；
+- 不同时大改多个竞价层造成无法归因；
+- 不把未完成 capability lineage reconciliation 的旧/冲突 Amazon 文档数值写成当前确定的平台上限或自动调整公式；
+- 不在 material control state 缺失/过期时输出 action-safe 精确 modifier。

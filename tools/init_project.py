@@ -18,11 +18,12 @@ AMAZON_DIRS = ["agent1/normalized", "agent1/evidence", "agent1/competitors", "ag
                "agent1/output/xlsx", "agent1/output/issues", "agent1/versions",
                "agent2/templates/raw", "agent2/mappings", "agent2/overrides", "agent2/feeds/generated", "agent2/feeds/validated",
                "agent2/manifests", "agent2/validation", "agent2/provenance", "agent2/mutations", "agent2/processing-reports",
-               "agent3/source", "agent3/working", "agent3/corrected", "agent3/reports", "agent3/change-sets", "agent3/diffs"]
+               "agent3/source", "agent3/working", "agent3/corrected", "agent3/reports", "agent3/change-sets", "agent3/diffs",
+               "ppc/reports", "ppc/actions"]
 
 
-def find_template(plugin):
-    base = os.path.join(ROOT, "plugins", plugin, "skills", plugin, "assets", "project-memory-template.md")
+def find_template(plugin, skill=None):
+    base = os.path.join(ROOT, "plugins", plugin, "skills", skill or plugin, "assets", "project-memory-template.md")
     return base if os.path.exists(base) else None
 
 
@@ -34,7 +35,7 @@ def main():
     made = []
     os.makedirs(os.path.join(a.dir, "inbox"), exist_ok=True)  # drop source files here (XLSX, images, exports, templates)
     if a.only in (None, "amazon"):
-        tpl = find_template("amazon-product-intelligence")
+        tpl = find_template("amazon-seo-listings")
         if tpl:
             base = os.path.join(a.dir, "amazon-project")
             for d in AMAZON_DIRS:

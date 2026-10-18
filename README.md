@@ -1,19 +1,19 @@
 # Agents
 
-Четыре автономных агента для работы с Amazon. Подключаются плагинами в Claude Code (локально в терминале) или загружаются в ChatGPT, Gemini, Claude.ai, Codex, Cursor.
+Четыре автономных агента (по одной ветке на агента: `AMZ-DESIGN`, `SEO-Listings`, `PPC`, `Feeds`; в `main` все четыре) для работы с Amazon. Подключаются плагинами в Claude Code (локально в терминале) или загружаются в ChatGPT, Gemini, Claude.ai, Codex, Cursor.
 
-| Агент | Что делает |
-|---|---|
-| `amazon-product-intelligence` | ТТХ, сопоставление, тексты, SEO (Cerebro / Helium 10 MCP), цены и маржа, пакет для Feed |
-| `amazon-feed-compiler` | Заполняет Feed Amazon |
-| `amazon-feed-error-agent` | Исправляет ошибки загруженного Feed |
-| `amazon-creative-studio` (Design) | Вёрстка дизайна, ТЗ, визуальный контент, чтение картинок |
+| Агент (плагин) | Ветка | Что делает |
+|---|---|---|
+| `amazon-creative-studio` (Design) | `AMZ-DESIGN` | Дизайн и всё, что с ним связано: вёрстка, ТЗ, визуальный контент, чтение картинок |
+| `amazon-seo-listings` (SEO, Listings) | `SEO-Listings` | ТТХ, сопоставление, тексты листингов, SEO (Cerebro / Helium 10 MCP), цены и маржа, пакет для Feeds |
+| `amazon-ppc` (PPC) | `PPC` | Реклама: кампании, search term отчёты, harvest и минус-слова, ставки / бюджеты, ACOS / TACOS / ROAS |
+| `amazon-feeds` (Feeds) | `Feeds` | Заполнение Feed, ошибки Feed, корректировки (два режима одного агента) |
 
 Подробно кто за что отвечает: [`docs/AGENTS_OVERVIEW.md`](docs/AGENTS_OVERVIEW.md). Amazon-агенты: [`docs/AMAZON_AGENTS.md`](docs/AMAZON_AGENTS.md). Локальная установка в терминал: [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md) (`install.sh` / `install.ps1`).
 
 ## Обязательные правила заполнения Feed Amazon
 
-Действуют для `amazon-feed-compiler` и `amazon-feed-error-agent`:
+Действуют для агента `amazon-feeds` (режимы FILL и ERRORS):
 
 - **Brand** — при заполнении Feed бренд дополнительно проставляется на **все SKU**.
 - **Tax code**:
@@ -43,9 +43,9 @@
 ```
 /plugin marketplace add business2business17-ui/Agents
 /plugin install amazon-creative-studio@business2business17-agents
-/plugin install amazon-product-intelligence@business2business17-agents
-/plugin install amazon-feed-compiler@business2business17-agents
-/plugin install amazon-feed-error-agent@business2business17-agents
+/plugin install amazon-seo-listings@business2business17-agents
+/plugin install amazon-ppc@business2business17-agents
+/plugin install amazon-feeds@business2business17-agents
 ```
 **Другие ИИ:** `dist/<агент>/` и `dist/<агент>.zip`: `system-prompt.md` (всё внутри) или `instructions-short.md` (<= 8000 символов, для Custom GPT) + `knowledge/`.
 
@@ -53,9 +53,14 @@
 
 ```
 .claude-plugin/marketplace.json
-plugins/amazon-creative-studio/{.claude-plugin/plugin.json, agents/, skills/amazon-creative-studio/{SKILL.md, references/, scripts/, assets/}}
-dist/amazon-creative-studio/       собирается: python3 tools/build_portable.py (--check для CI)
-tests/test_design_tools.py
+plugins/amazon-creative-studio/   Design            (ветка AMZ-DESIGN)
+plugins/amazon-seo-listings/      SEO, Listings     (ветка SEO-Listings)
+plugins/amazon-ppc/               PPC               (ветка PPC)
+plugins/amazon-feeds/             Feeds: скиллы amazon-feeds (роутер), amazon-feed-compiler (FILL), amazon-feed-error-agent (ERRORS)  (ветка Feeds)
+   у каждого: {.claude-plugin/plugin.json, agents/, skills/<агент>/{SKILL.md, references/, scripts/, assets/}, licenses/}
+shared/amazon/                    общий код; tools/sync_shared.py раскладывает по плагинам
+dist/<агент>/                     собирается: python3 tools/build_portable.py (--check для CI)
+tests/
 ```
 
 После правок: `python3 tools/sync_shared.py && python3 tools/build_portable.py && python3 -m unittest discover -s tests` (то же самое проверяет CI: `.github/workflows/ci.yml`).

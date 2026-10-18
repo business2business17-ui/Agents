@@ -1,0 +1,319 @@
+{
+  "_meta": {
+    "purpose": "Single table of Amazon marketplaces: domain, currency, content languages. Language depends on the country; some marketplaces are multi-language and then the language of each listing must be chosen explicitly.",
+    "status": "Languages reviewed against a list supplied by the user on 2026-10-11 (primary = language the seller must provide; secondary = shopper interface / auto-translated, own listing in it is VERIFY_IN_UI). Still NOT verified against the seller account: the feed template and Seller Central decide which languages a category accepts.",
+    "language_codes": "ISO 639-1",
+    "fields": "languages = listing content languages to choose from (primary); primary_languages = required content language(s); secondary_languages = interface / machine-translated for shoppers"
+  },
+  "marketplaces": {
+    "US": {
+      "domain": "amazon.com",
+      "currency": "USD",
+      "languages": [
+        "en"
+      ],
+      "note": "English is primary; Spanish is secondary (own Spanish content: VERIFY_IN_UI).",
+      "primary_languages": [
+        "en"
+      ],
+      "secondary_languages": [
+        "es"
+      ]
+    },
+    "CA": {
+      "domain": "amazon.ca",
+      "currency": "CAD",
+      "languages": [
+        "en",
+        "fr"
+      ],
+      "multi_language": true,
+      "note": "English and French are both official; choose per listing.",
+      "primary_languages": [
+        "en",
+        "fr"
+      ],
+      "secondary_languages": []
+    },
+    "MX": {
+      "domain": "amazon.com.mx",
+      "currency": "MXN",
+      "languages": [
+        "es"
+      ],
+      "primary_languages": [
+        "es"
+      ],
+      "secondary_languages": []
+    },
+    "BR": {
+      "domain": "amazon.com.br",
+      "currency": "BRL",
+      "languages": [
+        "pt"
+      ],
+      "primary_languages": [
+        "pt"
+      ],
+      "secondary_languages": []
+    },
+    "UK": {
+      "domain": "amazon.co.uk",
+      "currency": "GBP",
+      "languages": [
+        "en"
+      ],
+      "primary_languages": [
+        "en"
+      ],
+      "secondary_languages": []
+    },
+    "DE": {
+      "domain": "amazon.de",
+      "currency": "EUR",
+      "languages": [
+        "de"
+      ],
+      "primary_languages": [
+        "de"
+      ],
+      "secondary_languages": [
+        "en",
+        "nl",
+        "pl",
+        "tr"
+      ],
+      "note": "German is primary; shopper interface also offers en, nl, pl, tr."
+    },
+    "FR": {
+      "domain": "amazon.fr",
+      "currency": "EUR",
+      "languages": [
+        "fr"
+      ],
+      "primary_languages": [
+        "fr"
+      ],
+      "secondary_languages": [
+        "en"
+      ]
+    },
+    "IT": {
+      "domain": "amazon.it",
+      "currency": "EUR",
+      "languages": [
+        "it"
+      ],
+      "primary_languages": [
+        "it"
+      ],
+      "secondary_languages": [
+        "en"
+      ]
+    },
+    "ES": {
+      "domain": "amazon.es",
+      "currency": "EUR",
+      "languages": [
+        "es"
+      ],
+      "primary_languages": [
+        "es"
+      ],
+      "secondary_languages": [
+        "en",
+        "ca"
+      ]
+    },
+    "NL": {
+      "domain": "amazon.nl",
+      "currency": "EUR",
+      "languages": [
+        "nl"
+      ],
+      "primary_languages": [
+        "nl"
+      ],
+      "secondary_languages": [
+        "en"
+      ]
+    },
+    "SE": {
+      "domain": "amazon.se",
+      "currency": "SEK",
+      "languages": [
+        "sv"
+      ],
+      "primary_languages": [
+        "sv"
+      ],
+      "secondary_languages": [
+        "en"
+      ]
+    },
+    "PL": {
+      "domain": "amazon.pl",
+      "currency": "PLN",
+      "languages": [
+        "pl"
+      ],
+      "primary_languages": [
+        "pl"
+      ],
+      "secondary_languages": [
+        "en"
+      ]
+    },
+    "BE": {
+      "domain": "amazon.com.be",
+      "currency": "EUR",
+      "languages": [
+        "fr",
+        "nl"
+      ],
+      "multi_language": true,
+      "note": "French and Dutch; choose per listing.",
+      "primary_languages": [
+        "fr",
+        "nl"
+      ],
+      "secondary_languages": []
+    },
+    "IE": {
+      "domain": "amazon.ie",
+      "currency": "EUR",
+      "languages": [
+        "en"
+      ],
+      "primary_languages": [
+        "en"
+      ],
+      "secondary_languages": []
+    },
+    "TR": {
+      "domain": "amazon.com.tr",
+      "currency": "TRY",
+      "languages": [
+        "tr"
+      ],
+      "primary_languages": [
+        "tr"
+      ],
+      "secondary_languages": []
+    },
+    "AE": {
+      "domain": "amazon.ae",
+      "currency": "AED",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "multi_language": true,
+      "note": "Arabic and English; choose per listing.",
+      "primary_languages": [
+        "ar",
+        "en"
+      ],
+      "secondary_languages": []
+    },
+    "SA": {
+      "domain": "amazon.sa",
+      "currency": "SAR",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "multi_language": true,
+      "note": "Arabic and English; choose per listing.",
+      "primary_languages": [
+        "ar",
+        "en"
+      ],
+      "secondary_languages": []
+    },
+    "EG": {
+      "domain": "amazon.eg",
+      "currency": "EGP",
+      "languages": [
+        "ar"
+      ],
+      "note": "Arabic is primary; English is secondary (own English content: VERIFY_IN_UI).",
+      "primary_languages": [
+        "ar"
+      ],
+      "secondary_languages": [
+        "en"
+      ]
+    },
+    "ZA": {
+      "domain": "amazon.co.za",
+      "currency": "ZAR",
+      "languages": [
+        "en"
+      ],
+      "primary_languages": [
+        "en"
+      ],
+      "secondary_languages": []
+    },
+    "IN": {
+      "domain": "amazon.in",
+      "currency": "INR",
+      "languages": [
+        "en"
+      ],
+      "note": "English is primary; regional languages are shopper-side (own content: VERIFY_IN_UI).",
+      "primary_languages": [
+        "en"
+      ],
+      "secondary_languages": [
+        "hi",
+        "ta",
+        "te"
+      ]
+    },
+    "JP": {
+      "domain": "amazon.co.jp",
+      "currency": "JPY",
+      "languages": [
+        "ja"
+      ],
+      "price_precision": 0,
+      "primary_languages": [
+        "ja"
+      ],
+      "secondary_languages": [
+        "en",
+        "zh"
+      ]
+    },
+    "AU": {
+      "domain": "amazon.com.au",
+      "currency": "AUD",
+      "languages": [
+        "en"
+      ],
+      "primary_languages": [
+        "en"
+      ],
+      "secondary_languages": []
+    },
+    "SG": {
+      "domain": "amazon.sg",
+      "currency": "SGD",
+      "languages": [
+        "en"
+      ],
+      "primary_languages": [
+        "en"
+      ],
+      "secondary_languages": [
+        "zh"
+      ]
+    }
+  },
+  "aliases": {
+    "GB": "UK",
+    "EN": "UK"
+  }
+}

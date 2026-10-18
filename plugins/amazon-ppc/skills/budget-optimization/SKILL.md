@@ -1,0 +1,227 @@
+---
+name: budget-optimization
+description: 分析 Amazon Ads campaign 的预算受限、花费节奏、边际效率和预算分配，生成增预算、降预算、重分配或保持建议。适用于预算不足、预算分配、日预算治理和扩量判断。
+license: MIT
+metadata:
+  author: "zerlinpi"
+  version: "0.1.0"
+  display_name_zh: "预算优化"
+  display_name_en: "Budget Optimization"
+  description_zh: "在效率、库存和业务目标约束下优化广告预算分配。"
+  description_en: "Optimize Amazon Ads budgets using budget constraints, pacing, marginal efficiency, inventory and business goals."
+---
+
+# Budget Optimization
+
+## Connector capability gate
+
+When a conclusion depends on live MCP/API/connector data, load `../../references/connector-capability.md` before interpreting missing or empty fields. If a machine-readable capability snapshot is available, identify the exact required capability IDs and run `../../scripts/evaluate_connector_capability_gate.py` **before metric interpretation**.
+
+- `Pass` — continue with the Skill's normal evidence, sufficiency, lineage and safety checks.
+- `Degraded` — do not make a high-confidence dependent recommendation; keep the result to `Directional`, `Hold`, `Alternate Source`, `Missing Data`, or `Manual Review`.
+- `Blocked` — do not treat the dependent observation as action-safe until the capability is resolved or an allowed alternate source is verified.
+- `missing_evidence_policy = never_zero` — `Partial`, `Unsupported`, `Unknown`, or absent connector capability is never a numeric zero, unchanged state, or proof that the platform lacks the feature.
+
+This gate is read-only and does not authorize live Amazon Ads mutation.
+
+## Campaign objective gate
+
+Before reallocating budget based on apparent efficiency, load `../../references/campaign-objective.md` when campaign roles differ. Cross-campaign allocation is an objective-allocation problem, not only an ACOS ranking problem.
+
+- Do not drain `Discovery` merely because current ACOS is worse than a mature `Profit` campaign without checking the learning mandate and guardrails.
+- Do not fund `Growth` merely because budget exhausts; require marginal headroom and explicit growth economics.
+- Do not cut `Defense` solely from one efficiency ratio without strategic-coverage and cannibalization context.
+- Do not starve an `Experiment` in a way that breaks the declared design.
+- If campaign objective is `Unknown`, avoid reallocation that assumes campaigns have interchangeable jobs.
+
+No universal campaign-type budget percentage is defined by this repository.
+
+## Budget control-state causal gate
+
+When the question is whether a Sponsored Products budget change **worked**, whether a budget increase caused a result, or whether a surprising spend change came from a manual budget edit, load `../../references/control-state-comparability.md` and use `decision_surface=sponsored_products_budget_change` when the required evidence is available.
+
+For this causal surface, `budget_or_pacing` must distinguish the source-supported `base_average_daily_budget`, the `effective_daily_budget` that was actually in force for the comparison window, and `active_budget_rules`. If the connector cannot observe budget-rule state, keep material-control coverage `Partial/Unknown`; do not encode missing rule evidence as an empty list or unchanged state.
+
+For this registered surface, overlapping bid controls include placement, audience and Sponsored Products video bid adjustments when applicable; missing video-control evidence is not a zero boost or proof of ineligibility.
+
+Use `../../scripts/compare_control_state.py` only as a read-only evidence classifier. `Treatment Isolated` means the evidenced registered controls isolate the intended budget treatment; it does not prove incrementality or authorize another budget mutation.
+
+## 核心原则
+
+“预算花完”不是自动加预算信号；“预算没花完”也不等于 campaign 有问题。预算动作必须结合边际效率、业务目标和预算池约束。Campaign 预算只是约束层级之一；账户级、portfolio 或外部预算 cap 可能才是真正瓶颈。
+
+## Progressive loading
+
+存在多个 Campaign 竞争同一个业务预算、portfolio cap、Sponsored Products account-level daily budget cap、外部 pacing pool，或其他上游 spend constraint 时，再加载：
+
+- `references/portfolio-budget-conflicts.md`
+
+只有方向性预算结论需要转成具体金额时，再加载：
+
+- `../../references/action-sizing.md`
+
+普通单 Campaign 预算诊断若不需要具体动作幅度，不加载这些 reference。
+
+## 输入
+
+需要：
+- daily/lifetime budget；
+- spend；
+- budget status / budget utilization（如有）；
+- campaign performance；
+- 目标 ACOS/ROAS/利润；
+- 时间窗口。
+
+推荐：
+- average time in budget / out-of-budget coverage；
+- estimated missed impressions/clicks/sales（如平台提供，按模型估计处理）；
+- platform recommended budget（如有，作为参考而非默认动作）；
+- Sponsored Products account-level daily budget cap / portfolio cap / business budget；
+- 小时级 pacing；
+- placement；
+- inventory；
+- promotion plan；
+- campaign priority/role；
+- 同账户可调配预算池、protected floor 或外部 pacing 约束。
+
+## Configured budget vs effective budget
+
+Keep these observations separate before diagnosis:
+
+- **base average daily budget** — the configured campaign budget from a trusted source;
+- **effective daily budget** — the budget in force after source-supported automated budget rules for the relevant date/time;
+- **observed spend / serving coverage** — realized delivery evidence such as spend, budget status and average time in budget;
+- **budget-rule state** — schedule/performance rule status and effective interval when the active source supports it;
+- **upstream constraint state** — portfolio/account/business/external caps and pacing when decision-relevant.
+
+Amazon currently documents Sponsored Ads budget rules that can automatically increase daily budget based on schedules/events or performance conditions, and multiple applicable rules can combine. A performance-triggered rule is an adaptive control: its activation may be related to the same performance signal being evaluated, so it is a potential control/confounding change rather than proof that a manual action caused the outcome.
+
+Amazon also documents Sponsored Ads daily budgets as **average daily** budgets whose realized spend can vary by day under the applicable account setting/policy. Therefore:
+
+`spend on one day > base average daily budget` does **not** by itself prove a manual budget increase, executor drift, overspend, or policy violation.
+
+If effective budget or rule state is unavailable, say what is unknown and keep the conclusion `Directional / Hold / Manual Review` as appropriate. Missing rule evidence is never zero rules.
+
+## 诊断
+
+### Efficient and budget constrained
+
+高效且频繁因预算受限停止投放，是优先增预算候选。但还需检查：
+- 库存；
+- 是否已有足够规模；
+- 预算增加后边际流量是否可能明显变差；
+- 大促是否即将结束；
+- 是否存在更上游的 account/portfolio/business cap；
+- 如果总预算固定，新增预算从哪里来以及来源 Campaign 的机会成本。
+
+`average time in budget < 100%`、out-of-budget status 或稳定日内提前耗尽可支持“delivery constrained”的判断，但不自动证明“profitable headroom”。
+
+### Inefficient and budget constrained
+
+不能因为花完预算就增加。先解决 keyword/search term/bid/placement/retail efficiency。
+
+### Efficient and not spending
+
+预算不是主要瓶颈。检查 bid、流量规模、相关性、排名、广告状态和 targeting coverage。
+
+### Inefficient and not spending
+
+低优先级；可能需要结构整改而非预算动作。
+
+## Modeled opportunity evidence
+
+平台提供的 estimated missed impressions/clicks/sales、recommended budget 等可作为有用的机会信号，但必须与观测数据分开：
+
+- spend / budget / average time in budget 属于 serving/current-state 证据；
+- missed opportunity / recommended budget 属于模型估计或推荐；
+- 模型估计不等于保证增量，不替代利润、库存、重叠流量和上游 cap 检查；
+- 无法解释估计方法、范围或适用窗口时，降低 confidence，而不是把预测值当成事实。
+
+## Pacing
+
+如有小时数据，检查：
+- 是否上午过早耗尽；
+- 高转化时段是否没有预算；
+- 是否存在大促导致的临时加速；
+- 日内波动是否只是单天随机性；
+- account/portfolio cap 是否在相同时间窗口先于 campaign budget 成为瓶颈。
+
+没有小时数据时，不声称可以精确做 dayparting。
+
+## 上游预算约束
+
+当存在 account-level / portfolio / business / external cap 时：
+
+1. 先识别实际 constraint hierarchy；
+2. 记录每层 cap、当前 spend 与可信 remaining headroom；
+3. 若上游 cap 已绑定，不能把单 Campaign 提额写成“可独立获得更多 delivery”；
+4. 要么给出平衡的 source → destination 重分配，要么把上游 cap 变更作为单独的业务预算决策；
+5. 若 headroom/source budget 不清楚，输出 Directional / Hold / Manual Review。
+
+## 预算重分配
+
+当总预算固定时：
+1. 明确总预算池、业务目标和不可随意移动的 protected spend；
+2. 识别低边际回报预算；
+3. 识别高边际回报且存在真实 headroom 的 Campaign；
+4. 把建议写成来源 Campaign → 目标 Campaign 的平衡转移，而不是彼此冲突的独立增预算建议；
+5. 同时估计目标收益与来源机会成本；
+6. 采用与证据质量、风险和可逆性匹配的变更幅度；
+7. 设验证窗口观察 pool-level 结果与边际效率。
+
+## 变更幅度 Guardrail
+
+不使用通用固定百分比作为默认预算调整幅度。需要给出具体预算金额时，使用 `../../references/action-sizing.md`，并让建议幅度受以下因素共同约束：
+
+- 可用的 marginal headroom 证据；
+- 数据量和归因成熟度；
+- 库存与促销窗口；
+- 账户/portfolio/business cap 的真实可用 headroom；
+- 预算池可移动空间；
+- Campaign 的业务角色和 protected floor；
+- 最近是否存在未完成验证的 Bid / Placement / Budget / Structure 变更；
+- 动作可逆性与潜在损失上限；
+- caller/account 显式提供的 max change、spend-at-risk 或其他政策限制。
+
+证据弱时优先 Directional、Probe/Shadow、Experiment 或 Hold，而不是套用固定比例。无法证明具体 `proposed_value` 时保留方向和缺失约束，不制造精确金额。
+
+## 输出
+
+### Budget map
+每个 campaign 标记：
+- constrained/not constrained；
+- constraint level：campaign / portfolio / account / business / external / unknown；
+- efficient/inefficient；
+- average time in budget / serving coverage（如有）；
+- observed vs modeled headroom evidence；
+- role/priority；
+- marginal headroom；
+- pool constraint / protected floor（如适用）；
+- recommended direction。
+
+### Reallocation plan
+列出来源 campaign → 目标 campaign，以及：
+- 预算前后（仅当具体幅度可被证据支持）；
+- active upstream caps / remaining headroom；
+- action class / sizing basis；
+- pool total reconciliation；
+- 观测证据与模型估计分栏；
+- 来源机会成本；
+- 预计目的；
+- confidence；
+- guardrail；
+- validation window。
+
+## 禁止
+
+- 不把预算增长当作销售增长保证；
+- 不把 estimated missed sales/clicks/impressions 当成保证增量；
+- 不把 platform recommended budget 当成无需校验即可执行的默认值；
+- 不在上游 account/portfolio cap 已绑定时，把单 Campaign 提额描述为独立可实现的 delivery 增长；
+- 不把平均 ROAS/ACOS 当作下一单位预算的边际回报；
+- 不在固定总预算池下对所有受限 Campaign 同时给出无法调和的增预算建议；
+- 不从高效品牌防御或其他 protected Campaign 抽走关键预算而不提示风险；
+- 不在库存紧张时建议大幅扩量；
+- 不同时大幅改 budget、bid、placement 而没有分阶段验证计划；
+- 不把第三方/平台示例百分比直接当作本账户默认预算动作幅度；
+- 不引入未经授权的真实账户写入。

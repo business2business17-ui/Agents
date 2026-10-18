@@ -19,8 +19,8 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SH = os.path.join(ROOT, "shared", "amazon")
-PI = os.path.join(ROOT, "plugins", "amazon-product-intelligence", "skills", "amazon-product-intelligence", "scripts")
-ER = os.path.join(ROOT, "plugins", "amazon-feed-error-agent", "skills", "amazon-feed-error-agent", "scripts")
+PI = os.path.join(ROOT, "plugins", "amazon-seo-listings", "skills", "amazon-seo-listings", "scripts")
+ER = os.path.join(ROOT, "plugins", "amazon-feeds", "skills", "amazon-feed-error-agent", "scripts")
 
 
 def run(script, *args, ok=(0,)):
@@ -451,8 +451,9 @@ class AmazonTools(unittest.TestCase):
         self.assertIn("FORBIDDEN_TERM_FOUND", p.stdout)
 
     def test_category_and_research_references_shipped(self):
-        for a in ("amazon-product-intelligence", "amazon-feed-compiler", "amazon-feed-error-agent"):
-            refs = os.path.join(ROOT, "plugins", a, "skills", a, "references")
+        for plugin, a in (("amazon-seo-listings", "amazon-seo-listings"), ("amazon-feeds", "amazon-feed-compiler"),
+                          ("amazon-feeds", "amazon-feed-error-agent"), ("amazon-ppc", "amazon-ppc")):
+            refs = os.path.join(ROOT, "plugins", plugin, "skills", a, "references")
             for f in ("amazon-categories.md", "live-research.md"):
                 self.assertGreater(os.path.getsize(os.path.join(refs, f)), 1000, (a, f))
             skill = open(os.path.join(refs, "..", "SKILL.md"), encoding="utf-8").read()

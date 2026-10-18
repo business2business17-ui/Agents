@@ -1,0 +1,15 @@
+{
+  "name": "amazon-feeds",
+  "version": "3.0.0",
+  "description": "Amazon Feeds agent: fill feed templates (rows 7+ only, dry run, guard, manifest), analyze feed errors from Processing Reports, apply approved corrections with QA and re-analysis.",
+  "author": {
+    "name": "business2business17-ui"
+  },
+  "keywords": [
+    "amazon",
+    "seller",
+    "feed",
+    "errors",
+    "listing"
+  ]
+}

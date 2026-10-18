@@ -860,7 +860,7 @@ For every product (per row, per category and type) the agent audits the descript
 
 Rules: never invent a fact, a benefit, a certification or a use case; never strengthen a claim in translation; keep brand and model names exactly; the proposal is marketplace-language text, the audit is in the chat language. Length and formatting follow the placement (image copy is short; the description proposal is a text for the product page and is not limited by the image layout).
 
-Scope: this is description-level content that feeds the visuals and the product page. Full title / bullets / backend-keyword SEO belongs to `amazon-product-intelligence` (Agent 1); hand over the approved description and the `MISSING_TTX` list instead of duplicating that work.
+Scope: this is description-level content that feeds the visuals and the product page. Full title / bullets / backend-keyword SEO belongs to `amazon-seo-listings` (Agent 1); hand over the approved description and the `MISSING_TTX` list instead of duplicating that work.
 
 ## Output
 

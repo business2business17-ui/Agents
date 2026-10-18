@@ -34,38 +34,72 @@ def split_frontmatter(text):
     return meta, m.group(2).lstrip("\n")
 
 
+# plugins whose dist bundles several primary skills (first = router, inlined first); every other plugin has one
+PRIMARY = {"amazon-feeds": ["amazon-feeds", "amazon-feed-compiler", "amazon-feed-error-agent"]}
+
+
 def build_one(plugin: Path):
     name = plugin.name
-    skill_dir = plugin / "skills" / name  # the primary skill; companion skills are not inlined into dist/
+    skills = PRIMARY.get(name, [name])  # companion skills are not inlined into dist/
+    multi = len(skills) > 1
     agent_meta, agent_body = split_frontmatter((plugin / "agents" / f"{name}.md").read_text(encoding="utf-8"))
-    skill_meta, skill_body = split_frontmatter((skill_dir / "SKILL.md").read_text(encoding="utf-8"))
+    parsed = {}
+    for sk in skills:
+        meta, body = split_frontmatter((plugin / "skills" / sk / "SKILL.md").read_text(encoding="utf-8"))
+        parsed[sk] = (meta, body)
 
-    refs = sorted((skill_dir / "references").glob("*.md"))
-    parts = [f"# {name}\n\n{agent_meta.get('description', '')}\n", agent_body.strip(), skill_body.strip(),
-             "\n---\n# KNOWLEDGE BASE (reference files; read the named file when the protocol points to it)\n"]
+    parts = [f"# {name}\n\n{agent_meta.get('description', '')}\n", agent_body.strip()]
+    if multi:
+        parts.append("Skills are inlined below; where a protocol names `references/`, `scripts/` or `assets/`, they are the files under "
+                     "`<skill>/references|scripts|assets` of this bundle (files: `knowledge/<skill>/...`).")
+    for sk in skills:
+        body = parsed[sk][1].strip()
+        parts.append(f"\n---\n# SKILL: {sk}\n\n{body}" if multi else body)
+    parts.append("\n---\n# KNOWLEDGE BASE (reference files; read the named file when the protocol points to it)\n")
     parts.append("Script files (`scripts/*.py`) and `assets/` are separate files; if you cannot execute scripts, "
                  "apply their checks manually as described in `references/qa-preflight.md` and produce the "
                  "workbook columns per `references/xlsx-output.md`.\n")
-    for r in refs:
-        parts.append(f"\n## FILE: references/{r.name}\n\n{r.read_text(encoding='utf-8').strip()}\n")
+    seen = {}
+    for sk in skills:
+        for r in sorted((plugin / "skills" / sk / "references").glob("*.md")):
+            text = r.read_text(encoding="utf-8").strip()
+            label = f"{sk}/references/{r.name}" if multi else f"references/{r.name}"
+            if multi and text in seen:
+                parts.append(f"\n## FILE: {label}\n\n(identical to {seen[text]})\n")
+                continue
+            seen[text] = label
+            parts.append(f"\n## FILE: {label}\n\n{text}\n")
     system_prompt = "\n\n".join(parts).replace("\n\n\n\n", "\n\n") + "\n"
 
-    sections = re.split(r"\n(?=## )", skill_body.strip())
+    router_body = parsed[skills[0]][1]
+    sections = re.split(r"\n(?=## )", router_body.strip())
     kept = [s for s in sections if not s.startswith(SHORT_DROP)]
-    short = ("\n".join(kept).strip() +
-             "\n\nKNOWLEDGE: the files `references/*.md` are attached as knowledge; open the one named in each "
-             "step when you reach it. Project memory: if you cannot write files, print the updated memory block "
-             "at the end of each reply and ask the user to paste it next session.\n")
+    tail = ("\n\nKNOWLEDGE: the files `references/*.md` are attached as knowledge; open the one named in each "
+            "step when you reach it. Project memory: if you cannot write files, print the updated memory block "
+            "at the end of each reply and ask the user to paste it next session.\n")
+    if multi:
+        tail = ("\n\nKNOWLEDGE: the operating protocols are the files " + ", ".join(f"`{sk}/SKILL.md`" for sk in skills[1:]) +
+                ": open the one for the chosen mode at the start and follow it. Their `references/`, `scripts/`, `assets/` are attached "
+                "as `<skill>/references|scripts|assets/...`. Project memory: if you cannot write files, print the updated memory block "
+                "at the end of each reply and ask the user to paste it next session.\n")
+    short = ("\n".join(kept).strip() + tail)
+    if multi:
+        short = agent_body.strip() + "\n\n" + short
     if len(short) > SHORT_LIMIT:
         raise SystemExit(f"{name}: instructions-short.md is {len(short)} chars (> {SHORT_LIMIT}); trim SKILL.md")
 
     out = {}
     out[f"dist/{name}/system-prompt.md"] = system_prompt
     out[f"dist/{name}/instructions-short.md"] = short
-    for sub in ("references", "scripts", "assets"):
-        for f in sorted((skill_dir / sub).glob("*")):
-            if f.is_file() and f.name != "__pycache__":
-                out[f"dist/{name}/knowledge/{sub}/{f.name}"] = f.read_bytes()
+    for sk in skills:
+        base = f"dist/{name}/knowledge/{sk}" if multi else f"dist/{name}/knowledge"
+        skill_dir = plugin / "skills" / sk
+        if multi and sk != skills[0]:
+            out[f"{base}/SKILL.md"] = (skill_dir / "SKILL.md").read_bytes()
+        for sub in ("references", "scripts", "assets"):
+            for f in sorted((skill_dir / sub).glob("*")):
+                if f.is_file() and f.name != "__pycache__":
+                    out[f"{base}/{sub}/{f.name}"] = f.read_bytes()
     return name, out
 
 

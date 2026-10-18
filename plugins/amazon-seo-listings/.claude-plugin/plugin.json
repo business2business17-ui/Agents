@@ -1,0 +1,14 @@
+{
+  "name": "amazon-seo-listings",
+  "version": "3.0.0",
+  "description": "Amazon SEO and listings agent: product data, evidence, claims, SEO content (Cerebro / Helium 10), localized listing text, pricing and margin, sealed package for the Feeds agent.",
+  "author": {
+    "name": "business2business17-ui"
+  },
+  "keywords": [
+    "amazon",
+    "seller",
+    "seo",
+    "listing"
+  ]
+}

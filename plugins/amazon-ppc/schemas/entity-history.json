@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/zerlinpi/amazon-ads-skills/schemas/entity-history.json",
+  "title": "Amazon Ads Entity Optimization History",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["entity", "as_of", "history_status", "recent_events"],
+  "properties": {
+    "entity": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {
+        "marketplace": {"type": ["string", "null"]},
+        "profile_scope": {"type": ["string", "null"]},
+        "type": {"type": "string", "minLength": 1},
+        "id": {"type": "string", "minLength": 1},
+        "control_dimension": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "account_identity": {
+      "type": ["object", "null"],
+      "description": "Derived account identity envelope preserved from compatible optimization events. Missing fields remain unknown; conflicting advertiser identities must not be collapsed into one history.",
+      "properties": {
+        "manager_account_id": {"type": ["string", "null"]},
+        "global_advertiser_account_id": {"type": ["string", "null"]},
+        "regional_advertiser_account_id": {"type": ["string", "null"]},
+        "legacy_advertiser_account_id": {"type": ["string", "null"]},
+        "advertiser_account_id": {"type": ["string", "null"]},
+        "regional_profile_id": {"type": ["string", "null"]},
+        "country_code": {"type": ["string", "null"]},
+        "identity_mapping_provenance": {"type": ["object", "string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "identity_scope_status": {"type": ["string", "null"], "enum": ["Complete", "Incomplete", "Ambiguous", "Collision Detected", null]},
+    "identity_scope_warnings": {"type": "array", "items": {"type": "string"}},
+    "candidate_scopes": {"type": "array", "items": {"type": "object", "properties": {"marketplace": {"type": ["string", "null"]}, "profile_scope": {"type": ["string", "null"]}, "reason": {"type": ["string", "null"]}}, "additionalProperties": true}},
+    "as_of": {"type": "string", "format": "date-time"},
+    "latest_source_event_at": {"type": ["string", "null"], "format": "date-time"},
+    "latest_readback_at": {"type": ["string", "null"], "format": "date-time"},
+    "history_status": {"type": "string", "enum": ["No Recent Action", "Proposed Only", "Awaiting Application", "Application Unknown", "Pending Readback", "Pending Evaluation", "Worked / Keep", "Monitoring", "Rollback Candidate", "Rolled Back", "Failed Application", "Drifted", "Conflicted / Manual Review"]},
+    "identity_lineage": {
+      "type": ["object", "null"],
+      "properties": {
+        "continuity_status": {"type": ["string", "null"], "enum": ["Verified", "Partial", "Rejected", "Unknown", null]},
+        "scope_transition_type": {"type": ["string", "null"], "enum": ["same_scope", "cross_profile_same_marketplace", "cross_marketplace", "unknown", null]},
+        "scope_transition_verified": {"type": ["boolean", "null"]},
+        "predecessor_evidence_portability": {"type": ["string", "null"], "enum": ["Bounded", "Directional Only", "Rejected", "Unknown", null]},
+        "portability_constraints": {"type": "array", "items": {"type": "string"}},
+        "predecessor_entities": {"type": "array", "items": {"type": "object", "required": ["type", "id"], "properties": {"type": {"type": "string", "minLength": 1}, "id": {"type": "string", "minLength": 1}, "marketplace": {"type": ["string", "null"]}, "profile_scope": {"type": ["string", "null"]}}, "additionalProperties": true}},
+        "migration_reason": {"type": ["string", "null"]},
+        "mapping_timestamp": {"type": ["string", "null"], "format": "date-time"},
+        "verification_source": {"type": ["string", "null"]},
+        "business_intent_preserved": {"type": ["boolean", "null"]},
+        "targeting_semantics_preserved": {"type": ["boolean", "null"]},
+        "asin_scope_preserved": {"type": ["boolean", "null"]},
+        "warnings": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "latest_known_state": {},
+    "latest_measurement_state": {
+      "type": ["object", "null"],
+      "description": "Bounded projection of the newest decision-relevant evidence identity. This is retrieval context, not proof that historical outcomes remain comparable under current reporting semantics.",
+      "properties": {
+        "evidence_snapshot_id": {"type": ["string", "null"]},
+        "observed_at": {"type": ["string", "null"], "format": "date-time"},
+        "source_system": {"type": ["string", "null"]},
+        "source_dataset": {"type": ["string", "null"]},
+        "acquisition_channel": {"type": ["string", "null"]},
+        "reporting_generation": {"type": ["string", "null"]},
+        "semantic_version": {"type": ["string", "null"]},
+        "metric_semantics": {
+          "type": "array",
+          "description": "Per-metric semantic identities preserved from the selected evidence snapshot. Missing metric-level identity remains absent/unknown and must not be inferred from the dataset semantic_version.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "metric_name": {"type": ["string", "null"]},
+              "metric_family": {"type": ["string", "null"]},
+              "attribution_family": {"type": ["string", "null"]},
+              "semantic_version": {"type": ["string", "null"]},
+              "aggregation_semantics": {"type": ["string", "null"], "enum": ["additive", "non_additive_deduplicated", "ratio_or_derived", "unknown", null]}
+            },
+            "additionalProperties": true
+          }
+        },
+        "outcome_metric_semantics": {
+          "type": ["object", "null"],
+          "description": "Semantic identity of the decision-driving outcome metric from the same event that supplied the selected evidence snapshot.",
+          "properties": {
+            "metric_name": {"type": ["string", "null"]},
+            "metric_family": {"type": ["string", "null"]},
+            "attribution_family": {"type": ["string", "null"]},
+            "semantic_version": {"type": ["string", "null"]},
+            "aggregation_semantics": {"type": ["string", "null"], "enum": ["additive", "non_additive_deduplicated", "ratio_or_derived", "unknown", null]}
+          },
+          "additionalProperties": true
+        },
+        "measurement_composition": {
+          "type": ["object", "null"],
+          "description": "Decision-time conversion measurement composition and lower-grain allocation coverage. Preserve only explicitly observed composition; missing fields remain unknown and must not be inferred as direct-only, zero modeled conversions, or complete allocation.",
+          "properties": {
+            "modeled_conversion_inclusion": {"type": ["string", "null"]},
+            "direct_modeled_split_available": {"type": ["boolean", "null"]},
+            "allocation_coverage_status": {"type": ["string", "null"]},
+            "unallocated_rows_present": {"type": ["boolean", "null"]},
+            "allocation_grain": {"type": ["string", "null"]}
+          },
+          "additionalProperties": true
+        },
+        "currency_lineage": {
+          "type": ["object", "null"],
+          "description": "Decision-time monetary measurement lineage preserved from the selected evidence snapshot. Missing fields remain unknown; historical replay must not infer native currency or FX treatment from displayed values.",
+          "properties": {
+            "native_currency": {"type": ["string", "null"]},
+            "reporting_currency": {"type": ["string", "null"]},
+            "currency_conversion_status": {"type": ["string", "null"], "enum": ["native", "converted", "unknown", null]},
+            "conversion_timing": {"type": ["string", "null"]},
+            "exchange_rate_provenance": {"type": ["object", "string", "null"]}
+          },
+          "additionalProperties": true
+        },
+        "date_attribution_semantics": {"type": ["string", "null"]},
+        "historical_availability_status": {"type": ["string", "null"], "enum": ["available", "partially_available", "unavailable", "retired_or_deleted", "unknown", null]},
+        "comparability_status": {"type": ["string", "null"], "enum": ["Comparable", "Reconcilable", "Directional", "Not Comparable", "Unknown", null]},
+        "warnings": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "latest_realization": {
+      "type": ["object", "null"],
+      "description": "Backward-compatible bounded shopper-facing ad realization summary. New producers should prefer last_observed_realization plus current_realization_observability so known state and current observability are not conflated.",
+      "properties": {
+        "snapshot_id": {"type": ["string", "null"]}, "as_of": {"type": ["string", "null"], "format": "date-time"},
+        "realization_mode": {"type": ["string", "null"], "enum": ["manual", "platform_managed", "hybrid", "unknown", null]},
+        "coverage_status": {"type": ["string", "null"], "enum": ["Complete", "Partial", "Unavailable", "Unknown", null]},
+        "comparability_status": {"type": ["string", "null"], "enum": ["Comparable", "Reconcilable", "Directional", "Not Comparable", "Unknown", null]},
+        "identity_hash": {"type": ["string", "null"]}, "warnings": {"type": "array", "items": {"type": "string"}}
+      }, "additionalProperties": true
+    },
+    "last_observed_realization": {
+      "type": ["object", "null"],
+      "description": "Most recent bounded realization state actually observed. A newer Unavailable/Unknown observation attempt must not erase this state, but it must not be treated as current truth without freshness and observability context.",
+      "properties": {
+        "snapshot_id": {"type": ["string", "null"]}, "observed_at": {"type": ["string", "null"], "format": "date-time"},
+        "realization_mode": {"type": ["string", "null"], "enum": ["manual", "platform_managed", "hybrid", "unknown", null]},
+        "coverage_status": {"type": ["string", "null"], "enum": ["Complete", "Partial", "Unknown", null]},
+        "comparability_status": {"type": ["string", "null"], "enum": ["Comparable", "Reconcilable", "Directional", "Not Comparable", "Unknown", null]},
+        "freshness_status": {"type": ["string", "null"], "enum": ["Current", "Bounded", "Stale", "Unknown", null]},
+        "freshness_basis": {"type": ["string", "null"]}, "identity_hash": {"type": ["string", "null"]}, "warnings": {"type": "array", "items": {"type": "string"}}
+      }, "additionalProperties": true
+    },
+    "current_realization_observability": {
+      "type": ["object", "null"],
+      "description": "Newest relevant attempt to observe material realization dimensions, kept separate from the last known realized identity.",
+      "properties": {
+        "checked_at": {"type": ["string", "null"], "format": "date-time"},
+        "status": {"type": ["string", "null"], "enum": ["Complete", "Partial", "Unavailable", "Unknown", null]},
+        "source_dataset": {"type": ["string", "null"]}, "acquisition_channel": {"type": ["string", "null"]},
+        "material_dimensions": {"type": "array", "items": {"type": "string"}}, "warnings": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "latest_action": {
+      "type": ["object", "null"],
+      "description": "Bounded summary of the latest relevant optimization action. Preserve the campaign objective captured on that action event when known; do not replace it with a later campaign objective.",
+      "properties": {
+        "event_id": {"type": ["string", "null"]},
+        "timestamp": {"type": ["string", "null"], "format": "date-time"},
+        "action_type": {"type": ["string", "null"]},
+        "campaign_objective": {
+          "anyOf": [{"$ref": "campaign-objective.json"}, {"type": "null"}],
+          "description": "Campaign objective recorded at action time. Unknown or missing action-time objective must not be backfilled from later performance or the current campaign objective."
+        }
+      },
+      "additionalProperties": true
+    },
+    "application_status": {"type": ["string", "null"], "enum": ["Confirmed", "Partial", "Not Applied", "Drifted", "Unknown", null]},
+    "outcome_status": {"type": ["string", "null"], "enum": ["Worked", "Likely Worked", "Monitoring", "Inconclusive", "Likely Failed", "Failed", "Application Failure", "Drifted", null]},
+    "validation": {"type": ["object", "null"], "properties": {"status": {"type": ["string", "null"], "enum": ["Not Started", "Pending", "Mature", "Blocked", "Unknown", null]}, "window": {"type": ["object", "null"]}, "next_evaluation": {"type": ["string", "object", "null"]}}, "additionalProperties": true},
+    "active_rollback_condition": {},
+    "pending_event_count": {"type": "integer", "minimum": 0},
+    "memory_warnings": {"type": "array", "items": {"type": "string"}},
+    "active_experiments": {"type": "array", "items": {}},
+    "recent_events": {"type": "array", "items": {}},
+    "decision_gate": {"type": ["string", "null"], "enum": ["Allowed", "Hold", "Experiment Only", "Manual Review", null]},
+    "source_complete": {"type": ["boolean", "null"]}
+  }
+}

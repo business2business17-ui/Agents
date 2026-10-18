@@ -1,0 +1,15 @@
+{
+  "name": "amazon-ppc",
+  "version": "1.0.0",
+  "description": "Amazon PPC agent: campaign build, search term analysis, harvest and negatives, bids / budgets / placements, ACOS-TACOS-ROAS from real margins, diagnosis and reviews.",
+  "author": {
+    "name": "business2business17-ui"
+  },
+  "keywords": [
+    "amazon",
+    "ppc",
+    "ads",
+    "acos",
+    "advertising"
+  ]
+}

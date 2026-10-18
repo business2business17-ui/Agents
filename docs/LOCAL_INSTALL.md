@@ -34,9 +34,9 @@
 
 | Агент | Что сказать |
 |---|---|
-| `amazon-product-intelligence` | «Подготовь данные для Feed по файлу inbox/products.xlsx, рынок DE, SEO из inbox/cerebro.xlsx» |
-| `amazon-feed-compiler` | «Заполни Feed по пакету Agent 1, шаблон inbox/DE_template.xlsm» (в первый раз добавьте «режим SIMULATION») |
-| `amazon-feed-error-agent` | «Разбери ошибки загруженного Feed inbox/feed_uploaded.xlsm» |
+| `amazon-seo-listings` | «Подготовь данные для Feed по файлу inbox/products.xlsx, рынок DE, SEO из inbox/cerebro.xlsx» |
+| `amazon-feeds` | Заполнить: «Заполни Feed по пакету SEO-Listings, шаблон inbox/DE_template.xlsm» (в первый раз добавьте «режим SIMULATION»). Ошибки: «Разбери ошибки загруженного Feed inbox/feed_uploaded.xlsm» |
+| `amazon-ppc` | «Разбери search term отчёт inbox/st.xlsx, target ACOS 30%, найди минус-слова и что вынести в Exact» |
 | `amazon-creative-studio` (Design) | «Сделай план карусели и ТЗ дизайнеру по товарам из inbox/products.xlsx, картинки в inbox/images/» |
 
 Чтобы агент работал без лишних остановок, добавьте «делай сам» (режим AUTOPILOT).
@@ -45,9 +45,9 @@
 
 Скрипты лежат в `plugins/<агент>/skills/<агент>/scripts/` (у каждого есть `--help`). Примеры:
 ```
-python3 plugins/amazon-product-intelligence/skills/amazon-product-intelligence/scripts/pricing_engine.py --sale 24.99 --marketplace DE
-python3 plugins/amazon-product-intelligence/skills/amazon-product-intelligence/scripts/amazon_link.py parse "https://www.amazon.de/dp/B0XXXXXXXX"
-python3 plugins/amazon-product-intelligence/skills/amazon-product-intelligence/scripts/google_link.py fetch "<ссылка Google Sheet>" --out inbox
+python3 plugins/amazon-seo-listings/skills/amazon-seo-listings/scripts/pricing_engine.py --sale 24.99 --marketplace DE
+python3 plugins/amazon-seo-listings/skills/amazon-seo-listings/scripts/amazon_link.py parse "https://www.amazon.de/dp/B0XXXXXXXX"
+python3 plugins/amazon-seo-listings/skills/amazon-seo-listings/scripts/google_link.py fetch "<ссылка Google Sheet>" --out inbox
 ```
 
 ## Токены и доступ
