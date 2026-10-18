@@ -13,7 +13,6 @@ Usage: build_portable.py [--check]   (--check exits 1 if dist/ is stale; for CI)
 """
 import argparse
 import re
-import shutil
 import sys
 import zipfile
 from pathlib import Path

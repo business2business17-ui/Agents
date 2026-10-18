@@ -25,7 +25,7 @@ import sys
 
 from lxml import etree
 
-from xlsx_core import M, Book, parse_xml, sha256, split_ref
+from xlsx_core import M, Book, parse_xml, split_ref
 
 
 def canon(el):
@@ -44,12 +44,11 @@ def cell_map(book, root):
 
 
 def strip_data(root):
-    clone = etree.fromstring(etree.tostring(root))
-    for tag in ("sheetData", "dimension"):
-        el = clone.find(M + tag)
-        if el is not None:
-            clone.remove(el)
-    return canon(clone)
+    """Canonical form of the sheet XML without <sheetData>/<dimension>. Children are serialized one by one:
+    cloning the whole sheet (data included) to delete two elements was the guard's main cost on big feeds."""
+    skip = {M + "sheetData", M + "dimension"}
+    attrs = sorted(root.attrib.items())
+    return repr(attrs).encode() + b"".join(canon(ch) for ch in root if ch.tag not in skip)
 
 
 def main():
@@ -81,9 +80,10 @@ def main():
         else "xl/workbook.xml differs")
 
     s_root, o_root = parse_xml(src.entries[part]), parse_xml(out.entries[part])
-    chk("sheet_structure", strip_data(s_root) == strip_data(o_root),
+    structure_same = strip_data(s_root) == strip_data(o_root)
+    chk("sheet_structure", structure_same,
         "validations, merges, columns, protection, conditional formatting, panes identical"
-        if strip_data(s_root) == strip_data(o_root) else "target sheet XML differs outside sheetData")
+        if structure_same else "target sheet XML differs outside sheetData")
 
     s_cells, s_styles, s_rows = cell_map(src, s_root)
     o_cells, o_styles, o_rows = cell_map(out, o_root)
@@ -113,8 +113,8 @@ def main():
     chk("no_write_below_min_row", not low, f"cells changed in protected rows: {low}" if low else "none")
     f_changed = [c[0] for c in changed if "formula" in (c[1][0], c[2][0])]
     chk("formulas", not f_changed, f"formula cells changed/added: {f_changed}" if f_changed else "no formula touched")
-    inj = [ref for ref, (k, v) in o_cells.items()
-           if k == "formula" and ref in {c[0] for c in changed}]
+    changed_refs = {c[0] for c in changed}
+    inj = [ref for ref, (k, v) in o_cells.items() if k == "formula" and ref in changed_refs]
     chk("injection", not inj, f"changed cells stored as formulas: {inj}" if inj else
         "no changed cell is a formula; text beginning with = + - @ is stored as text")
 

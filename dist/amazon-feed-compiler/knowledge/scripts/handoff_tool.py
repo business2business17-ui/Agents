@@ -87,8 +87,30 @@ def seal_one(r, batch_id, agent_version, now):
     return r
 
 
+def gtin_problem(code, kind):
+    """None if `code` is a well-formed GTIN of the given kind (ean/upc/gtin) with a valid check digit, else the reason."""
+    if not code.isdigit() or not code.isascii():
+        return "not a digit string"
+    lengths = {"ean": (8, 13), "upc": (12,), "gtin": (8, 12, 13, 14)}[kind]
+    if len(code) not in lengths:
+        return f"{len(code)} digits; {kind} must have {' or '.join(map(str, lengths))}"
+    total = sum(int(ch) * (3 if i % 2 == 0 else 1) for i, ch in enumerate(reversed(code[:-1])))
+    expected = (10 - total % 10) % 10
+    return None if expected == int(code[-1]) else f"check digit mismatch (should end in {expected})"
+
+
 def validate_one(r):
+    """Validate one record; a structurally broken record yields an error entry instead of a traceback."""
+    try:
+        return _validate_one(r)
+    except (TypeError, AttributeError, KeyError, ValueError) as e:
+        return [f"malformed record structure ({type(e).__name__}: {e}); check field types against --example"], []
+
+
+def _validate_one(r):
     errs, warns = [], []
+    if not isinstance(r, dict):
+        return ["record must be a JSON object"], warns
     for k in REQUIRED:
         if k not in r:
             errs.append(f"missing field: {k}")
@@ -123,6 +145,10 @@ def validate_one(r):
             errs.append(f"identifiers.{k} must be a string (leading zeros), got {type(v).__name__}")
         if v == "":
             errs.append(f"identifiers.{k} is an empty string; use null for unavailable")
+        elif isinstance(v, str):
+            why = gtin_problem(v, k)
+            if why:
+                errs.append(f"identifiers.{k} {v!r}: {why} (INVALID_GTIN)")
     pt = r["product_type"]
     if not isinstance(pt, dict) or not pt.get("value"):
         errs.append("product_type.value missing")
@@ -194,7 +220,9 @@ def validate_one(r):
             if p and p.get("currency") and _mp_cur(r["marketplace"]) and p["currency"] != _mp_cur(r["marketplace"]):
                 errs.append(f"pricing.currency {p['currency']} does not match marketplace {r['marketplace']} ({_mp_cur(r['marketplace'])}): CURRENCY_CONFLICT")
     if c and c.get("backend_search_terms") is not None:
-        if len(c["backend_search_terms"].encode("utf-8")) != c.get("backend_bytes", -1):
+        if not isinstance(c["backend_search_terms"], str):
+            errs.append("content.backend_search_terms must be a string")
+        elif len(c["backend_search_terms"].encode("utf-8")) != c.get("backend_bytes", -1):
             errs.append("content.backend_bytes does not match UTF-8 byte length")
     hs = r["hashes"]
     exp = seal_one(r, r["batch_id"], r["generated_by_agent_version"], r["generated_at"])
@@ -207,10 +235,14 @@ def validate_one(r):
 
 
 def load(path):
-    txt = open(path, encoding="utf-8-sig").read()
+    with open(path, encoding="utf-8-sig") as fh:
+        txt = fh.read()
     if path.endswith(".jsonl"):
         return [json.loads(l) for l in txt.splitlines() if l.strip()]
-    d = json.loads(txt)
+    try:
+        d = json.loads(txt)
+    except json.JSONDecodeError:  # a .json file that actually holds one record per line
+        return [json.loads(l) for l in txt.splitlines() if l.strip()]
     return d if isinstance(d, list) else [d]
 
 

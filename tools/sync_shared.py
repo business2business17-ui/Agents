@@ -17,9 +17,9 @@ PLAN = {
     "amazon-product-intelligence": ["pricing_engine.py", "margin_calc.py", "performance_calc.py", "handoff_tool.py",
                                     "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py"],
     "amazon-feed-compiler": ["pricing_engine.py", "handoff_tool.py", "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
-                             "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py"],
+                             "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py", "feed_pipeline.py"],
     "amazon-feed-error-agent": ["pricing_engine.py", "google_link.py", "amazon_link.py", "marketplaces.py", "marketplaces.json", "xlsx_core.py", "xlsm_inspect.py", "xlsm_patch.py",
-                                "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py"],
+                                "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py", "feed_pipeline.py"],
 }
 # Design agent: link tools, marketplace table, categories and live-research knowledge (no Amazon feed/pricing code).
 DESIGN = "amazon-creative-studio"

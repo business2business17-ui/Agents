@@ -43,12 +43,6 @@ def ranges_of(sqref):
     return out
 
 
-def in_ranges(ref, rngs):
-    c, r = split_ref(ref)
-    ci = col_to_idx(c)
-    return any(a <= ci <= c_ and r1 <= r <= r2 for a, r1, c_, r2 in rngs)
-
-
 def range_values(book, ref_text, default_sheet):
     m = re.match(r"^'?([^'!]+)'?!\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?$", ref_text.strip())
     if not m:
@@ -68,7 +62,20 @@ def range_values(book, ref_text, default_sheet):
     return vals
 
 
+_LIST_CACHE = {}
+
+
 def resolve_list(book, formula, sheet):
+    """Allowed values of a list validation, resolved once per (book, formula): re-reading the source range for
+    every planned cell made validation quadratic on real templates (lists live on a 'Valid Values' sheet)."""
+    key = (id(book), sheet, formula)
+    if key not in _LIST_CACHE:
+        vals = _resolve_list(book, formula, sheet)
+        _LIST_CACHE[key] = None if vals is None else (vals, frozenset(vals))
+    return _LIST_CACHE[key]
+
+
+def _resolve_list(book, formula, sheet):
     f = (formula or "").strip()
     if f.startswith("="):
         f = f[1:]
@@ -92,7 +99,8 @@ def main():
     a = ap.parse_args()
 
     book = Book(a.source)
-    cells = json.load(open(a.cells, encoding="utf-8"))
+    with open(a.cells, encoding="utf-8") as fh:
+        cells = json.load(fh)
     root = book.sheet_root(a.sheet)
     headers = {col: v[1] for col, v in dict(book.rows(a.sheet, a.header_row, a.header_row)).get(a.header_row, {}).items()}
     existing = {}
@@ -107,6 +115,11 @@ def main():
             vals.append(dict(type=v.get("type"), op=v.get("operator") or "between", rngs=ranges_of(v.get("sqref")),
                              f1=f1.text if f1 is not None else None, f2=f2.text if f2 is not None else None,
                              allow_blank=v.get("allowBlank") == "1"))
+    by_col = {}  # column index -> [(row_from, row_to, validation)]: avoids testing every validation for every cell
+    for v in vals:
+        for c1, r1, c2, r2 in v["rngs"]:
+            for ci in range(c1, c2 + 1):
+                by_col.setdefault(ci, []).append((r1, r2, v))
     findings = []
 
     def add(sev, ref, code, msg):
@@ -139,17 +152,20 @@ def main():
                 add("FAIL", ref, "FIELD_LENGTH_EXCEEDED", f"{len(sval.encode('utf-8'))} bytes > 249")
             if len(sval) > 2000:
                 add("WARN", ref, "LONG_TEXT", f"{len(sval)} chars; check the template limit")
-        for v in vals:
-            if not in_ranges(ref, v["rngs"]):
+        seen_v = set()
+        for r1, r2, v in by_col.get(col_to_idx(col), ()):
+            if not r1 <= row <= r2 or id(v) in seen_v:
                 continue
+            seen_v.add(id(v))
             if not sval and v["allow_blank"]:
                 continue
             t = v["type"]
             if t == "list":
-                allowed = resolve_list(book, v["f1"], a.sheet)
-                if allowed is None:
+                resolved = resolve_list(book, v["f1"], a.sheet)
+                if resolved is None:
                     add("INFO", ref, "VALIDATION_MANUAL", f"list source not resolvable: {v['f1']!r}")
-                elif sval not in allowed:
+                elif sval not in resolved[1]:
+                    allowed = resolved[0]
                     near = [x for x in allowed if x.strip().lower() == sval.strip().lower()]
                     if near:
                         add("FAIL", ref, "ENUM_AMBIGUOUS", f"'{sval}' differs only by case/spacing from allowed '{near[0]}': "
@@ -194,7 +210,8 @@ def main():
     res = dict(source=a.source, sheet=a.sheet, planned_cells=len(cells), fails=len(fails),
                status="FAIL" if fails else "PASS", findings=findings)
     if a.json:
-        json.dump(res, open(a.json, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        with open(a.json, "w", encoding="utf-8") as fh:
+            json.dump(res, fh, ensure_ascii=False, indent=2)
     for f in findings:
         print(f"  {f['severity']:5} {f['cell']:8} {str(f['field'] or ''):22} {f['code']:22} {f['message']}")
     print(f"DRY RUN: {res['status']} - {len(cells)} planned cells, {len(fails)} FAIL")

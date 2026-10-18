@@ -13,7 +13,8 @@ import os
 import sys
 
 _PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "marketplaces.json")
-_DATA = json.load(open(_PATH, encoding="utf-8"))
+with open(_PATH, encoding="utf-8") as _fh:
+    _DATA = json.load(_fh)
 
 
 def norm(code):
@@ -49,8 +50,18 @@ def main():
         for k, v in _DATA["marketplaces"].items():
             print(f"{k:3} {v['domain']:16} {v['currency']}  languages={','.join(v['languages'])}{'  (choose per listing)' if v.get('multi_language') else ''}")
         return 0
-    codes = [x for x in a if not x.startswith("--") and (a.index(x) == 0 or a[a.index(x) - 1] != "--language")]
-    lang = a[a.index("--language") + 1].lower() if "--language" in a else None
+    lang, codes, i = None, [], 0
+    while i < len(a):
+        if a[i] == "--language":
+            if i + 1 >= len(a):
+                print("--language needs a value")
+                return 2
+            lang = a[i + 1].lower()
+            i += 2
+            continue
+        if not a[i].startswith("--"):
+            codes.append(a[i])
+        i += 1
     rc = 0
     for c in codes:
         i = info(c)

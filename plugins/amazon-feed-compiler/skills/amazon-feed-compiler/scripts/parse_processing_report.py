@@ -22,7 +22,7 @@ import json
 import re
 import sys
 
-from xlsx_core import M, TEMPLATE_NAME_HINTS, Book, col_to_idx, idx_to_col, parse_xml, split_ref
+from xlsx_core import M, TEMPLATE_NAME_HINTS, Book, parse_xml, split_ref
 
 SYN = {
     "code": ["error code", "fehlercode", "code d'erreur", "codice errore", "código de error", "codigo de error",

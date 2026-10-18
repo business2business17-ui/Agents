@@ -22,15 +22,17 @@ Safety rules enforced here (violations abort with exit 1 and write nothing):
   * duplicate target cells are rejected
 """
 import argparse
+import bisect
 import io
 import json
+import os
 import sys
 import zipfile
 from decimal import Decimal, InvalidOperation
 
 from lxml import etree
 
-from xlsx_core import M, Book, col_to_idx, idx_to_col, parse_xml, serialize, split_ref
+from xlsx_core import M, Book, col_to_idx, parse_xml, serialize, split_ref
 
 XML_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
 INJECTION_PREFIXES = ("=", "+", "-", "@")
@@ -41,19 +43,27 @@ def die(msg):
     sys.exit(1)
 
 
-def find_or_create_row(sd, r):
-    prev = None
-    for row in sd:
-        rn = int(row.get("r"))
-        if rn == r:
+class RowIndex:
+    """Row lookup for <sheetData>: O(1) find, O(log n) ordered insert (a linear scan per cell was quadratic)."""
+
+    def __init__(self, sd):
+        self.sd = sd
+        self.rows = {int(r.get("r")): r for r in sd}
+        self.order = sorted(self.rows)
+
+    def get(self, r):
+        row = self.rows.get(r)
+        if row is not None:
             return row
-        if rn > r:
-            new = etree.Element(M + "row", r=str(r))
-            row.addprevious(new)
-            return new
-        prev = row
-    new = etree.SubElement(sd, M + "row", r=str(r))
-    return new
+        new = etree.Element(M + "row", r=str(r))
+        i = bisect.bisect_left(self.order, r)
+        if i < len(self.order):
+            self.rows[self.order[i]].addprevious(new)
+        else:
+            self.sd.append(new)
+        self.order.insert(i, r)
+        self.rows[r] = new
+        return new
 
 
 def find_or_create_cell(row, ref):
@@ -82,6 +92,8 @@ def set_value(c, value, vtype):
             d = Decimal(str(value))
         except InvalidOperation:
             die(f"{c.get('r')}: not a number: {value!r}")
+        if not d.is_finite():
+            die(f"{c.get('r')}: not a finite number: {value!r}")
         etree.SubElement(c, M + "v").text = format(d, "f")
         return "number"
     if vtype == "bool":
@@ -98,9 +110,10 @@ def set_value(c, value, vtype):
 
 def update_dimension(root, touched_refs):
     dim = root.find(M + "dimension")
-    if dim is None or ":" not in (dim.get("ref") or ""):
+    if dim is None or not dim.get("ref"):
         return
-    a, b = dim.get("ref").split(":")
+    a, _, b = dim.get("ref").partition(":")
+    b = b or a
     (c1, r1), (c2, r2) = split_ref(a), split_ref(b)
     for ref in touched_refs:
         c, r = split_ref(ref)
@@ -121,7 +134,8 @@ def main():
     ap.add_argument("--report")
     a = ap.parse_args()
 
-    if a.out == a.source:
+    if os.path.exists(a.out) and os.path.samefile(a.out, a.source) or \
+            os.path.realpath(a.out) == os.path.realpath(a.source):
         die("--out must differ from --source (the clean source feed is read-only)")
     with open(a.cells, encoding="utf-8") as f:
         cells = json.load(f)
@@ -138,11 +152,12 @@ def main():
     part = book.sheet_part(a.sheet)
     root = parse_xml(book.entries[part])
     sd = root.find(M + "sheetData")
+    index = RowIndex(sd)
     report, touched = [], []
     for c in cells:
         ref = c["cell"].upper()
         _, rn = split_ref(ref)
-        row = find_or_create_row(sd, rn)
+        row = index.get(rn)
         if "spans" in row.attrib:
             del row.attrib["spans"]
         cell, created = find_or_create_cell(row, ref)
@@ -181,8 +196,10 @@ def main():
             ni.external_attr = zi.external_attr
             ni.comment = zi.comment
             zout.writestr(ni, data)
-    with open(a.out, "wb") as f:
+    tmp = f"{a.out}.tmp-{os.getpid()}"  # atomic: a crash never leaves a half-written feed under the final name
+    with open(tmp, "wb") as f:
         f.write(buf.getvalue())
+    os.replace(tmp, a.out)
     if a.report:
         with open(a.report, "w", encoding="utf-8") as f:
             json.dump(summary, f, ensure_ascii=False, indent=2)
