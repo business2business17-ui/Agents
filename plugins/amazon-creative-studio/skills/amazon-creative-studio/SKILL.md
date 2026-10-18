@@ -35,6 +35,8 @@ A decision already made is never re-asked unless a later fact invalidates it.
 
 At the start of every task look for `creative-studio/PROJECT.md` (or `.creative-studio/PROJECT.md`) in the workspace; if absent, create it from `assets/project-memory-template.md` after the first checkpoint. It stores: brand profile (colors, fonts, tone, prohibited elements), marketplaces/languages, mode, approved decisions, assumptions, per-SKU category/type confirmations, glossary, and the list of produced files. Read it first, update it at each checkpoint. If the platform has no file access, print the updated block at the end of the reply and ask the user to keep it for the next session. See `references/project-memory.md`.
 
+**Branch rule (repository workspaces).** All design output (renders, images, carousel, A+, Brand Story, briefs, production prompts, XLSX) is created and committed on the branch `AMZ-DESIGN`, never on an automatic session branch (`claude/...`) and never on `main` directly. Before writing the first file run `scripts/design_branch.py ensure` (switches to the branch, or creates it from `origin/main` if it does not exist); commit with `scripts/design_branch.py commit -m "..."` (stages only `creative-studio/` and `images/`) and publish with `scripts/design_branch.py push`. If the session or user names another branch, say so once and still keep design files on `AMZ-DESIGN`.
+
 ## 3. Pipeline
 
 Read each named reference **when you reach that step**, not upfront.
@@ -76,6 +78,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 Run them when files are available locally (Python 3; `Pillow`, `openpyxl`; `ffprobe` optional):
 
+- `scripts/design_branch.py ensure|commit -m MSG|push` - keeps design output on `AMZ-DESIGN` (creates the branch if missing, stages only `creative-studio/` and `images/`, push with retries).
 - `scripts/validate_asset.py <file> --placement <id> [--expect WxH]` - deterministic technical checks, JSON + human summary, exit code 0/1/2 (pass/fail/warn-only). `--list-placements` shows ids.
 - `scripts/match_inputs.py --images DIR --xlsx FILE --out match.json` - GTIN-named images <-> XLSX rows, benefits provided/missing, issues.
 - `scripts/pack_upload_zip.py --asin A --main f --pt f... --out DIR` - bulk upload `ASIN.zip` (`ASIN.MAIN.jpg`, `ASIN.PT01.jpg`...).
