@@ -29,8 +29,15 @@ def main():
         with open(path, encoding="utf-8") as fh:
             return json.load(fh)
 
-    prev = load(a.previous)["findings"]
-    cur = load(a.current)["findings"]
+    prev_doc, cur_doc = load(a.previous), load(a.current)
+    prev, cur = prev_doc["findings"], cur_doc["findings"]
+    pt, ct = prev_doc.get("feed_timestamp"), cur_doc.get("feed_timestamp")
+    if pt and ct and pt == ct:
+        print(f"SAME_REPORT: both files carry the feed timestamp {pt}: this is one upload, not a re-upload. Nothing to compare "
+              "(attempt counters are not increased).")
+        return 1
+    if pt and ct and ct < pt:
+        print(f"WARNING order: PREVIOUS ({pt}) is newer than CURRENT ({ct}): swap the arguments.")
     hist = load(a.history) if a.history else {}
     cur_by = {}
     for f in cur:
@@ -59,6 +66,15 @@ def main():
                         attempts=hist.get(k, attempts), cell=f.get("cell"), attribute=f.get("attribute"), sku=f.get("sku")))
     new = [f for f in cur if key(f) not in seen and f["severity"] != "UNKNOWN"]
     counts["NEW"] = len(new)
+    # transient media errors: do the same URLs fail again, or other ones?
+    for code in ("20000", "300060"):
+        pu = {f.get("original_value") for f in prev if str(f.get("error_code")) == code and f.get("original_value")}
+        cu = {f.get("original_value") for f in cur if str(f.get("error_code")) == code and f.get("original_value")}
+        if pu and cu:
+            same = len(pu & cu) / len(pu)
+            print(f"MEDIA code {code}: {len(pu & cu)} of {len(pu)} previously failing URLs fail again ({same:.0%}); {len(cu - pu)} new failing URLs. "
+                  + ("Mostly different URLs each time: the host is unstable/slow (TRANSIENT_HINT), not these files." if same < 0.3 else
+                     "The same URLs fail again: check those files/URLs (not found, firewall, wrong path)."))
     pe = sum(f["severity"] == "ERROR" for f in prev)
     ce = sum(f["severity"] == "ERROR" for f in cur)
     pw = sum(f["severity"] == "WARNING" for f in prev)

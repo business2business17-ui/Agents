@@ -47,6 +47,10 @@ The user may paste an Amazon product, category or search link of any country. Ru
 5. **Quota.** Every call consumes MCP quota: check `get_mcp_usage_info` before large batches and pull once per (marketplace, ASIN/seed), not once per SKU of a variation family.
 6. **Provenance.** Record per source: tool or export name, marketplace, ASIN/seed, `time_period`, retrieval or export date, row count. This becomes `seo_source_date`, `seo_version` and the SEO sheet. A file's modification time is NOT the data date: ask.
 
+## Cerebro / Magnet files carry no marketplace
+
+An exported Cerebro/Magnet XLSX has columns like `Keyword Phrase`, `Search Volume`, `Keyword Sales`, `Cerebro IQ Score`, `Title Density`, per-ASIN rank columns, but **no marketplace or country column and no export date**. So for every file the agent needs two facts and asks once (all files in one question, recommendation taken from the file name such as `DE_...`, `GB_...`): which marketplace the export is from and the export date. `seo_import.py` reads a marketplace code from the file name, accepts `--source-marketplace XX`, and otherwise raises `SEO_SOURCE_MARKETPLACE_UNKNOWN`; an export from another marketplace than the target raises `SEO_MARKETPLACE_MISMATCH` (e.g. a US export is never used for ES). Language shares are computed over classifiable keywords only (brands, models and numbers are neutral); a large US export contains Spanish keywords, which does not make it a Spanish-market export. Several files of the same marketplace are merged; files of different marketplaces are processed separately.
+
 ## From data to content
 
 1. Run `scripts/seo_import.py FILES --marketplace XX --product-terms "<from verified TTX>" --competitors "<brands>" --verified-claims "<claims with evidence>" --seo-date YYYY-MM-DD --out seo.json`. `--product-terms` come from the verified TTX / product type (never from the keyword list itself).

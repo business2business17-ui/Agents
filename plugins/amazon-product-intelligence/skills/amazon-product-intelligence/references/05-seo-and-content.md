@@ -115,6 +115,8 @@ Target maximum:
 
 `75 characters including spaces`
 
+(2026 rule, media category 200; see `content-limits.md`.)
+
 If Product Type rules specify another applicable requirement, use the Product Type rule.
 
 Preferred structure:
@@ -182,7 +184,7 @@ Do not simply repeat the Title.
 
 ## 35. Bullet Points
 
-Create up to 5 bullets unless Product Type rules require another structure.
+Create up to 5 bullets unless Product Type rules require another structure. Each bullet is 10-255 characters, no symbols or end punctuation; limits in `content-limits.md`.
 
 Each bullet must provide unique information.
 
@@ -220,7 +222,7 @@ Target:
 
 Safe maximum:
 
-`249 bytes`
+`249 bytes` (US/UK/EU; JP 500, IN 200; see `content-limits.md`)
 
 Prioritize:
 

@@ -216,3 +216,12 @@ Statuses:
 - ENUM_USER_DECISION_REQUIRED
 
 If ambiguous, ask the user.
+
+## Template that already contains data rows (`TEMPLATE_ROW7_CONFLICT`)
+
+Real feeds are often delivered partly or fully filled (rows 7+ with SKUs, `Edit (Partial Update)` or `Create or Replace (Full Update)` in `::record_action`). Never overwrite and never stop silently. Report: number of filled rows, SKU list/hash, record actions found, product types, marketplace and `contentLanguageTag` (row 1 `settings=` string stays untouched). Then ask ONE question with a recommendation:
+1. **Append** new products below the last filled row (default when the user brings new SKUs). Existing rows stay byte-identical.
+2. **Edit existing rows** matched by SKU (Partial Update): every change carries `expect_old` + `change_id` and goes through the approval checkpoint; the guard proves nothing else changed.
+3. **Hand over to the Feed Error Agent** when the file was already uploaded and a Processing Report exists.
+Rows with a different marketplace id in their attribute names than the target marketplace are never mixed (`MARKETPLACE_MISMATCH`).
+
