@@ -28,5 +28,17 @@
 | `amazon-listing-skill` | OnestarQQ/amazon-listing-skill | лицензия не указана, уточнить у автора |
 | `amazon-a-plus` (только SKILL.md)` | xianyu110/ecommerce-image-skills | MIT |
 
+## Третий пакет (SEO, реклама, исследование, SP-API)
+
+| Скилл | Источник | Лицензия | Заметка |
+|---|---|---|---|
+| `amazon-marketing` (+ вложенные `skills/listing-optimizer`, `a-plus-content`, `product-onboarding`, `listing-audit`, `competitor-analysis`, `keyword-research`, `references/`, `templates/`) | brianmoney/amazon-marketing-skill | MIT | оставлена структура репозитория, чтобы относительные пути работали; входной скилл - `amazon-marketing/SKILL.md` |
+| `amazon-ads` (MCP Marketplace Ad Pros) | MarketplaceAdPros/skill-amazon-ads | MIT | нужен MCP `map`, см. `docs/MCP_SERVERS.md` |
+| `amzscout-research` | amzscout-corp/amzscout-skill-mcp | MIT | нужен MCP `amzscout` и API-ключ |
+| `amazon-seller` | claude-office-skills/skills | MIT | в SKILL.md указан MCP `ecommerce-mcp`, которого нет; использовать как методику |
+| `sp-api-reference` (также у feed-compiler и feed-error-agent) | amzn/selling-partner-api-models | Apache-2.0 | офлайн-модели Listings Items, Product Types, Feeds, Catalog Items |
+
+**Не скопирован: `helium10-listing-builder`** (helium10/Helium10-MCP). Лицензия Helium 10 запрещает копирование, изменение и распространение (разрешено только ставить из их репозитория как есть). Ставьте у себя из источника: `/plugin marketplace add helium10/Helium10-MCP` (см. README репозитория). Сам MCP `https://mcp.helium10.com/mcp` в сессии подключается отдельно токеном `h10_mcp_...`.
+
 Скрипты `fetch-listing.sh`, `fetch-competitor.sh`, `research.sh` (где есть) тянут HTML Amazon через `curl`; правило проекта «без скрейпинга», запускать только по явной просьбе пользователя.
 Тексты лицензий: `../licenses/`.
