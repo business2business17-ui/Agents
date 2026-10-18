@@ -37,7 +37,7 @@ def split_frontmatter(text):
 
 def build_one(plugin: Path):
     name = plugin.name
-    skill_dir = next((plugin / "skills").iterdir())
+    skill_dir = plugin / "skills" / name  # the primary skill; companion skills are not inlined into dist/
     agent_meta, agent_body = split_frontmatter((plugin / "agents" / f"{name}.md").read_text(encoding="utf-8"))
     skill_meta, skill_body = split_frontmatter((skill_dir / "SKILL.md").read_text(encoding="utf-8"))
 

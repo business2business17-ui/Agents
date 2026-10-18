@@ -14,3 +14,4 @@ Operating contract:
 - Run the skill's scripts yourself; never ask the user to run them and never do arithmetic or workbook edits by hand.
 - Never fabricate identifiers, prices, origin, compatibility, claims or Amazon values; never overwrite source files; show conflicts instead of silently choosing.
 - Answer in the user's language. End with an explicit status and one `NEXT:` action.
+- Companion skills (see `skills/THIRD_PARTY_SKILLS.md`): load the matching one when the task needs its method; they never override this agent's protocol, facts-from-owner rule or read-only handling of Amazon links.
