@@ -15,7 +15,8 @@ MD = "shared-pricing-and-updates.md"
 REFS = [MD, "amazon-categories.md", "live-research.md", "content-limits.md"]
 FEED_COMMON = ["pricing_engine.py", "marketplaces.py", "marketplaces.json", "google_link.py", "amazon_link.py", "xlsx_core.py", "xlsm_inspect.py",
                "xlsm_patch.py", "workbook_guard.py", "validate_cells.py", "parse_processing_report.py", "compare_reports.py", "feed_pipeline.py"]
-REFS_BY = {("amazon-ppc", "amazon-ppc"): ["amazon-categories.md", "live-research.md"]}  # PPC does not need pricing / content-limit policy
+REFS_BY = {("amazon-ppc", "amazon-ppc"): ["amazon-categories.md", "live-research.md"],
+           ("amazon-seo-listings", "amazon-seo-listings"): REFS + ["amazon-title-bullet-requirements.md"]}  # PPC does not need pricing / content-limit policy
 # (plugin, skill) -> shared scripts copied into skills/<skill>/scripts
 PLAN = {
     ("amazon-seo-listings", "amazon-seo-listings"): [

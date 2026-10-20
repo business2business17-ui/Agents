@@ -1,5 +1,7 @@
 # Listing content limits and country/language rules
 
+Official Seller Central requirements for titles, bullets and prohibited content (user-supplied 2026-10-20): `amazon-title-bullet-requirements.md`. Item Highlights: 10-125 characters.
+
 Status: `USER_SUPPLIED` on 2026-10-11 (limits and language table given by the user). Corroborated by the US and UK feed templates (Data Definitions): the `title_differentiation` attribute, label "Item Highlight", says it "will appear only when the item name is under 75 characters" and "do not repeat information already in the item name". Everything else is not independently verified on Amazon pages. **The Product Type rule in the feed template / Seller Central for the chosen marketplace always wins.** Machine-readable copy: `content_limits.json`; checker: `scripts/content_check.py --marketplace XX`.
 
 | Field (feed attribute) | Limit | Rules |

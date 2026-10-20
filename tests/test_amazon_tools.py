@@ -460,6 +460,31 @@ class AmazonTools(unittest.TestCase):
             self.assertIn("amazon-categories", skill)
             self.assertIn("live-research", skill)
 
+    def test_official_title_and_bullet_requirements(self):
+        cc = os.path.join(PI, "content_check.py")
+        good = {"title": "Acme Cotton Dance Top for Kids", "item_highlights": "Soft cotton, long sleeves, relaxed fit",
+                "bullet_points": ["Cotton fabric: Made from 100% cotton for softness and breathability",
+                                  "Long sleeve: Long sleeves add coverage and style",
+                                  "Loose fit: Relaxed fit allows for easy movement and comfort",
+                                  "Machine washable: Durable construction allows for easy care",
+                                  "Versatile style: Perfect for dance practice, playtime, or outdoor activity"]}
+        gp = self.write_json("good.json", good)
+        out = run(cc, "--file", gp, "--brand", "Acme", "--json", ok=(0, 1)).stdout
+        errs = [x for x in json.loads(out)[0]["findings"] if x["severity"] == "ERROR"] if out.lstrip().startswith("[") else []
+        self.assertEqual(errs, [], out)
+
+        bad = {"title": "Acme Top! FSA eligible_Kids", "item_highlights": "Soft",
+               "bullet_points": ["cotton: n/a", "ECO FRIENDLY DESIGN with a full refund guarantee", "Made from bamboo, order B00UXG4WR5 qty 2",
+                                 "Visit www.acme.com for 60ml sizes", "Great quality \u2122 for 3 kids"]}
+        bp = self.write_json("bad.json", bad)
+        p = run(cc, "--file", bp, "--brand", "Acme", ok=(1,)).stdout
+        for code in ("TITLE_SPECIAL_CHARS", "TITLE_RESTRICTED_PHRASE", "HIGHLIGHTS_TOO_SHORT", "BULLET_NO_CAPITAL", "BULLET_PLACEHOLDER",
+                     "BULLET_ALL_CAPS", "BULLET_GUARANTEE", "BULLET_PROHIBITED_CLAIM", "BULLET_ASIN", "BULLET_ABBREVIATION",
+                     "BULLET_EXTERNAL_INFO", "BULLET_UNIT_SPACE", "BULLET_SPECIAL_CHARS", "BULLET_NUMBER_DIGIT"):
+            self.assertIn(code, p, code)
+        two = self.write_json("two.json", {"title": "Acme Top", "bullet_points": ["Cotton fabric: Soft and light", "Long sleeve: Adds coverage"]})
+        self.assertIn("BULLETS_TOO_FEW", run(cc, "--file", two, ok=(1,)).stdout)
+
     def test_content_limits_2026(self):
         cc = os.path.join(PI, "content_check.py")
         title75 = "A" * 75

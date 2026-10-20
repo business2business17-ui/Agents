@@ -18,6 +18,9 @@ Checks: title length / repeated meaningful words / ALL CAPS beyond the brand (--
 shipping, URL, e-mail, phone, emoji, excessive punctuation) / forbidden terms / competitor brands / unverified regulated claims /
 item highlights: length, own repetition, ANY word already used in the title / bullets: unique, 10-255 chars, symbols, end punctuation,
 indexed bytes / description: 2000 chars, no HTML / backend: byte length per marketplace, commas, duplicates, title words.
+Official requirements (user-supplied 2026-10-20): references/amazon-title-bullet-requirements.md - title special characters / restricted phrases, bullets:
+capital start, prohibited characters, placeholders, ASINs, prohibited claims, guarantee wording, external info, ALL CAPS, abbreviations, unit spacing,
+numbers one-nine, header structure, at least three bullets, Item Highlights 10-125.
 Findings: ERROR blocks READY_TO_PUBLISH, WARN needs a human look. Exit 0 = no ERROR, 1 = at least one ERROR.
 Heuristic by design: the agent still reads the copy. Product-Type-specific limits always win over these defaults.
 """
@@ -78,6 +81,20 @@ PHONE = re.compile(r"(?<!\d)(?:\+?\d[\d\s().-]{8,}\d)(?!\d)")
 PRICE = re.compile(r"([€$£¥]\s?\d|\d\s?[€$£¥]|\b\d+([.,]\d+)?\s?(eur|usd|gbp|euro|dollar)\b|\b\d+\s?%\s?(off|rabatt|reduc|dto|sconto))", re.I)
 
 
+TITLE_BAD_CHARS = re.compile(r"[!$?_{}^\u00ac\u00a6]")
+TITLE_RESTRICTED = ("fsa/hsa eligible", "fsa eligible", "hsa eligible")
+BULLET_BAD_CHARS = re.compile("[\u2122\u00ae\u20ac\u2026\u2020\u2021\u00a2\u00a3\u00a5\u00a9\u00b1~\u00e2]")
+PLACEHOLDER = re.compile(r"(?<!\w)(?:not applicable|n/a|not eligible|yet to decide|to be decided|tbd|copy pending)(?!\w)|(?<!\w)NA(?!\w)", re.I)
+ASIN_RX = re.compile(r"\bB0[A-Z0-9]{8}\b")
+PROHIBITED_CLAIMS = ("eco-friendly", "environmentally friendly", "ecologically friendly", "anti-microbial", "antimicrobial",
+                     "anti-bacterial", "antibacterial", "made from bamboo", "contains bamboo", "made from soy", "contains soy")
+GUARANTEE = ("full refund", "if not satisfied", "send it back", "unconditional guarantee", "money back", "money-back")
+ABBREV = re.compile(r"(?<!\w)(?:qty|pkg|w/|approx\.?)(?!\w)", re.I)
+UNIT_GLUED = re.compile(r"(?<![\w.,])\d+(?:[.,]\d+)?(?:ml|mg|kg|cm|mm|oz|lb|g|l)\b", re.I)
+DIGIT_WORD = re.compile(r"(?<![\w.,/#:-])([1-9])(?![\w.,%/:-])\s+(?!(?:x|ml|mg|kg|cm|mm|oz|lb|g|l|in|inch|inches|ft|pcs|pc|v|w|a|mah|hz|gb|tb|mb|k|d)\b)[A-Za-z]")
+NUMBER_WORDS = {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine"}
+
+
 def norm_token(w):
     w = unicodedata.normalize("NFKC", w.lower())
     for suf in ("ies", "es", "s"):
@@ -136,6 +153,12 @@ def check(c, o):
             out.append(f("ERROR", "title", "TITLE_WORD_REPETITION", f"words used more than {o.max_word_repeat or limit(('title', 'max_word_repeat'), 2)}x: {rep}"))
         if PRICE.search(title):
             out.append(f("ERROR", "title", "TITLE_PRICE_OR_DISCOUNT", "price/discount text in title"))
+        bad = sorted(set(TITLE_BAD_CHARS.findall(title)))
+        if bad:
+            out.append(f("ERROR", "title", "TITLE_SPECIAL_CHARS", f"characters not allowed in titles: {' '.join(bad)} (~ # < > * only as identifier or measurement)"))
+        for ph in limit(("title", "restricted_phrases"), list(TITLE_RESTRICTED)):
+            if ph in low_t:
+                out.append(f("ERROR", "title", "TITLE_RESTRICTED_PHRASE", f"restricted phrase '{ph}'"))
         for rx, code in ((URL, "URL"), (MAIL, "EMAIL"), (PHONE, "PHONE"), (EMOJI, "EMOJI")):
             if rx.search(title):
                 out.append(f("ERROR", "title", f"TITLE_{code}", f"{code.lower()} in title"))
@@ -147,6 +170,9 @@ def check(c, o):
         hmax = o.highlights_max or limit(("item_highlights", "max_chars"), 125)
         if len(hi) > hmax:
             out.append(f("ERROR", "item_highlights", "HIGHLIGHTS_TOO_LONG", f"{len(hi)} chars > {hmax}"))
+        hmin = limit(("item_highlights", "min_chars"), 10)
+        if len(hi) < hmin:
+            out.append(f("ERROR", "item_highlights", "HIGHLIGHTS_TOO_SHORT", f"{len(hi)} chars < {hmin}"))
         hrep = {w: n for w, n in Counter(meaningful(hi)).items() if n > (o.max_word_repeat or limit(("item_highlights", "max_word_repeat"), 2))}
         if hrep:
             out.append(f("ERROR", "item_highlights", "HIGHLIGHTS_WORD_REPETITION", f"words repeated inside the field: {hrep}"))
@@ -163,6 +189,9 @@ def check(c, o):
             out.append(f("WARN", "item_highlights", "HIGHLIGHTS_NOT_SHOWN", "Item Highlight is displayed only when the item name is under 75 characters"))
     if len(bullets) > o.bullets_max:
         out.append(f("ERROR", "bullet_points", "TOO_MANY_BULLETS", f"{len(bullets)} > {o.bullets_max} (unless the Product Type allows more)"))
+    min_count = limit(("bullets", "min_count"), 3)
+    if 0 < len(bullets) < min_count:
+        out.append(f("ERROR", "bullet_points", "BULLETS_TOO_FEW", f"{len(bullets)} bullet(s); at least {min_count} are required"))
     seen = set()
     bmin, bmax = limit(("bullets", "min_chars"), 10), o.bullet_max_chars or limit(("bullets", "max_chars"), 255)
     for i, b in enumerate(bullets, 1):
@@ -178,6 +207,44 @@ def check(c, o):
             out.append(f("ERROR", f"bullet_{i}", "BULLET_SYMBOLS", "emoji, check mark, bullet or asterisk symbol in text"))
         if re.search(r"[.!?;:,]$", b):
             out.append(f("WARN", f"bullet_{i}", "BULLET_END_PUNCTUATION", "no punctuation at the end of a bullet"))
+        first = b[0]
+        if first.isalpha() and first.islower():
+            out.append(f("ERROR", f"bullet_{i}", "BULLET_NO_CAPITAL", "a bullet begins with a capital letter"))
+        bad = sorted(set(BULLET_BAD_CHARS.findall(b)))
+        if bad:
+            out.append(f("ERROR", f"bullet_{i}", "BULLET_SPECIAL_CHARS", f"prohibited characters: {' '.join(bad)}"))
+        if PLACEHOLDER.search(b):
+            out.append(f("ERROR", f"bullet_{i}", "BULLET_PLACEHOLDER", "placeholder text (n/a, TBD, not applicable, copy pending ...)"))
+        if ASIN_RX.search(b):
+            out.append(f("ERROR", f"bullet_{i}", "BULLET_ASIN", "ASIN in a bullet"))
+        lb = b.lower()
+        for ph in PROHIBITED_CLAIMS:
+            if ph in lb:
+                out.append(f("ERROR", f"bullet_{i}", "BULLET_PROHIBITED_CLAIM", f"prohibited claim '{ph}'"))
+        for ph in GUARANTEE:
+            if ph in lb:
+                out.append(f("ERROR", f"bullet_{i}", "BULLET_GUARANTEE", f"guarantee / refund wording '{ph}'"))
+        for rx, what in ((URL, "link"), (MAIL, "e-mail"), (PHONE, "phone number")):
+            if rx.search(b):
+                out.append(f("ERROR", f"bullet_{i}", "BULLET_EXTERNAL_INFO", f"{what}: company / contact / external information is not allowed"))
+        caps = re.findall(r"[^\W\d_]{3,}", b)
+        run, best = 0, 0
+        for w in re.findall(r"[^\W\d_]+", b):
+            run = run + 1 if len(w) >= 3 and w.isupper() else 0
+            best = max(best, run)
+        if best >= 2:
+            out.append(f("ERROR", f"bullet_{i}", "BULLET_ALL_CAPS", "words in ALL CAPS"))
+        elif any(w.isupper() and len(w) >= 5 for w in caps):
+            out.append(f("WARN", f"bullet_{i}", "BULLET_ALL_CAPS", "an ALL CAPS word (fine only for a brand or standard abbreviation)"))
+        if ABBREV.search(b):
+            out.append(f("ERROR", f"bullet_{i}", "BULLET_ABBREVIATION", "abbreviation (qty, pkg, w/, approx.): write the word"))
+        if UNIT_GLUED.search(b):
+            out.append(f("WARN", f"bullet_{i}", "BULLET_UNIT_SPACE", "put a space between the number and the unit (60 ml)"))
+        m = DIGIT_WORD.search(b)
+        if m:
+            out.append(f("WARN", f"bullet_{i}", "BULLET_NUMBER_DIGIT", f"write numbers one to nine in full ('{m.group(1)}' -> '{NUMBER_WORDS[m.group(1)]}'), except names, model numbers and measurements"))
+        if ":" not in b[:45]:
+            out.append(f("WARN", f"bullet_{i}", "BULLET_NO_HEADER", "recommended structure: 'Header: description'"))
     ibytes = sum(len(b.encode("utf-8")) for b in bullets)
     if ibytes > limit(("bullets", "indexed_total_bytes"), 1000):
         out.append(f("WARN", "bullet_points", "BULLETS_INDEX_OVERFLOW", f"{ibytes} bytes in total; only about {limit(('bullets', 'indexed_total_bytes'), 1000)} are indexed for search, put key terms first"))
