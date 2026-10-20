@@ -26,6 +26,11 @@
       "name": "amazon-feeds",
       "source": "./plugins/amazon-feeds",
       "description": "Feeds agent: fill feed templates (Template rows 7+ only), analyze feed errors from Processing Reports, apply approved corrections with QA and re-analysis."
+    },
+    {
+      "name": "amazon-finance",
+      "source": "./plugins/amazon-finance",
+      "description": "Finance agent: P&L, Cash Flow / Settlement, sales, SKU profitability, ads, inventory, unit economics, profit leakage and what-if from Seller Central reports."
     }
   ]
 }
