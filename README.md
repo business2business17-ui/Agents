@@ -8,6 +8,7 @@
 | `amazon-seo-listings` (SEO, Listings) | `SEO-Listings` | ТТХ, сопоставление, тексты листингов, SEO (Cerebro / Helium 10 MCP), цены и маржа, пакет для Feeds |
 | `amazon-ppc` (PPC) | `PPC` | Реклама: кампании, search term отчёты, harvest и минус-слова, ставки / бюджеты, ACOS / TACOS / ROAS |
 | `amazon-feeds` (Feeds) | `Feeds` | Заполнение Feed, ошибки Feed, корректировки (два режима одного агента) |
+| `amazon-analytic` (Analytic) | `claude/upbeat-brown-mvulwz` | Market Intelligence: выгрузки Xray/Cerebro, метрики ниши, юнит-экономика, cash-flow, решение GO/TEST/HOLD, портфель SKU, отчёт HTML/PDF |
 
 Подробно кто за что отвечает: [`docs/AGENTS_OVERVIEW.md`](docs/AGENTS_OVERVIEW.md). Amazon-агенты: [`docs/AMAZON_AGENTS.md`](docs/AMAZON_AGENTS.md). Локальная установка в терминал: [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md) (`install.sh` / `install.ps1`).
 
@@ -50,6 +51,7 @@
 /plugin install amazon-seo-listings@business2business17-agents
 /plugin install amazon-ppc@business2business17-agents
 /plugin install amazon-feeds@business2business17-agents
+/plugin install amazon-analytic@business2business17-agents
 ```
 **Другие ИИ:** `dist/<агент>/` и `dist/<агент>.zip`: `system-prompt.md` (всё внутри) или `instructions-short.md` (<= 8000 символов, для Custom GPT) + `knowledge/`.
 

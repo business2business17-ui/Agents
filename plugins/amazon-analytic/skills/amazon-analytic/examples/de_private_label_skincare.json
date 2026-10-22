@@ -1,0 +1,94 @@
+{
+  "_note": "ИЛЛЮСТРАТИВНЫЕ данные для проверки расчётов. Ставки комиссий и НДС — пример, перед реальным анализом сверить с актуальной fee schedule и таблицей vat_rates.",
+  "marketplace": "DE",
+  "business_model": "private_label",
+  "category": "skincare",
+  "niche_definition_id": "example-de-face-serum@v1",
+  "data_as_of": "2026-10-19",
+  "currency": "EUR",
+  "tax": {"vat_rate": 0.19, "price_includes_vat": true},
+  "fees": {
+    "referral": {"kind": "whole", "tiers": [[10, 0.08], [null, 0.15]], "min_fee": 0.30},
+    "fulfillment_fee": 3.40,
+    "storage_per_unit": 0.12,
+    "other_amazon_fees": 0.05,
+    "return_processing_fee": 0.0,
+    "schedule_version": "EXAMPLE-DE-2026-10",
+    "checked_at": "2026-10-05"
+  },
+  "costs": {
+    "cogs": 3.20, "cogs_status": "supplier_quote",
+    "inbound_freight": 0.60, "prep": 0.15, "duties": 0.10,
+    "other_variable": 0.10, "return_rate": 0.03, "unsellable_share": 0.5
+  },
+  "market": {
+    "niche_revenue_month": {"low": 180000, "base": 240000, "high": 300000},
+    "price_range": [12.0, 30.0],
+    "coverage": 0.82,
+    "source_divergence": 0.30,
+    "observed_at": "2026-10-15",
+    "seasonality_source": "search_trends",
+    "peak_period": false,
+    "nonbranded_share": 0.62,
+    "monthly_cv": 0.25,
+    "trend_12m": 0.12,
+    "review_median_top10": 850,
+    "hhi_brand": 1400,
+    "amazon_retail_share": 0.05
+  },
+  "keywords": {
+    "clusters": [
+      {"cluster_id": "core", "keywords": ["gesichtsserum", "face serum"], "search_volume_month": 40000,
+       "click_share": {"low": 0.010, "base": 0.020, "high": 0.035}, "cvr": {"low": 0.08, "base": 0.10, "high": 0.12}},
+      {"cluster_id": "hyaluron", "keywords": ["hyaluron serum", "hyaluronsaeure serum gesicht"], "search_volume_month": 15000,
+       "click_share": {"low": 0.020, "base": 0.035, "high": 0.050}, "cvr": {"low": 0.09, "base": 0.11, "high": 0.13}},
+      {"cluster_id": "longtail", "keywords": ["serum gesicht feuchtigkeit vegan"], "search_volume_month": 8000,
+       "click_share": {"low": 0.040, "base": 0.060, "high": 0.080}, "cvr": {"low": 0.10, "base": 0.12, "high": 0.14}}
+    ]
+  },
+  "ppc": {
+    "budget_month": 1500,
+    "cpc": {"low": 1.10, "base": 0.90, "high": 0.75},
+    "cvr_ads": {"low": 0.08, "base": 0.10, "high": 0.12},
+    "organic_multiplier": {"low": 0.3, "base": 0.6, "high": 1.0}
+  },
+  "cohort": {
+    "units_at_month": [0, 5, 12, 20, 25, 30, 40, 45, 60, 70, 80, 90, 100, 110, 120, 150, 180, 220, 260, 300, 350, 420],
+    "exited_count": 4
+  },
+  "scenarios": {
+    "prices": {"conservative": 17.99, "base": 19.99, "optimistic": 21.99},
+    "tacos_net": {"conservative": 0.14, "base": 0.11, "optimistic": 0.09}
+  },
+  "launch": {
+    "lead_time": {"production_days": 30, "transit_days": 35, "customs_days": 5, "receiving_days": 10},
+    "deposit_pct": 0.30,
+    "moq": 500,
+    "fixed_launch_costs": 2500,
+    "monthly_fixed_costs": 150,
+    "payout_delay_days": 14,
+    "coverage_target_days": 60,
+    "fba_capacity_units": 3000,
+    "start_month": 11,
+    "niche_cv": 0.4
+  },
+  "budget": 25000,
+  "max_test_loss": 8000,
+  "addressable_pain_points": 2,
+  "compliance": {
+    "flags": {"hazmat": false},
+    "statuses": {
+      "brand_rights": {"status": "PASS", "evidence_ref": "trademark reg. (пример)"},
+      "category_ungating": {"status": "PASS", "evidence_ref": "SC approval (пример)"},
+      "ip_content": {"status": "PASS", "evidence_ref": "собственные фото"},
+      "variation_policy": {"status": "PASS", "evidence_ref": "variation plan v1"},
+      "supply_chain_docs": {"status": "PASS", "evidence_ref": "supplier docs pack"},
+      "vat_registration": {"status": "PASS", "evidence_ref": "DE VAT ID"},
+      "epr_packaging": {"status": "PASS", "evidence_ref": "EPR reg. no."},
+      "gpsr": {"status": "PASS", "evidence_ref": "EU RP agreement"},
+      "cosmetics_rp_cpnp": {"status": "PASS", "evidence_ref": "CPNP notification"},
+      "cosmetics_labeling": {"status": "PASS", "evidence_ref": "label artwork v3"},
+      "cosmetic_claims": {"status": "PASS", "evidence_ref": "claims matrix"}
+    }
+  }
+}

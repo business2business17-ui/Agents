@@ -1,0 +1,79 @@
+{
+  "_note": "ИЛЛЮСТРАТИВНЫЕ данные. ASIN вымышленный. Ставки — пример, сверить с актуальными таблицами.",
+  "marketplace": "DE",
+  "business_model": "resale",
+  "category": "fragrance",
+  "niche_definition_id": "example-de-edp-brandx@v1",
+  "data_as_of": "2026-10-19",
+  "currency": "EUR",
+  "tax": {"vat_rate": 0.19, "price_includes_vat": true},
+  "fees": {
+    "referral": {"kind": "whole", "tiers": [[10, 0.08], [null, 0.15]], "min_fee": 0.30},
+    "fulfillment_fee": 3.90,
+    "storage_per_unit": 0.20,
+    "other_amazon_fees": 0.05,
+    "schedule_version": "EXAMPLE-DE-2026-10",
+    "checked_at": "2026-10-05"
+  },
+  "costs": {"cogs": 11.50, "cogs_status": "supplier_quote", "inbound_freight": 0.40, "prep": 0.20,
+            "return_rate": 0.02, "unsellable_share": 0.3},
+  "market": {
+    "price_range": [22.0, 29.0],
+    "coverage": 0.9,
+    "source_divergence": 0.2,
+    "observed_at": "2026-10-17",
+    "seasonality_source": "history",
+    "monthly_cv": 0.3,
+    "trend_12m": 0.04,
+    "review_median_top10": 3200,
+    "hhi_brand": 4200,
+    "amazon_retail_share": 0.0
+  },
+  "buybox": {
+    "asin": "B0EXAMPL01",
+    "buy_box_price": 24.90,
+    "asin_units": {"low": 900, "base": 1200, "high": 1500},
+    "offers": [
+      {"seller_id": "S1", "price": 24.90, "is_fba": true},
+      {"seller_id": "S2", "price": 25.20, "is_fba": true},
+      {"seller_id": "S3", "price": 24.95, "is_fba": true},
+      {"seller_id": "S4", "price": 27.50, "is_fba": false}
+    ],
+    "new_sellers_90d": 2,
+    "amazon_bb_share": 0.0,
+    "has_resale_authorization": true,
+    "bb_price_cv": 0.06,
+    "bb_price_below_mvp_share": 0.05
+  },
+  "scenarios": {
+    "prices": {"conservative": 23.90, "base": 24.90, "optimistic": 24.90},
+    "tacos_net": 0.02
+  },
+  "launch": {
+    "lead_time": {"production_days": 0, "transit_days": 7, "receiving_days": 10},
+    "deposit_pct": 1.0,
+    "moq": 120,
+    "fixed_launch_costs": 300,
+    "monthly_fixed_costs": 100,
+    "payout_delay_days": 14,
+    "coverage_target_days": 45,
+    "fba_capacity_units": 1500,
+    "niche_cv": 0.3
+  },
+  "budget": 15000,
+  "compliance": {
+    "flags": {"hazmat": true},
+    "statuses": {
+      "resale_authorization": {"status": "PASS", "evidence_ref": "distributor letter 2026-09"},
+      "category_ungating": {"status": "PASS", "evidence_ref": "brand approval"},
+      "ip_content": {"status": "N/A"},
+      "supply_chain_docs": {"status": "PASS", "evidence_ref": "invoices Q3"},
+      "vat_registration": {"status": "PASS", "evidence_ref": "DE VAT ID"},
+      "epr_packaging": {"status": "PASS", "evidence_ref": "EPR reg. no."},
+      "gpsr": {"status": "PASS", "evidence_ref": "brand EU RP"},
+      "cosmetics_rp_cpnp": {"status": "PASS", "evidence_ref": "brand CPNP"},
+      "cosmetics_labeling": {"status": "PASS", "evidence_ref": "brand label"},
+      "cosmetic_claims": {"status": "N/A"}
+    }
+  }
+}

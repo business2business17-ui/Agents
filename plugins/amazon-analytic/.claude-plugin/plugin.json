@@ -1,0 +1,7 @@
+{
+  "name": "amazon-analytic",
+  "version": "1.0.0",
+  "description": "Analytic agent (Market Intelligence): Helium 10 Xray/Cerebro import, niche metrics, unit economics, cash-flow, Buy Box, compliance, GO/TEST/HOLD decision, portfolio and HTML/PDF report.",
+  "author": {"name": "business2business17-ui"},
+  "keywords": ["amazon", "seller", "analytics", "market", "niche", "xray", "cerebro"]
+}

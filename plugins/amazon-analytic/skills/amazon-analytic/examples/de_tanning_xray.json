@@ -1,0 +1,102 @@
+{
+  "_note": "Рыночные данные — реальные выгрузки Helium 10 (XRAY/). Всё в user — ПРЕДПОЛОЖЕНИЯ для демонстрации: COGS (assumed), CPC, доля клика и CVR нового бренда, бюджет, lead time. Ставки referral/НДС сверить с актуальной fee schedule. Compliance не заполнен, поэтому статус REVIEW → HOLD R3 с условным решением.",
+  "as_of": "2026-10-20",
+  "xray": "XRAY/B0GTLG816P масло для загара категория xray.xlsx",
+  "cerebro": "XRAY/DE_cerebro масло для загара.xlsx",
+  "niche": {
+    "niche_id": "de-tanning-accelerators",
+    "version": 1,
+    "include_any": ["accelerat", "bräunungs", "tanning oil", "tan oil", "tanning lotion", "tanning cream",
+                    "tanning gel", "tanning spray", "solarium", "sunbed", "carrot", "bronzing oil", "intensifier",
+                    "sun oil", "tanning grease", "tan maxximizer", "dark tan"],
+    "exclude_any": ["self-tan", "self tan", "selbstbräun", "glove", "mitt", "drops", "drink", "capsule",
+                    "patch", "pads", "applicator", "face tanner", "spf 30", "spf 50", "after sun", "kit"]
+  },
+  "user": {
+    "business_model": "private_label",
+    "category": "cosmetics",
+    "tax": {"vat_rate": 0.19, "price_includes_vat": true},
+    "fees": {
+      "referral": {"kind": "whole", "tiers": [[10, 0.08], [null, 0.15]], "min_fee": 0.30},
+      "fulfillment_fee": null,
+      "storage_per_unit": 0.15,
+      "other_amazon_fees": 0.05,
+      "schedule_version": "ASSUMED-DE-BEAUTY-2026-10",
+      "checked_at": "2026-10-01"
+    },
+    "costs": {
+      "cogs": 2.80, "cogs_status": "assumed",
+      "inbound_freight": 0.50, "prep": 0.15, "duties": 0.10,
+      "other_variable": 0.10, "return_rate": 0.02, "unsellable_share": 0.5
+    },
+    "keyword_clusters": {
+      "accelerator": ["bräunungsbeschleuniger", "beschleuniger", "accelerator", "solarium", "sonnenbank", "bräunungscreme"],
+      "tanning_oil": ["bräunungsöl", "sonnenöl", "tanning oil", "bräunungs öl", "bronzing oil"],
+      "carrot": ["karotten", "carrot", "beta carotin", "möhren"]
+    },
+    "keyword_assumptions": {
+      "click_share": {"low": 0.01, "base": 0.02, "high": 0.04},
+      "cvr": {"low": 0.08, "base": 0.10, "high": 0.12}
+    },
+    "ppc": {
+      "budget_month": 1000,
+      "cpc": {"low": 0.95, "base": 0.75, "high": 0.60},
+      "cvr_ads": {"low": 0.08, "base": 0.10, "high": 0.12},
+      "organic_multiplier": {"low": 0.3, "base": 0.6, "high": 1.0}
+    },
+    "scenarios": {
+      "prices": {"conservative": 14.99, "base": 16.99, "optimistic": 18.99},
+      "tacos_net": {"conservative": 0.16, "base": 0.12, "optimistic": 0.10}
+    },
+    "launch": {
+      "lead_time": {"production_days": 30, "transit_days": 35, "customs_days": 5, "receiving_days": 10},
+      "deposit_pct": 0.30,
+      "moq": 1000,
+      "fixed_launch_costs": 2500,
+      "monthly_fixed_costs": 150,
+      "payout_delay_days": 14,
+      "coverage_target_days": 60,
+      "fba_capacity_units": 3000,
+      "start_month": 11,
+      "niche_cv": 0.6
+    },
+    "budget": 15000,
+    "max_test_loss": 5000,
+    "addressable_pain_points": 1,
+    "claims": ["Bräunungsbeschleuniger für Sonne und Solarium", "Natürliche Bräune mit Beta-Carotin"]
+  },
+  "hypotheses": [
+    {
+      "id": "h1_accelerator_cream",
+      "name": "Крем-ускоритель для солнца и солярия, 200 мл",
+      "niche": {"include_any": ["accelerat", "bräunungsbeschleuniger", "solarium", "sunbed", "intensifier", "tan maxximizer"],
+                "price_min": 12, "price_max": 26},
+      "user": {"scenarios": {"prices": {"conservative": 14.99, "base": 16.99, "optimistic": 18.99}},
+               "keyword_clusters_only": ["accelerator"]}
+    },
+    {
+      "id": "h2_budget_oil",
+      "name": "Бюджетное масло для загара, 200 мл",
+      "niche": {"include_any": ["tanning oil", "tan oil", "sun oil", "bronzing oil", "bräunungsöl", "tanning grease"],
+                "price_min": 3, "price_max": 10},
+      "user": {"scenarios": {"prices": {"conservative": 6.99, "base": 7.99, "optimistic": 8.99}},
+               "costs": {"cogs": 1.80}, "keyword_clusters_only": ["tanning_oil"]}
+    },
+    {
+      "id": "h3_carrot_oil",
+      "name": "Морковное масло / бета-каротин, 150 мл",
+      "niche": {"include_any": ["carrot", "beta-carotin", "beta carotene", "carotene", "carotin"],
+                "exclude_any": ["self-tan", "self tan", "glove", "drops", "drink", "capsule", "patch", "spf 30", "spf 50"],
+                "price_min": 6, "price_max": 26},
+      "user": {"scenarios": {"prices": {"conservative": 11.99, "base": 12.99, "optimistic": 14.99}},
+               "keyword_clusters_only": ["carrot"]}
+    },
+    {
+      "id": "h4_tanning_stick",
+      "name": "Ускоритель загара в стике (формата нет в выдаче)",
+      "niche": {"include_any": ["stick", "stift"]},
+      "user": {"scenarios": {"prices": {"conservative": 12.99, "base": 14.99, "optimistic": 16.99}}}
+    }
+  ],
+  "portfolio": {"target_profit_12m": null, "max_skus": null}
+}
