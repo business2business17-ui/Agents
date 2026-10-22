@@ -22,6 +22,6 @@ Run from this skill directory:
 - `references/README-core.md` - modules, tests, simplifications.
 - `references/Amazon_Market_Intelligence_Agent_TZ_v1.2.md` - specification.
 - `references/Анализ_ТЗ_v1.1_проблемы.md`, `references/Доработка_агента_по_отчёту_Pets.md` - problem analysis and rework notes.
-- `xray_samples/` - sample scan output.
+- `XRAY/` - real Helium 10 exports (Xray, Cerebro), listings report and sample scan output.
 
 KNOWLEDGE: the files `references/*.md` are attached as knowledge; open the one named in each step when you reach it. Project memory: if you cannot write files, print the updated memory block at the end of each reply and ask the user to paste it next session.
