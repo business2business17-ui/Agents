@@ -114,7 +114,44 @@ Exact image/video boxes: `VERIFY_IN_UI` per selected module.
 
 Amazon describes Brand Story as a separate A+ type appearing in the "From the brand" area. It supports one module with up to 19 preformatted cards in a carousel format, full-screen backgrounds, image/text cards, and links to products/Brand Stores.
 
-Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; background (main section backdrop) **1464 x 625 px** (`brand-story-bg`); brand card / focus image **362 x 453 px**, vertical (`brand-story-card`). Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; export JPG/PNG, RGB/sRGB. Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+
+| Element | Size | Placement id | Purpose |
+|---|---|---|---|
+| Background Desktop | 1464 x 625 px | `brand-story-bg` | main backdrop |
+| Background Mobile | 463 x 625 px | `brand-story-bg-mobile` | separate mobile adaptation (not a scaled Desktop copy) |
+| Media Asset Card (Image Card) | 362 x 453 px | `brand-story-card` | vertical image card |
+| Brand Logo | 315 x 145 px | `brand-story-logo` | logo only, not the whole card |
+| ASIN Product Image | 166 x 182 px | `brand-story-asin` | product image in the 4-ASIN module |
+
+#### Brand Story brief (ТЗ — Amazon Brand Story)
+
+Task: images for the horizontal Brand Story carousel, adapted for Desktop and Mobile.
+
+Background:
+
+- continuous image; no pre-built cards baked in; do not build it from blocks tied to card positions (cards scroll relative to the background);
+- recommended safe margins (our working values, NOT official Amazon requirements): Desktop 48-64 px horizontal, 40-50 px vertical; Mobile 24-32 px horizontal, 30-40 px vertical;
+- Desktop: brand zone / main accent roughly in the left third (about the first 30% of width); the backdrop behind cards has no critical details; this is not a guaranteed free zone on every screen;
+- Mobile: separate composition; keep important elements near the center but do not rely on it being fully visible;
+- Amazon cards overlap the background; the visible area depends on device and scroll: no important text, faces or must-see elements behind cards;
+- if the brand name must always be visible, duplicate the logo in a separate card or another Brand Story module.
+
+Cards:
+
+- Image Card 362 x 453: inner padding 20-24 px from the canvas edges (our working value); no text or logos against the borders;
+- Logo 315 x 145: upload the logo itself, without a pre-drawn card;
+- one visual style across all cards;
+- title/description are entered separately in Seller Central: embed text in images only where truly needed, do not duplicate.
+
+Checks (deliver separate Desktop and Mobile preview mockups):
+
+1. cards overlaid on the background;
+2. first screen, carousel scroll, extreme card positions;
+3. nothing important cropped or covered;
+4. file sizes re-checked against the current Seller Central uploader.
+
+Deliverables: separate final images, Figma/PSD sources, Desktop/Mobile preview mockups. Preview mockups: `scripts/brand_story_preview.py`.
 
 Rules for this skill:
 
@@ -124,7 +161,7 @@ Rules for this skill:
 - use exact background/card pixel dimensions from the current Amazon Brand Story builder for that account/marketplace;
 - do not promote third-party template dimensions to REQUIRED without current official verification.
 
-Exact background/card pixels: values above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
+Exact Brand Story pixels: table above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, A+ Content reference GLG4RQK2Y2RJADU4.
 

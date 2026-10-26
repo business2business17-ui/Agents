@@ -81,7 +81,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 - **Product Fidelity Lock.** The real product is an immutable protected layer: never redraw, regenerate, reshape, recolor, relabel or re-letter it; generate only around it (background, shadow, environment, text layers). Missing rear/side view -> ask for the real image or create environment only. Full rules: `references/product-fidelity.md`.
 - **MAIN image** is not a marketing surface: pure white `#FFFFFF`, real product, no text/badges/graphics, product not clipped, fills >=85% of the frame.
-- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
+- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story incl. Mobile bg 463x625, logo 315x145, ASIN 166x182; Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields; baked-in text only in safe zones, legible on mobile.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
@@ -506,7 +506,44 @@ Exact image/video boxes: `VERIFY_IN_UI` per selected module.
 
 Amazon describes Brand Story as a separate A+ type appearing in the "From the brand" area. It supports one module with up to 19 preformatted cards in a carousel format, full-screen backgrounds, image/text cards, and links to products/Brand Stores.
 
-Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; background (main section backdrop) **1464 x 625 px** (`brand-story-bg`); brand card / focus image **362 x 453 px**, vertical (`brand-story-card`). Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; export JPG/PNG, RGB/sRGB. Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+
+| Element | Size | Placement id | Purpose |
+|---|---|---|---|
+| Background Desktop | 1464 x 625 px | `brand-story-bg` | main backdrop |
+| Background Mobile | 463 x 625 px | `brand-story-bg-mobile` | separate mobile adaptation (not a scaled Desktop copy) |
+| Media Asset Card (Image Card) | 362 x 453 px | `brand-story-card` | vertical image card |
+| Brand Logo | 315 x 145 px | `brand-story-logo` | logo only, not the whole card |
+| ASIN Product Image | 166 x 182 px | `brand-story-asin` | product image in the 4-ASIN module |
+
+#### Brand Story brief (ТЗ — Amazon Brand Story)
+
+Task: images for the horizontal Brand Story carousel, adapted for Desktop and Mobile.
+
+Background:
+
+- continuous image; no pre-built cards baked in; do not build it from blocks tied to card positions (cards scroll relative to the background);
+- recommended safe margins (our working values, NOT official Amazon requirements): Desktop 48-64 px horizontal, 40-50 px vertical; Mobile 24-32 px horizontal, 30-40 px vertical;
+- Desktop: brand zone / main accent roughly in the left third (about the first 30% of width); the backdrop behind cards has no critical details; this is not a guaranteed free zone on every screen;
+- Mobile: separate composition; keep important elements near the center but do not rely on it being fully visible;
+- Amazon cards overlap the background; the visible area depends on device and scroll: no important text, faces or must-see elements behind cards;
+- if the brand name must always be visible, duplicate the logo in a separate card or another Brand Story module.
+
+Cards:
+
+- Image Card 362 x 453: inner padding 20-24 px from the canvas edges (our working value); no text or logos against the borders;
+- Logo 315 x 145: upload the logo itself, without a pre-drawn card;
+- one visual style across all cards;
+- title/description are entered separately in Seller Central: embed text in images only where truly needed, do not duplicate.
+
+Checks (deliver separate Desktop and Mobile preview mockups):
+
+1. cards overlaid on the background;
+2. first screen, carousel scroll, extreme card positions;
+3. nothing important cropped or covered;
+4. file sizes re-checked against the current Seller Central uploader.
+
+Deliverables: separate final images, Figma/PSD sources, Desktop/Mobile preview mockups. Preview mockups: `scripts/brand_story_preview.py`.
 
 Rules for this skill:
 
@@ -516,7 +553,7 @@ Rules for this skill:
 - use exact background/card pixel dimensions from the current Amazon Brand Story builder for that account/marketplace;
 - do not promote third-party template dimensions to REQUIRED without current official verification.
 
-Exact background/card pixels: values above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
+Exact Brand Story pixels: table above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, A+ Content reference GLG4RQK2Y2RJADU4.
 
@@ -930,7 +967,7 @@ For each element:
 - left/right/top/bottom protected zones;
 - mobile crop behavior;
 - UI overlays/link titles/buttons that may cover the image;
-- card overlays for Brand Story.
+- card overlays for Brand Story: separate Desktop and Mobile backgrounds, working margins (Desktop 48-64 px sides / 40-50 px top-bottom; Mobile 24-32 / 30-40), brand accent in the left third, Image Card inner padding 20-24 px; full ТЗ in `amazon-specs.md` section 5.
 
 ## 8. Video timeline
 
@@ -1287,7 +1324,7 @@ Run before every final report. Fix what you can; report only what remains.
 
 Covers: file readable, format, color mode (RGB only for A+), file size, dimensions vs. preset/minimum, aspect ratio, MAIN white background and edge-clipping heuristics, MAIN product fill estimate, video container/codec/fps/duration/bitrate via `ffprobe` (when installed), Store/SB limits. Anything that cannot be checked deterministically is returned as `MANUAL` or `VERIFY_IN_UI`, never as PASS.
 
-Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
+Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453), `brand-story-bg-mobile` (463x625), `brand-story-logo` (315x145), `brand-story-asin` (166x182). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
 
 ### File-size rule (carousel, <= 10 MB)
 
@@ -1305,6 +1342,7 @@ The number of PT slots per category is `VERIFY_IN_UI`. The agent plans MAIN + 6 
 | Exact text | every text block equals the approved copy character-for-character; locale spelling, units, decimal separators correct |
 | Layout | matches the approved verbal wireframe; reading order works; nothing covers the product's logo/label |
 | Safe zones | Store hero central safe area, tile link-title overlay, Brand Story cards/crops, A+ responsive crop respected |
+| Brand Story | separate Desktop (1464x625) and Mobile (463x625) previews built (`scripts/brand_story_preview.py`); cards over background checked on first screen, scroll and extreme positions; nothing important cropped/covered; no key text/faces behind cards; background has no baked-in cards; Mobile is its own composition; sizes rechecked against the current Seller Central uploader |
 | Mobile | text legible at phone display size (approx. 375 px wide preview) |
 | Claims | every claim traceable to a supplied fact; no strengthened translation; no invented award/cert/comparison |
 | Policy | MAIN rules; no watermark, QR code, hyperlink, HTML, animated GIF in A+; language matches the selected content language |
