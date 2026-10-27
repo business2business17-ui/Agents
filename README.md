@@ -11,6 +11,10 @@
 
 Подробно кто за что отвечает: [`docs/AGENTS_OVERVIEW.md`](docs/AGENTS_OVERVIEW.md). Amazon-агенты: [`docs/AMAZON_AGENTS.md`](docs/AMAZON_AGENTS.md). Локальная установка в терминал: [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md) (`install.sh` / `install.ps1`).
 
+## Правило веток
+
+Вся работа по агенту живёт в его ветке: **всё, что связано с дизайном (карусели, A+, Brand Story, ТЗ, картинки, рендеры, production-пакеты по товарам), всегда идёт в `AMZ-DESIGN`**; SEO и листинги в `SEO-Listings`; реклама в `PPC`; Feed (заполнение, ошибки, корректировки) в `Feeds`. Ветки `claude/...` временные: после проверки их содержимое переносится в ветку агента.
+
 ## Обязательные правила заполнения Feed Amazon
 
 Действуют для агента `amazon-feeds` (режимы FILL и ERRORS):
