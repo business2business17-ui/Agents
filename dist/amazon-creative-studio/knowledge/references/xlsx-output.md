@@ -92,6 +92,8 @@ Use these sheets when useful:
 
 The workbook must remain usable even if some assets are only concepts and have no URL yet.
 
+For carousel, Brand Story, Brand Store, A+ Premium and A+ Basic rows, apply `image-quality.md`. Put the filled clarity requirements in `Internal Production Rules`, actual displayed typography/crops in `Mobile / Responsive Notes`, both `LOCAL_CLARITY_QA` and `AMAZON_RENDER_QA` statuses in `QA / Preflight Result`, and export settings/evidence scope/date in `Notes`. Use `NOT_CHECKED` for uninspected Amazon renders. Record failures and pending checks in `ISSUES`; do not invent additional JSON column names, which the builder ignores.
+
 If multiple categories/types are present, never collapse them into a single project-level value. Preserve category and product type on every relevant row.
 
 Use explicit values such as `DESCRIPTION ONLY - ASSET NOT CREATED` rather than fake paths or links.

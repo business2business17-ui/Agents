@@ -61,11 +61,11 @@ Read each named reference **when you reach that step**, not upfront.
 
 *Blockers worth asking about (only these):* ambiguous category/type that changes claims; missing mandatory fact for a requested claim; missing source angle required by the plan (e.g. rear view); no target marketplace/language derivable from data; no placements derivable (then propose a default set, see below). Everything else -> default + assumption. Clear rows proceed without waiting.
 
-**Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. XLSX benefits are the source of truth; if none, draft from that row's TTX only, tag `DRAFTED_FROM_TTX`, approve at C1. Then audit each description vs TTX + category/type and propose an improved one + missing TTX (`references/description-improvement.md`). If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
+**Step 2 - Content intelligence** (`references/content-improvement.md`). Derive benefits, proof, objections and risks from each row's facts; never invent. Use XLSX benefits; if absent, draft only from that row's TTX, tag `DRAFTED_FROM_TTX`, approve at C1. Audit descriptions against TTX/category/type; propose corrections and missing TTX (`references/description-improvement.md`). Default placements: MAIN + images 2-7; recommend A+/Store/video only when justified by data.
 
 **Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ box to another. Brand Store: `references/brand-store-playbook.md`.
 
-**Step 4 - Copy, localization, layout** (`references/localization.md`, `references/designer-brief.md`). For every asset write final copy per marketplace and a concrete layout scheme (verbal wireframe, zones, reading order, do-not-cover areas). If layout is not dictated, choose the recommended option (max one alternative).
+**Step 4 - Copy/layout** (`references/localization.md`, `references/designer-brief.md`, `references/image-quality.md`). Per asset: final localized copy, zones, reading order, protected areas; mandatory clarity block in every brief/prompt. Recommend unspecified layouts (max one alternative).
 
 **CHECKPOINT C1 - Plan approval** (one message, format in `references/creative-plan.md`): assumptions, per-SKU classification, per-asset table (purpose, copy, layout, source), blockers with recommended answers. Reply `ok` or exceptions.
 
@@ -87,6 +87,7 @@ Read each named reference **when you reach that step**, not upfront.
 - **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story incl. Mobile bg 463x625, logo, ASIN; Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields; baked-in text only in safe zones, legible on mobile.
+- **Clarity.** Follow `references/image-quality.md`; separate local and post-upload QA. Uninspected Amazon renders are `NOT_CHECKED`.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
 - **Spec freshness.** For production-critical dimensions, safe zones, video limits and modules prefer the current official Amazon source (`references/live-research.md`) over `amazon-specs.md`; record the date.
 
@@ -233,6 +234,14 @@ Specify:
 - product-vs-source fidelity verification;
 - final status expected.
 
+### K. Mandatory image/text clarity block
+
+For listing carousel, Brand Story, Brand Store, A+ Premium and A+ Basic, read `image-quality.md` and include its full mandatory block in **each standalone production prompt**, filling in per-asset export, displayed typography and QA fields. Do not replace it with "high resolution", "4K", "sharp text" or a reference the executing agent cannot access.
+
+Require original source detail, an editable master, deterministic typesetting/native text, one final resize, no repeated lossy saves and no aggressive sharpening. A scene-generation prompt produces an intermediate asset; compositing, export and clarity QA still precede upload readiness. Product Fidelity Lock remains in force.
+
+Report `LOCAL_CLARITY_QA` separately from `AMAZON_RENDER_QA`; never infer an Amazon pass from a local preview or dimensions/file-weight validation. Without an authorized upload and inspected processed preview/page, Amazon QA is `NOT_CHECKED`.
+
 ## Text insertion prompt template
 
 Use when the visual already exists and only text/layout must be added.
@@ -272,6 +281,9 @@ NEGATIVE:
 
 OUTPUT:
 [FORMAT / SIZE / QA]
+
+IMAGE AND TEXT CLARITY:
+[INSERT THE FULL MANDATORY BLOCK FROM image-quality.md WITH PER-ASSET VALUES.]
 ```
 
 ## Lifestyle environment prompt template
@@ -315,6 +327,9 @@ NEGATIVE:
 
 OUTPUT:
 [FORMAT / SIZE / QA]
+
+IMAGE AND TEXT CLARITY:
+[INSERT THE FULL MANDATORY BLOCK FROM image-quality.md WITH PER-ASSET VALUES.]
 ```
 
 ## Rear-view / back-side rule
@@ -1168,6 +1183,8 @@ Use this structure for RU, EN, or DE briefs.
 - Requirement status: AMAZON_REQUIRED / AMAZON_RECOMMENDED / PRODUCTION_PRESET / VERIFY_IN_UI
 - Format:
 - File-size limit:
+- Verified module/specification source and date:
+- Displayed desktop/mobile size and any separate mobile export:
 - Video duration / codec / fps / bitrate when relevant:
 
 ## 3. Source files
@@ -1230,6 +1247,14 @@ Include placement-specific Amazon rules plus Product Fidelity Lock.
 - source-vs-output product comparison;
 - mobile preview;
 - Amazon UI preview before publishing.
+
+### Mandatory image/text clarity requirements
+
+For listing carousel, Brand Story, Brand Store, A+ Premium and A+ Basic, apply `image-quality.md` and paste its mandatory clarity block into **every individual brief**, filling in export settings, typography at displayed size and acceptance checks. This block must travel with a brief sent outside this repository.
+
+Require high-quality originals, an editable layered master, deterministic text compositing/native text, one final resize and a visually checked export. Do not accept blurred product detail, merging letters, unreadable thin text, compression artifacts or sharpening halos merely because dimensions and file weight pass.
+
+Deliver the master, final upload file, desktop/mobile previews and separate `LOCAL_CLARITY_QA` / `AMAZON_RENDER_QA` results. Check Amazon clarity after upload/processing; if access/upload is unavailable, record `NOT_CHECKED`, not a pass. Upload readiness and post-upload acceptance are separate.
 
 ## 11. Mandatory layout scheme per image/banner
 
@@ -1341,6 +1366,86 @@ Keep one `Product Row ID` per GTIN so every asset traces back to its image and r
 ## Scale
 
 Many GTINs: process all clean matches in one plan and one C1; group the table by product. Do not ask per SKU.
+
+## FILE: references/image-quality.md
+
+# Image and text clarity: production and Amazon acceptance
+
+This mandatory internal `PRODUCTION_PRESET` applies to **listing carousel (MAIN and secondary images), Brand Story, Brand Store, A+ Premium and A+ Basic**. Include it in every designer brief and AI production prompt, including standalone handoffs. Passing dimensions, format and file-weight checks alone does not establish visual quality.
+
+The goal is clear product details, clean graphics and readable approved text at the actual shopper display size, including after upload and Amazon processing. Do not promise zero recompression or identical pixels: inspect the final Amazon-rendered result. Do not diagnose an existing blurry image without comparing its source, export and rendered version.
+
+## 1. Sources and editable master
+
+- Use high-quality original product photographs, original logos and vector graphics. Do not use thumbnails, screenshots, messenger-compressed copies or previously compressed exports as masters.
+- Inspect the protected product and label at the intended output scale. Enlarging a small source, changing DPI metadata or asking for "4K/8K/ultra sharp" does not restore missing detail. Flag an insufficient source and request a better original; never invent label text or product texture.
+- Keep an editable master with separate product, background, vector graphics and live text layers. A larger working canvas is optional when the source supports it; it is not an instruction to upload oversized files.
+- Preserve Product Fidelity Lock. Do not sharpen, denoise or regenerate the protected product in a way that changes packaging, letters, texture or color. Background depth of field is allowed; the product and marketing text must remain in focus.
+
+## 2. Typography and layout that survive reduction
+
+- Prefer native Amazon text fields where the selected module supports the required copy; verify that the text also appears on mobile. Never add marketing text to MAIN.
+- For embedded marketing text, generate the scene first, then typeset the exact approved copy with a deterministic text/compositing tool. Keep letters and icons editable/vector until final raster export; do not depend on generated lettering for the final asset.
+- Use a clear font with sufficient stroke weight, strong text/background contrast and a quiet text zone. Avoid thin/light fonts, tiny footnotes, narrow letter spacing, hairline graphics and small saturated colored type that degrades when reduced. Simplify or split dense copy across assets; do not shrink it to make it fit.
+- Define font sizes at the displayed image scale. Internal starting targets: body/callouts at least **16 px**, headline at least **24 px** at intended mobile display size; key graphic strokes about **2 displayed px** or more. These are production targets, **not Amazon requirements**; inspect the actual font, module and crop.
+- Estimate scaling with `displayed text px = export text px * displayed image width / exported image width`. For a crop/card use that asset's actual rendered scale, not the page width. Check at 375 px and 430 px viewport widths as internal preview presets, plus the actual Amazon mobile layout when accessible.
+- Provide a separate mobile composition/export where supported if the desktop layout cannot remain readable. Preserve approved copy and product proportions.
+
+## 3. Export without avoidable quality loss
+
+- Record placement/module, marketplace, upload pixel box, aspect ratio, accepted format and file-weight limit from the current builder or verified specification, with source/date and requirement labels. Unknown production-critical values stay `VERIFY_IN_UI`.
+- Export at the approved upload size in sRGB. Keep the carousel's existing 4000 x 4000 preset; for A+ Basic, A+ Premium, Brand Story and Store use the selected module's own verified upload specification. Do not reuse one dimension everywhere or upload 2x/4x files assuming Amazon will preserve them.
+- Resize from the editable master once with high-quality resampling; rasterize text/graphics at final pixel size. Never stretch images, repeatedly resize flattened text or repeatedly save JPEGs. DPI metadata is not a substitute for pixel resolution.
+- Where accepted, prefer lossless PNG for text-heavy layouts, line art and flat graphics if it fits the limit. Use high-quality JPEG for photographs or when required by the uploader/file-weight budget. Internal JPEG starting point: quality 90-95, with 4:4:4 chroma sampling for embedded text/colored edges when supported. Encoder scales vary; inspect and adjust within the placement limit. These are presets, not Amazon mandates or guarantees.
+- Optimize weight without visible damage. Strip unnecessary metadata while retaining/embedding sRGB information; use lossless optimization where useful. Compare edges and letters after compression changes. Reject blur, ringing, blocks, color bleeding and broken strokes.
+- Use only restrained output sharpening after resizing where needed and without altering the protected product. Reject halos and brittle edges. Replace a weak source instead of cosmetically declaring it sharp.
+- If quality and file-weight constraints cannot both pass, revise background detail or approved layout/text density, or obtain a better source. Follow the existing approval rule before reducing carousel pixels. Never silently relax quality to pass the validator.
+
+## 4. Placement-specific checks
+
+| Placement | Required clarity check |
+|---|---|
+| Listing carousel | MAIN product edges/details remain natural and focused; no added text. Secondary-image headlines, callouts and icons remain readable in the normal mobile gallery without zoom. |
+| Brand Story | Inspect background and foreground cards separately, including mobile crops and overlays; essential text/branding must not disappear beneath cards. |
+| Brand Store | Inspect hero and each tile at their own desktop/mobile scale; prefer native text and verify essential copy in any custom mobile layout. |
+| A+ Premium | Check each selected module and separate mobile asset; larger banners must not justify smaller displayed copy. Inspect carousel/hotspot overlays where used. |
+| A+ Basic | Check each selected module at actual display size; simplify small comparison images and dense layouts, using available native text fields. Do not copy Premium dimensions. |
+
+## 5. Two-stage QA and acceptance
+
+Record **both** results per asset; a technical validator cannot certify visual clarity.
+
+1. `LOCAL_CLARITY_QA = PASS / FAIL`: inspect the final upload file at 100% pixels for defects and at actual desktop/mobile display size for readability. Compare with the original; check exact copy, letter edges, product fidelity, graphic strokes, crops and safe zones. Save export settings and preview evidence. A locally downscaled/recompressed preview is a stress test, not proof of Amazon's processing.
+2. `AMAZON_RENDER_QA = PASS / FAIL / NOT_CHECKED`: after an authorized upload has finished processing and fully loaded, inspect Amazon's desktop/mobile preview. Inspect the live customer-facing page when available; record evidence scope as `BUILDER_PREVIEW` or `LIVE_PAGE`. A preview-only pass keeps live verification pending. Capture asset/version, marketplace/module, date, page/preview reference, viewport/device and screenshots where possible.
+
+Acceptance: intended marketing copy is readable without zoom; letters/icons do not merge or bleed; no visible blocks, halos or soft focus at normal display size; product details remain faithful and are not degraded by production. Do not require microscopic physical label text to be readable in a thumbnail.
+
+If Amazon QA fails, compare source -> export -> Amazon-rendered image; identify source, export, text-scale, crop or rendering issues; revise from the master, re-export and recheck through the authorized upload workflow. Do not repeatedly re-save the uploaded JPEG.
+
+If access, upload authorization or a live page is unavailable, mark the relevant check `NOT_CHECKED`, stating why and what must be checked next. Do not upload/publish solely to complete this checklist without authorization. `READY FOR AMAZON CREATIVE UPLOAD` may mean local QA passed and upload can proceed; it **never** means post-upload clarity passed. Failed local QA blocks upload readiness; failed Amazon QA blocks final acceptance.
+
+## 6. Mandatory block in every brief and AI prompt
+
+Include this block in full, translate as needed and fill its per-asset values. A reference link alone is insufficient for a standalone handoff.
+
+```text
+IMAGE AND TEXT CLARITY — REQUIRED PRODUCTION QUALITY
+Placement/module: [carousel / Brand Story / Brand Store / A+ Premium / A+ Basic; exact module].
+Upload export: [W x H px, aspect, accepted format, sRGB, file-weight limit, verified source/date].
+Keep the product, graphics and approved text clear at actual desktop/mobile size; verify again after Amazon upload/processing. Technical acceptance alone is not visual acceptance.
+Use high-quality originals and an editable layered master. Do not enlarge a poor source and present it as restored detail; never redraw product/label details.
+Typeset exact approved copy in native Amazon fields where supported, otherwise deterministic editable text layers rasterized at final size. MAIN has no added marketing text.
+Displayed text/graphics: [font, weight, export px -> displayed px, contrast, stroke width, mobile layout/crop]. No tiny/thin type or crowded copy.
+Resize once from the master. Use lossless PNG for text/graphics if accepted and within limit, otherwise visually checked high-quality JPEG; avoid repeated JPEG saves and aggressive compression/sharpening.
+Export settings: [format, quality/chroma sampling if applicable, resampling, profile, final bytes].
+LOCAL_CLARITY_QA: [PASS / FAIL; evidence at 100% and desktop/mobile display size].
+AMAZON_RENDER_QA: [PASS / FAIL / NOT_CHECKED; BUILDER_PREVIEW / LIVE_PAGE; device/viewport, date, evidence or reason pending].
+Deliver the editable master, final upload file, previews and QA record. If text blurs, edges bleed or product detail deteriorates, revise and recheck. Never claim post-upload success without inspecting the Amazon-rendered result.
+```
+
+## Requirement boundaries
+
+Placement limits remain governed by `amazon-specs.md` and current official sources/the selected Amazon builder. The typography targets, export settings and two-stage QA above are internal production standards, not additional verified Amazon requirements. Do not copy Store guidance into A+ modules or infer universal uploader limits.
 
 ## FILE: references/image-reading.md
 
@@ -1569,7 +1674,7 @@ Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 rec
 
 ### File-size rule (carousel, <= 10 MB)
 
-A 4000x4000 file over 10 MB is fixed by **compression, not by fewer pixels**: re-export as optimized JPEG (quality ~85-92, progressive, sRGB, metadata stripped) and re-run the validator. Only if it still does not fit, **stop and warn the user**: state the current size, the pixel size you propose (never below 2000x2000, the Amazon recommended floor) and the reason; reduce pixels only after the user agrees, and record it in the workbook `ISSUES` sheet. Never reduce silently.
+A 4000x4000 file over 10 MB is fixed by **export optimization, not by fewer pixels**: follow `image-quality.md`, compare allowed formats, remove unnecessary metadata while retaining sRGB information, and re-export from the master. For JPEG, start at quality 90-95 (encoder-dependent), adjust within the limit, and inspect text/edges after each change. Do not accept visible damage to meet file weight. Re-run the validator and local clarity QA. If quality and file weight still cannot both pass, **stop and warn the user**: state the current size, proposed correction (including any pixel-size reduction, never below the existing 2000x2000 floor) and reason; reduce pixels only after the user agrees and record it in the workbook `ISSUES` sheet. Never reduce silently.
 
 ### PT slots
 
@@ -1585,20 +1690,30 @@ The number of PT slots per category is `VERIFY_IN_UI`. The agent plans MAIN + 6 
 | Safe zones | Store hero central safe area, tile link-title overlay, Brand Story cards/crops, A+ responsive crop respected |
 | Brand Story | separate Desktop (1464x625) and Mobile (463x625) previews built (`scripts/brand_story_preview.py`); cards over background checked on first screen, scroll and extreme positions; nothing important cropped/covered; no key text/faces behind cards; background has no baked-in cards; Mobile is its own composition; sizes rechecked against the current Seller Central uploader |
 | Mobile | text legible at phone display size (approx. 375 px wide preview) |
+| Local clarity | `image-quality.md`: final export checked at 100% pixels and actual desktop/mobile size; clean product detail, readable text, no merging letters, color bleeding, compression blocks or sharpening halos |
+| Amazon-rendered clarity | after authorized upload and completed processing, inspect rendered desktop/mobile preview/page; record scope and evidence separately, or `NOT_CHECKED` if unavailable |
 | Claims | every claim traceable to a supplied fact; no strengthened translation; no invented award/cert/comparison |
 | Policy | MAIN rules; no watermark, QR code, hyperlink, HTML, animated GIF in A+; language matches the selected content language |
 
-## 3. Status
+## 3. Clarity QA record
+
+Apply `image-quality.md` to every carousel, Brand Story, Brand Store, A+ Premium and A+ Basic asset. Record `LOCAL_CLARITY_QA = PASS / FAIL` and `AMAZON_RENDER_QA = PASS / FAIL / NOT_CHECKED`, with asset/version, export settings, viewport/device, date, evidence and correction if needed. Distinguish `BUILDER_PREVIEW` from `LIVE_PAGE`; a preview pass does not certify an unseen live page. Use the existing `QA / Preflight Result` column for both statuses, `Notes` for evidence and settings, and ISSUES for failures/pending verification.
+
+Technical script results and sharpness metrics are not visual acceptance. If Amazon quality fails, return to the master, fix the cause and repeat relevant checks. No access or authorized upload means Amazon QA is pending; never fabricate a screenshot, inspection or pass.
+
+## 4. Status
 
 Per asset, then overall:
 
-- `READY FOR AMAZON CREATIVE UPLOAD` - all required checks PASS; only informational `VERIFY_IN_UI` notes remain that are not blocking.
+- `READY FOR AMAZON CREATIVE UPLOAD` - all required pre-upload checks, including local clarity, PASS; only informational `VERIFY_IN_UI` notes remain that are not blocking. Report Amazon QA separately; `NOT_CHECKED` is pending post-upload verification, not final visual acceptance.
 - `READY AFTER USER-APPROVED CROP/EXPORT` - content correct, a mechanical crop/resize/format change is needed and the user must approve it.
 - `NOT READY FOR AMAZON CREATIVE UPLOAD` - any failed check, any unauthorized product mismatch, or any unverified production-critical spec.
 
 Each `NOT READY` line: `asset - placement - issue - exact correction - who (agent/user)`.
 
 Write failures to the workbook `ISSUES` sheet.
+
+A failed local clarity check blocks upload readiness. A failed Amazon check blocks final acceptance and requires a corrected export; mark that version `NOT READY FOR AMAZON CREATIVE UPLOAD` for correction. Do not publish/upload solely to satisfy QA without authorization.
 
 ## FILE: references/universal-xlsx-intake.md
 
@@ -1788,6 +1903,8 @@ Use these sheets when useful:
 - `ISSUES` - missing inputs, Amazon compliance issues, claim risks, QA failures.
 
 The workbook must remain usable even if some assets are only concepts and have no URL yet.
+
+For carousel, Brand Story, Brand Store, A+ Premium and A+ Basic rows, apply `image-quality.md`. Put the filled clarity requirements in `Internal Production Rules`, actual displayed typography/crops in `Mobile / Responsive Notes`, both `LOCAL_CLARITY_QA` and `AMAZON_RENDER_QA` statuses in `QA / Preflight Result`, and export settings/evidence scope/date in `Notes`. Use `NOT_CHECKED` for uninspected Amazon renders. Record failures and pending checks in `ISSUES`; do not invent additional JSON column names, which the builder ignores.
 
 If multiple categories/types are present, never collapse them into a single project-level value. Preserve category and product type on every relevant row.
 
