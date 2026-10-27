@@ -167,6 +167,8 @@ Source: Amazon Seller Central Help, A+ Content reference GLG4RQK2Y2RJADU4.
 
 ## 6. Brand Store
 
+Process, ASIN routing, QA and a worked brief (Trendy Aesthetic, iPhone/AirPods cases): `brand-store-playbook.md`.
+
 Official Amazon Ads Store creative guidelines.
 
 ### Header
