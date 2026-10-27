@@ -26,6 +26,11 @@
       "name": "amazon-feeds",
       "source": "./plugins/amazon-feeds",
       "description": "Feeds agent: fill feed templates (Template rows 7+ only), analyze feed errors from Processing Reports, apply approved corrections with QA and re-analysis."
+    },
+    {
+      "name": "amazon-analytic",
+      "source": "./plugins/amazon-analytic",
+      "description": "Analytic agent (Market Intelligence): Xray/Cerebro import, niche metrics, unit economics, cash-flow, Buy Box, compliance, GO/TEST/HOLD decision, portfolio and report."
     }
   ]
 }
