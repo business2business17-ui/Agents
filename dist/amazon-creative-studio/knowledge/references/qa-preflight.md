@@ -8,7 +8,7 @@ Run before every final report. Fix what you can; report only what remains.
 
 Covers: file readable, format, color mode (RGB only for A+), file size, dimensions vs. preset/minimum, aspect ratio, MAIN white background and edge-clipping heuristics, MAIN product fill estimate, video container/codec/fps/duration/bitrate via `ffprobe` (when installed), Store/SB limits. Anything that cannot be checked deterministically is returned as `MANUAL` or `VERIFY_IN_UI`, never as PASS.
 
-Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
+Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453), `brand-story-bg-mobile` (463x625), `brand-story-logo` (315x145), `brand-story-asin` (166x182). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
 
 ### File-size rule (carousel, <= 10 MB)
 
@@ -26,6 +26,7 @@ The number of PT slots per category is `VERIFY_IN_UI`. The agent plans MAIN + 6 
 | Exact text | every text block equals the approved copy character-for-character; locale spelling, units, decimal separators correct |
 | Layout | matches the approved verbal wireframe; reading order works; nothing covers the product's logo/label |
 | Safe zones | Store hero central safe area, tile link-title overlay, Brand Story cards/crops, A+ responsive crop respected |
+| Brand Story | separate Desktop (1464x625) and Mobile (463x625) previews built (`scripts/brand_story_preview.py`); cards over background checked on first screen, scroll and extreme positions; nothing important cropped/covered; no key text/faces behind cards; background has no baked-in cards; Mobile is its own composition; sizes rechecked against the current Seller Central uploader |
 | Mobile | text legible at phone display size (approx. 375 px wide preview) |
 | Claims | every claim traceable to a supplied fact; no strengthened translation; no invented award/cert/comparison |
 | Policy | MAIN rules; no watermark, QR code, hyperlink, HTML, animated GIF in A+; language matches the selected content language |

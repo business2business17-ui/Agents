@@ -60,7 +60,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 **Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. XLSX benefits are the source of truth; if none, draft from that row's TTX only, tag `DRAFTED_FROM_TTX`, approve at C1. Then audit each description vs TTX + category/type and propose an improved one + missing TTX (`references/description-improvement.md`). If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
 
-**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ module's box to another.
+**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ box to another. Brand Store: `references/brand-store-playbook.md`.
 
 **Step 4 - Copy, localization, layout** (`references/localization.md`, `references/designer-brief.md`). For every asset write final copy per marketplace and a concrete layout scheme (verbal wireframe, zones, reading order, do-not-cover areas). If layout is not dictated, choose the recommended option (max one alternative).
 
@@ -81,7 +81,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 - **Product Fidelity Lock.** The real product is an immutable protected layer: never redraw, regenerate, reshape, recolor, relabel or re-letter it; generate only around it (background, shadow, environment, text layers). Missing rear/side view -> ask for the real image or create environment only. Full rules: `references/product-fidelity.md`.
 - **MAIN image** is not a marketing surface: pure white `#FFFFFF`, real product, no text/badges/graphics, product not clipped, fills >=85% of the frame.
-- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
+- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story incl. Mobile bg 463x625, logo, ASIN; Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields; baked-in text only in safe zones, legible on mobile.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
@@ -506,7 +506,44 @@ Exact image/video boxes: `VERIFY_IN_UI` per selected module.
 
 Amazon describes Brand Story as a separate A+ type appearing in the "From the brand" area. It supports one module with up to 19 preformatted cards in a carousel format, full-screen backgrounds, image/text cards, and links to products/Brand Stores.
 
-Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; background (main section backdrop) **1464 x 625 px** (`brand-story-bg`); brand card / focus image **362 x 453 px**, vertical (`brand-story-card`). Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; export JPG/PNG, RGB/sRGB. Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+
+| Element | Size | Placement id | Purpose |
+|---|---|---|---|
+| Background Desktop | 1464 x 625 px | `brand-story-bg` | main backdrop |
+| Background Mobile | 463 x 625 px | `brand-story-bg-mobile` | separate mobile adaptation (not a scaled Desktop copy) |
+| Media Asset Card (Image Card) | 362 x 453 px | `brand-story-card` | vertical image card |
+| Brand Logo | 315 x 145 px | `brand-story-logo` | logo only, not the whole card |
+| ASIN Product Image | 166 x 182 px | `brand-story-asin` | product image in the 4-ASIN module |
+
+#### Brand Story brief (ТЗ — Amazon Brand Story)
+
+Task: images for the horizontal Brand Story carousel, adapted for Desktop and Mobile.
+
+Background:
+
+- continuous image; no pre-built cards baked in; do not build it from blocks tied to card positions (cards scroll relative to the background);
+- recommended safe margins (our working values, NOT official Amazon requirements): Desktop 48-64 px horizontal, 40-50 px vertical; Mobile 24-32 px horizontal, 30-40 px vertical;
+- Desktop: brand zone / main accent roughly in the left third (about the first 30% of width); the backdrop behind cards has no critical details; this is not a guaranteed free zone on every screen;
+- Mobile: separate composition; keep important elements near the center but do not rely on it being fully visible;
+- Amazon cards overlap the background; the visible area depends on device and scroll: no important text, faces or must-see elements behind cards;
+- if the brand name must always be visible, duplicate the logo in a separate card or another Brand Story module.
+
+Cards:
+
+- Image Card 362 x 453: inner padding 20-24 px from the canvas edges (our working value); no text or logos against the borders;
+- Logo 315 x 145: upload the logo itself, without a pre-drawn card;
+- one visual style across all cards;
+- title/description are entered separately in Seller Central: embed text in images only where truly needed, do not duplicate.
+
+Checks (deliver separate Desktop and Mobile preview mockups):
+
+1. cards overlaid on the background;
+2. first screen, carousel scroll, extreme card positions;
+3. nothing important cropped or covered;
+4. file sizes re-checked against the current Seller Central uploader.
+
+Deliverables: separate final images, Figma/PSD sources, Desktop/Mobile preview mockups. Preview mockups: `scripts/brand_story_preview.py`.
 
 Rules for this skill:
 
@@ -516,11 +553,13 @@ Rules for this skill:
 - use exact background/card pixel dimensions from the current Amazon Brand Story builder for that account/marketplace;
 - do not promote third-party template dimensions to REQUIRED without current official verification.
 
-Exact background/card pixels: values above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
+Exact Brand Story pixels: table above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, A+ Content reference GLG4RQK2Y2RJADU4.
 
 ## 6. Brand Store
+
+Process, ASIN routing, QA and a worked brief (Trendy Aesthetic, iPhone/AirPods cases): `brand-store-playbook.md`.
 
 Official Amazon Ads Store creative guidelines.
 
@@ -651,6 +690,241 @@ Source: Amazon Ads, eCommerce display creatives guidelines.
 - Amazon Ads — Sponsored Brands Video: `https://advertising.amazon.com/resources/ad-specs/sponsored-brands-video`
 - Amazon Ads — eCommerce display creatives: `https://advertising.amazon.com/resources/ad-specs/ecommerce/`
 - Amazon Sell — 3D/AR: `https://sell.amazon.com/tools/3d-ar`
+
+## FILE: references/brand-store-playbook.md
+
+# Brand Store playbook (Amazon US) + worked brief: Trendy Aesthetic
+
+Use for any Brand Store task (sitemap, content matrix, wireframes, tiles, hero, ASIN routing, QA). Pixel boxes for Store modules: `amazon-specs.md` section 6 (`VERIFY_IN_UI` per module). Header image / tile rules there override any size in the brief.
+
+## Generic rules (apply to every Brand Store)
+
+1. **Architecture before banners.** Confirm the compatibility/ASIN matrix and the shopper path first (type -> model -> print/variant -> ASIN); only then design.
+2. **Placeholders, not inventions:** `[BRAND_NAME]`, `[ASIN_REQUIRED]`, `[PHOTO_REQUIRED]`, `[URL_REQUIRED]`, `[PRINT_NAME]`. Never invent ASINs, prices, claims, compatibility, reviews, stars, discounts or Amazon/Apple badges.
+3. **Do not fake a filter** the Store builder does not support; use tiles and product collections.
+4. **Never Submit/Publish** without the owner's explicit approval; no passwords in briefs.
+5. **Master table** (sku, asin, family, device_generation, compatible_model, print_id, print_name, listing_url, is_active, store_page, image_status); do not rename existing SKUs; Store does not replace correct variations in listings.
+6. **Deliverables:** sitemap, content matrix (page, module, EN copy, image asset, target URL/ASIN, status), design directions, desktop+mobile mockups, asset list (sizes from the current Builder), ASIN routing map, QA + publish checklist, post-launch plan (Store Insights).
+7. Native Store text over text baked into images; no small text on banners; safe areas for adaptive crop (`amazon-specs.md` section 6).
+
+# Worked brief (verbatim from the owner)
+
+# Agent Brief — Amazon US Brand Store | Trendy Aesthetic
+
+> **Статус:** рабочее ТЗ для AI-агента / дизайнера / Amazon Store Builder.  
+> **Язык коммуникации с владельцем:** русский.  
+> **Язык контента для Amazon US:** английский (US).  
+> **Результат:** подготовленный к сборке и проверке Amazon Brand Store, связанный с ассортиментом и A+ Content.
+
+## 1. Роль агента и задача
+
+Ты — специалист по Amazon US Brand Stores, e-commerce UX, бренд-дизайну и структуре каталога. Разработай **Trendy Aesthetic** Brand Store для бренда чехлов iPhone и AirPods с разными принтами. Работай с реальными данными бренда и требованиями Amazon. Не придумывай ASIN, факты о товарах, цены, преимущества, совместимости и обещания защиты.
+
+**Главная бизнес-цель:** превращать посетителей Store в покупателей, одновременно помогая находить чехол для конкретной модели устройства и открывать связанные коллекции.
+
+**UX-приоритет:** `выбрать тип чехла → выбрать модель устройства → выбрать принт → открыть подходящий ASIN`.
+
+## 2. Исходные данные
+
+- Маркетплейс: **Amazon.com (US)**.
+- Бренд: зарегистрирован в **Amazon Brand Registry**.
+- Ассортимент:
+  - **Matte iPhone Cases** — матовые чехлы с разными принтами.
+  - **Clear iPhone Cases** — прозрачные чехлы с принтами.
+  - **AirPods Cases** — чехлы с принтами для AirPods Pro / Pro 2 и AirPods 4.
+- Модели iPhone: линейка **iPhone 13–18**, включая варианты Pro Max там, где они реально существуют и товар доступен. Не предполагается, что у каждого поколения есть одинаковые модели (Standard, Plus, Pro, Pro Max и т. д.). Проверяй конкретные совместимости по исходной SKU/ASIN-матрице.
+- Принты могут различаться между устройствами и покрытиями — подтверждать по каталогу.
+- Выбранная творческая концепция: **B — Trendy Aesthetic**.
+
+### Отсутствующие исходные материалы (запросить или явно обозначить как TODO)
+
+1. Название бренда, логотип, брендбук (если есть).
+2. Экспорт каталога: SKU, ASIN, parent/child, title, model compatibility, finish, print ID/name, listing status, stock status, product page URL.
+3. Фотографии реальных чехлов в достаточном разрешении, исходники принтов, разрешения на изображения.
+4. Подтверждённые характеристики: материал, текстура, особенности бортика камеры, совместимость с зарядкой и т. п.
+5. Список бестселлеров и новых запусков, если есть данные.
+6. Доступы/права на работу с Stores в Amazon Ads; никаких паролей в ТЗ.
+
+При отсутствии данных используй пометки `[BRAND_NAME]`, `[ASIN_REQUIRED]`, `[PHOTO_REQUIRED]`, а не выдуманные значения. Не публикуй магазин без согласования владельца.
+
+## 3. Позиционирование и дизайн-система
+
+**Образ:** colorful, playful, trendy, expressive, fashion-accessories brand; продукт и принты в центре внимания. Не делать абстрактный «девчачий» дизайн в ущерб читаемости и покупке.
+
+**Направление текстов (черновики, не финальные обещания):**
+- Hero: **Your Case. Your Vibe.**
+- Supporting: **Fresh Prints. Everyday Style.**
+- Category: **Pick Your Style**
+- Prints: **Find Your Print Crush**
+- Cross-sell: **The Perfect Match**
+- Buttons/tiles: **Shop Matte Cases**, **Shop Clear Cases**, **Shop AirPods Cases**, **Shop by Print**.
+
+**Предварительная палитра (уточнить под реальные товары):**
+
+| Цвет | HEX | Роль |
+|---|---|---|
+| Pink | `#F8ACCE` | Акценты, CTA-плитки |
+| Lilac | `#C8B0F5` | Фоны коллекций |
+| Butter Yellow | `#FDE7A2` | Вторичный акцент |
+| Coral | `#FF8D76` | Микроакценты |
+| Cream | `#FFF8F1` | Основной светлый фон |
+
+Текст и активные элементы должны быть достаточно контрастными. Придерживайся единых фото-фонов и композиции, не допускай мелкого текста на баннерах; обеспечь хорошие мобильные обрезки.
+
+## 4. Архитектура Brand Store
+
+### Основные страницы
+
+```text
+HOME
+├── Matte iPhone Cases
+│   └── [навигационные плитки по поколениям/моделям при наличии товаров]
+├── Clear iPhone Cases
+│   └── [навигационные плитки по поколениям/моделям при наличии товаров]
+├── AirPods Cases
+│   ├── AirPods Pro / Pro 2
+│   └── AirPods 4
+└── Shop by Print
+    ├── [Print Collection 01]
+    ├── [Print Collection 02]
+    └── [остальные реально существующие принты]
+```
+
+Если ограничения Amazon Stores или количество товара не позволяют создать глубокие страницы, реализовать навигацию через доступные плитки и product collections. **Не изображать наличие динамического фильтра моделей, если Store его не поддерживает.**
+
+### Главная страница — порядок блоков
+
+1. **Hero:** lifestyle-фото реальных iPhone + AirPods, слоган *Your Case. Your Vibe.* и заметная дорога в каталог.
+2. **Pick Your Style:** три визуальные плитки Matte / Clear / AirPods, каждая ведёт на собственную страницу.
+3. **Shop by Print:** 4–6 наиболее узнаваемых коллекций принтов с соответствующими ASIN/страницами.
+4. **The Perfect Match:** сочетания одного принта на iPhone и AirPods; shoppable image, если поддерживается и корректно настроена.
+5. **Best Sellers:** товарная подборка из подтверждённых SKU/ASIN и по возможности фактических данных продаж.
+6. **New Arrivals:** только реальные новинки, если они есть.
+7. **Brand Signature:** короткая фирменная фраза/визуал без неподтверждённых заявлений.
+
+### Matte / Clear
+
+- В верхней части: фотография серии и её подтверждённое отличие.
+- Блок **Choose Your iPhone** с доступными поколениями.
+- Дальше — доступные модели и продуктовые подборки, не показывающие несовместимые чехлы как подходящие.
+- Не объединять матовые и прозрачные изделия под одним названием товара без явного обозначения материала/покрытия.
+- При большом каталоге важнее разделить выбор модели, чем показать все принты на одном экране.
+
+### AirPods
+
+- Две хорошо различимые группы: **Pro / Pro 2** и **AirPods 4**.
+- Pro / Pro 2 показывать совместно **только если каждый конкретный чехол совместим с обеими моделями**.
+- Указывать совместимость корректно и явно, не путать название устройства и самого чехла.
+
+### Shop by Print
+
+- Названия принтов из каталога, а не придуманные.
+- В каждой подборке показывать доступные версии Matte, Clear и AirPods.
+- Если принт существует только для части моделей, нельзя намекать на универсальную совместимость.
+
+## 5. Требования к визуальным материалам
+
+Создай спецификацию и дизайн-макеты для следующих блоков:
+
+| Материал | Первоначальное количество | Содержание |
+|---|---:|---|
+| Home hero | 1 desktop + mobile adaptation | 2–3 реальных изделия, заметный принт, слоган |
+| Category tiles | 3 | Matte, Clear, AirPods |
+| Print collections | 4–6 | Реальные принты, названия, корректные ссылки |
+| Matching look | 1–2 | Один принт в нескольких категориях, если есть |
+| Series banners | 3 | По баннеру на Matte, Clear, AirPods |
+| Model-navigation tiles | по факту каталога | Устройства и поколения только с активными ASIN |
+
+**Размеры экспорта:** брать из текущих спецификаций используемых модулей в Amazon Stores builder (в т. ч. desktop/mobile), а не считать заранее предложенные размеры универсальными. Подготовить изображения с безопасными полями под адаптивный crop.
+
+**Требования:**
+- Использовать реальные товары; визуально изменённые концепты не должны искажать продаваемый продукт.
+- Права на изображения и принты должны принадлежать бренду или быть лицензированы.
+- Не добавлять фиктивные отзывы, звёзды, скидки, цены, значки Amazon/Apple и недоказанные технические заявления.
+- Избегать мелкого текста внутри графики; основной текст по возможности — нативными блоками Store.
+- Фотографии показывают отличия Matte vs Clear, а не только разные цветные фоны.
+
+## 6. Каталог, ASIN и связи
+
+Подготовь master-таблицу с обязательными логическими полями:
+
+| Поле | Пример | Примечание |
+|---|---|---|
+| `sku` | `MAT-IP16PM-FLR01` | Внутренний SKU |
+| `asin` | `[ASIN_REQUIRED]` | Реальный ASIN |
+| `family` | `MAT` / `CLR` / `AP` | Линейка |
+| `device_generation` | `iPhone 16` | Для навигации |
+| `compatible_model` | `iPhone 16 Pro Max` | Точная совместимость |
+| `print_id` | `FLR01` | Единый ключ дизайна |
+| `print_name` | `[PRINT_NAME]` | Название в Store |
+| `listing_url` | `[URL_REQUIRED]` | Проверенная ссылка |
+| `is_active` | `true/false` | Доступность листинга |
+| `store_page` | `Matte` | Целевая страница |
+| `image_status` | `approved/missing` | Статус контента |
+
+Примерная система SKU:
+
+- `MAT-IP16PM-FLR01` — матовый чехол iPhone 16 Pro Max, Floral 01.
+- `CLR-IP16PM-FLR01` — прозрачный чехол той же модели и принта.
+- `AP-PRO12-FLR01` — AirPods Pro/Pro 2 при подтверждённой общей совместимости.
+- `AP-4-FLR01` — AirPods 4.
+
+Существующие SKU **не переименовывать без отдельного анализа последствий** для учёта, фулфилмента и связей; схема применяется к новым SKU или как реестр псевдокодов. Parent–Child relationships и доступные variation themes отдельно сверять с текущим product-type template Amazon US. Brand Store не заменяет правильные вариации в товарных листингах.
+
+## 7. Связь с A+ Content
+
+Запланировать **три базовых A+ направления**:
+
+1. Matte iPhone.
+2. Clear iPhone.
+3. AirPods (при необходимости отдельные фотографии/версии для Pro/Pro 2 и AirPods 4).
+
+И **единый Brand Story** для бренда, если доступен в интерфейсе.
+
+Связать страницы Store и A+ через предусмотренные Amazon механизмы, не обещать произвольные интерактивные переходы там, где продукт их не предоставляет. Общие шаблоны A+ могут применяться к нескольким ASIN только при совпадении релевантных характеристик, конструкций и совместимостей. Не показывать на A+ изделие другой модели как текущий продаваемый товар.
+
+## 8. Реализация в Amazon Ads / Stores
+
+1. Проверить бренд, права доступа, актуальные правила Amazon US, доступные шаблоны/модули Store и размеры для каждого выбранного блока.
+2. Провести аудит каталога: реальные активные ASIN, совместимость, серии, принты, наличие фотографий.
+3. Подготовить sitemap, customer journey и wireframes desktop/mobile.
+4. Составить контент-матрицу с английскими заголовками, целевыми страницами и ASIN для всех плиток.
+5. Собрать дизайн-систему и изображения; показать владельцу на согласование.
+6. Собрать draft Store в Builder или сформировать подробные инструкции сборки, если доступа нет.
+7. Протестировать все ссылки, карточки ASIN, совместимости, mobile preview, читаемость и crop.
+8. Проверить соблюдение Store policies, отсутствие запрещённых заявлений и корректность прав на изображения.
+9. Подготовить checklist публикации и передать проект владельцу на утверждение. **Не нажимать Submit/Publish без явного согласия владельца.**
+10. После публикации предложить план оценки Store Insights и итераций.
+
+## 9. Проверка качества / Definition of Done
+
+- [ ] Все основные страницы логично связаны и работают на мобильном устройстве.
+- [ ] С главной можно попасть в Matte / Clear / AirPods максимум за один очевидный переход.
+- [ ] Для покупателя очевидно, как найти **свою** модель iPhone или AirPods.
+- [ ] Каждый магазинный product tile ведёт к фактическому доступному ASIN, без фиктивных ссылок.
+- [ ] Нет ложных утверждений о защите, MagSafe, совместимости, скидках и характеристиках.
+- [ ] Visual identity единая, но продукт различим на фото.
+- [ ] Принты и продукты представлены строго по реальному каталогу.
+- [ ] Изображения соответствуют требованиям выбранного модуля Stores.
+- [ ] Проверены desktop/mobile preview и адаптивная обрезка.
+- [ ] Все тексты написаны на естественном английском для Amazon US.
+- [ ] Список незакрытых вопросов и отсутствующих материалов передан владельцу.
+- [ ] Ничего не опубликовано без подтверждения.
+
+## 10. Ожидаемые артефакты от агента
+
+1. **Store sitemap** — дерево страниц и связей.
+2. **Content matrix** — таблица блоков: page, tile/module, copy (EN), image asset, target URL/ASIN, status.
+3. **Design directions** — цвет, типографика, стиль фотографий и 1–2 направления главного hero.
+4. **Desktop + mobile mockup** главной и шаблонов трёх категорий.
+5. **Asset list** — требуемые фотографии/экспорты, формат и размер по текущему Amazon Builder.
+6. **ASIN routing map** — какие реальные товары связаны с каждой категорией, моделью и принтом.
+7. **QA + publish checklist** — что проверить до и после модерации.
+8. **Post-launch measurement plan** — Store Insights: visits, page views, attributed sales, performance по страницам/источникам и улучшения на основе фактических данных.
+
+## 11. Ключевая инструкция агенту
+
+**Не начинай с красивых баннеров, пока не подтверждена матрица совместимостей и не определён путь покупателя до правильного товара.** Сначала продуктовая архитектура, затем дизайн и сборка. Если материалы отсутствуют — используй placeholders и передай список пробелов. Если текущие правила Amazon или Store Builder отличаются от этого документа, соблюдай актуальные официальные ограничения и фиксируй изменения.
 
 ## FILE: references/carousel-strategy.md
 
@@ -930,7 +1204,7 @@ For each element:
 - left/right/top/bottom protected zones;
 - mobile crop behavior;
 - UI overlays/link titles/buttons that may cover the image;
-- card overlays for Brand Story.
+- card overlays for Brand Story: separate Desktop and Mobile backgrounds, working margins (Desktop 48-64 px sides / 40-50 px top-bottom; Mobile 24-32 / 30-40), brand accent in the left third, Image Card inner padding 20-24 px; full ТЗ in `amazon-specs.md` section 5.
 
 ## 8. Video timeline
 
@@ -1287,7 +1561,7 @@ Run before every final report. Fix what you can; report only what remains.
 
 Covers: file readable, format, color mode (RGB only for A+), file size, dimensions vs. preset/minimum, aspect ratio, MAIN white background and edge-clipping heuristics, MAIN product fill estimate, video container/codec/fps/duration/bitrate via `ffprobe` (when installed), Store/SB limits. Anything that cannot be checked deterministically is returned as `MANUAL` or `VERIFY_IN_UI`, never as PASS.
 
-Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
+Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453), `brand-story-bg-mobile` (463x625), `brand-story-logo` (315x145), `brand-story-asin` (166x182). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
 
 ### File-size rule (carousel, <= 10 MB)
 
@@ -1305,6 +1579,7 @@ The number of PT slots per category is `VERIFY_IN_UI`. The agent plans MAIN + 6 
 | Exact text | every text block equals the approved copy character-for-character; locale spelling, units, decimal separators correct |
 | Layout | matches the approved verbal wireframe; reading order works; nothing covers the product's logo/label |
 | Safe zones | Store hero central safe area, tile link-title overlay, Brand Story cards/crops, A+ responsive crop respected |
+| Brand Story | separate Desktop (1464x625) and Mobile (463x625) previews built (`scripts/brand_story_preview.py`); cards over background checked on first screen, scroll and extreme positions; nothing important cropped/covered; no key text/faces behind cards; background has no baked-in cards; Mobile is its own composition; sizes rechecked against the current Seller Central uploader |
 | Mobile | text legible at phone display size (approx. 375 px wide preview) |
 | Claims | every claim traceable to a supplied fact; no strengthened translation; no invented award/cert/comparison |
 | Policy | MAIN rules; no watermark, QR code, hyperlink, HTML, animated GIF in A+; language matches the selected content language |

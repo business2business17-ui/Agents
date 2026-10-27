@@ -58,7 +58,7 @@ For each element:
 - left/right/top/bottom protected zones;
 - mobile crop behavior;
 - UI overlays/link titles/buttons that may cover the image;
-- card overlays for Brand Story.
+- card overlays for Brand Story: separate Desktop and Mobile backgrounds, working margins (Desktop 48-64 px sides / 40-50 px top-bottom; Mobile 24-32 / 30-40), brand accent in the left third, Image Card inner padding 20-24 px; full ТЗ in `amazon-specs.md` section 5.
 
 ## 8. Video timeline
 
