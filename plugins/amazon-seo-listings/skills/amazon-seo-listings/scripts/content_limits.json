@@ -5,7 +5,13 @@
     "source_note": "Limits given by the user from current Amazon rules (title limit effective 2026-07-27). Not independently verified on Amazon pages.",
     "corroborated_by": "US and UK feed templates (Data Definitions, item_name / title_differentiation): 'Item Highlight ... will appear only when the item name is under 75 characters. Do not repeat information already in the item name.'",
     "precedence": "The Product Type rule in the feed template / Seller Central for the chosen marketplace always wins over this file. Re-check with references/live-research.md when older than 90 days.",
-    "attribute_names": {"title": "item_name", "item_highlights": "title_differentiation", "bullets": "bullet_point", "description": "product_description", "backend": "generic_keyword"}
+    "attribute_names": {
+      "title": "item_name",
+      "item_highlights": "title_differentiation",
+      "bullets": "bullet_point",
+      "description": "product_description",
+      "backend": "generic_keyword"
+    }
   },
   "title": {
     "max_chars": 75,
@@ -14,14 +20,29 @@
     "max_word_repeat": 2,
     "stop_words_exempt": true,
     "all_caps": "only the brand name may be ALL CAPS",
-    "promo_phrases": ["free shipping", "best seller", "bestseller", "kostenloser versand", "livraison gratuite", "envio gratis", "spedizione gratuita"],
-    "over_limit_effect": "Amazon may shorten or rewrite an over-limit title automatically."
+    "promo_phrases": [
+      "free shipping",
+      "best seller",
+      "bestseller",
+      "kostenloser versand",
+      "livraison gratuite",
+      "envio gratis",
+      "spedizione gratuita"
+    ],
+    "over_limit_effect": "Amazon may shorten or rewrite an over-limit title automatically.",
+    "special_chars_forbidden": "!$?_{}^¬¦",
+    "restricted_phrases": [
+      "fsa/hsa eligible",
+      "fsa eligible",
+      "hsa eligible"
+    ]
   },
   "item_highlights": {
     "max_chars": 125,
     "max_word_repeat": 2,
     "no_title_word_overlap": true,
-    "style": "feature / benefit phrases separated by commas, not full sentences; indexed like the title"
+    "style": "feature / benefit phrases separated by commas, not full sentences; indexed like the title",
+    "min_chars": 10
   },
   "bullets": {
     "count": 5,
@@ -32,7 +53,8 @@
     "indexed_total_note": "About 1000 bytes across all five bullets are indexed for search; text beyond that is not indexed.",
     "forbidden": "emoji, check marks, asterisks and similar symbols; no punctuation at the end of a bullet",
     "mobile_visible_chars": "60-80",
-    "mobile_note": "The first 60-80 characters of each bullet are what mobile shoppers see before 'Read more'."
+    "mobile_note": "The first 60-80 characters of each bullet are what mobile shoppers see before 'Read more'.",
+    "min_count": 3
   },
   "description": {
     "max_chars": 2000,
@@ -41,8 +63,26 @@
   },
   "backend": {
     "unit": "bytes (UTF-8), not characters",
-    "max_bytes": {"default": 249, "JP": 500, "IN": 200},
-    "confirmed_for": ["US", "UK", "DE", "FR", "IT", "ES", "NL", "SE", "PL", "BE", "IE", "JP", "IN"],
+    "max_bytes": {
+      "default": 249,
+      "JP": 500,
+      "IN": 200
+    },
+    "confirmed_for": [
+      "US",
+      "UK",
+      "DE",
+      "FR",
+      "IT",
+      "ES",
+      "NL",
+      "SE",
+      "PL",
+      "BE",
+      "IE",
+      "JP",
+      "IN"
+    ],
     "bytes_note": "Latin ASCII = 1 byte per character; Cyrillic, Arabic, CJK and accented letters take 2-4 bytes. One byte over the limit makes Amazon ignore the whole field.",
     "separator": "spaces only; commas are wasted bytes and not allowed",
     "no_repeat": true

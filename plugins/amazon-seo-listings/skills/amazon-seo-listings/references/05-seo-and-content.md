@@ -1,5 +1,7 @@
 # SEO engine and content generation
 
+> Official title / bullet / Item Highlights / prohibited-content requirements (Seller Central text, user-supplied 2026-10-20): `amazon-title-bullet-requirements.md`; they are applied to every text this stage writes and checked by `scripts/content_check.py`.
+>
 > Source: original agent specification, sections preserved verbatim. Where this file conflicts with `SKILL.md` section "Precedence and errata", `SKILL.md` wins.
 
 ## 25. Stage 4 — SEO Engine
@@ -184,7 +186,7 @@ Do not simply repeat the Title.
 
 ## 35. Bullet Points
 
-Create up to 5 bullets unless Product Type rules require another structure. Each bullet is 10-255 characters, no symbols or end punctuation; limits in `content-limits.md`.
+Create up to 5 bullets unless Product Type rules require another structure. Each bullet is 10-255 characters, starts with a capital letter, no symbols or end punctuation, structure `Header: description`, numbers one to nine in full, `60 ml` with a space; at least 3 bullets; limits in `content-limits.md`, full rules in `amazon-title-bullet-requirements.md`.
 
 Each bullet must provide unique information.
 
