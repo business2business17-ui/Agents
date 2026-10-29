@@ -116,6 +116,14 @@ Specify:
 - product-vs-source fidelity verification;
 - final status expected.
 
+### K. Mandatory image/text clarity block
+
+For listing carousel, Brand Story, Brand Store, A+ Premium and A+ Basic, read `image-quality.md` and include its full mandatory block in **each standalone production prompt**, filling in per-asset export, displayed typography and QA fields. Do not replace it with "high resolution", "4K", "sharp text" or a reference the executing agent cannot access.
+
+Require original source detail, an editable master, deterministic typesetting/native text, one final resize, no repeated lossy saves and no aggressive sharpening. A scene-generation prompt produces an intermediate asset; compositing, export and clarity QA still precede upload readiness. Product Fidelity Lock remains in force.
+
+Report `LOCAL_CLARITY_QA` separately from `AMAZON_RENDER_QA`; never infer an Amazon pass from a local preview or dimensions/file-weight validation. Without an authorized upload and inspected processed preview/page, Amazon QA is `NOT_CHECKED`.
+
 ## Text insertion prompt template
 
 Use when the visual already exists and only text/layout must be added.
@@ -155,6 +163,9 @@ NEGATIVE:
 
 OUTPUT:
 [FORMAT / SIZE / QA]
+
+IMAGE AND TEXT CLARITY:
+[INSERT THE FULL MANDATORY BLOCK FROM image-quality.md WITH PER-ASSET VALUES.]
 ```
 
 ## Lifestyle environment prompt template
@@ -198,6 +209,9 @@ NEGATIVE:
 
 OUTPUT:
 [FORMAT / SIZE / QA]
+
+IMAGE AND TEXT CLARITY:
+[INSERT THE FULL MANDATORY BLOCK FROM image-quality.md WITH PER-ASSET VALUES.]
 ```
 
 ## Rear-view / back-side rule

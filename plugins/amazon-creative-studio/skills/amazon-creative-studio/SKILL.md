@@ -35,6 +35,8 @@ A decision already made is never re-asked unless a later fact invalidates it.
 
 At the start of every task look for `creative-studio/PROJECT.md` (or `.creative-studio/PROJECT.md`) in the workspace; if absent, create it from `assets/project-memory-template.md` after the first checkpoint. It stores: brand profile (colors, fonts, tone, prohibited elements), marketplaces/languages, mode, approved decisions, assumptions, per-SKU category/type confirmations, glossary, and the list of produced files. Read it first, update it at each checkpoint. If the platform has no file access, print the updated block at the end of the reply and ask the user to keep it for the next session. See `references/project-memory.md`.
 
+**Branch rule (repository workspaces).** All design output (renders, images, carousel, A+, Brand Story, briefs, production prompts, XLSX) is created and committed on the branch `AMZ-DESIGN`, never on an automatic session branch (`claude/...`) and never on `main` directly. Before writing the first file run `scripts/design_branch.py ensure` (switches to the branch, or creates it from `origin/main` if it does not exist); commit with `scripts/design_branch.py commit -m "..."` (stages only `creative-studio/` and `images/`) and publish with `scripts/design_branch.py push`. If the session or user names another branch, say so once and still keep design files on `AMZ-DESIGN`.
+
 ## 3. Pipeline
 
 Read each named reference **when you reach that step**, not upfront.
@@ -43,11 +45,11 @@ Read each named reference **when you reach that step**, not upfront.
 
 *Blockers worth asking about (only these):* ambiguous category/type that changes claims; missing mandatory fact for a requested claim; missing source angle required by the plan (e.g. rear view); no target marketplace/language derivable from data; no placements derivable (then propose a default set, see below). Everything else -> default + assumption. Clear rows proceed without waiting.
 
-**Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. XLSX benefits are the source of truth; if none, draft from that row's TTX only, tag `DRAFTED_FROM_TTX`, approve at C1. Then audit each description vs TTX + category/type and propose an improved one + missing TTX (`references/description-improvement.md`). If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
+**Step 2 - Content intelligence** (`references/content-improvement.md`). Derive benefits, proof, objections and risks from each row's facts; never invent. Use XLSX benefits; if absent, draft only from that row's TTX, tag `DRAFTED_FROM_TTX`, approve at C1. Audit descriptions against TTX/category/type; propose corrections and missing TTX (`references/description-improvement.md`). Default placements: MAIN + images 2-7; recommend A+/Store/video only when justified by data.
 
-**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ module's box to another.
+**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ box to another. Brand Store: `references/brand-store-playbook.md`.
 
-**Step 4 - Copy, localization, layout** (`references/localization.md`, `references/designer-brief.md`). For every asset write final copy per marketplace and a concrete layout scheme (verbal wireframe, zones, reading order, do-not-cover areas). If layout is not dictated, choose the recommended option (max one alternative).
+**Step 4 - Copy/layout** (`references/localization.md`, `references/designer-brief.md`, `references/image-quality.md`). Per asset: final localized copy, zones, reading order, protected areas; mandatory clarity block in every brief/prompt. Recommend unspecified layouts (max one alternative).
 
 **CHECKPOINT C1 - Plan approval** (one message, format in `references/creative-plan.md`): assumptions, per-SKU classification, per-asset table (purpose, copy, layout, source), blockers with recommended answers. Reply `ok` or exceptions.
 
@@ -66,9 +68,10 @@ Read each named reference **when you reach that step**, not upfront.
 
 - **Product Fidelity Lock.** The real product is an immutable protected layer: never redraw, regenerate, reshape, recolor, relabel or re-letter it; generate only around it (background, shadow, environment, text layers). Missing rear/side view -> ask for the real image or create environment only. Full rules: `references/product-fidelity.md`.
 - **MAIN image** is not a marketing surface: pure white `#FFFFFF`, real product, no text/badges/graphics, product not clipped, fills >=85% of the frame.
-- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
+- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story incl. Mobile bg 463x625, logo, ASIN; Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields; baked-in text only in safe zones, legible on mobile.
+- **Clarity.** Follow `references/image-quality.md`; separate local and post-upload QA. Uninspected Amazon renders are `NOT_CHECKED`.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
 - **Spec freshness.** For production-critical dimensions, safe zones, video limits and modules prefer the current official Amazon source (`references/live-research.md`) over `amazon-specs.md`; record the date.
 
@@ -76,6 +79,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 Run them when files are available locally (Python 3; `Pillow`, `openpyxl`; `ffprobe` optional):
 
+- `scripts/design_branch.py ensure|commit -m MSG|push` - keeps design output on `AMZ-DESIGN` (creates the branch if missing, stages only `creative-studio/` and `images/`, push with retries).
 - `scripts/validate_asset.py <file> --placement <id> [--expect WxH]` - deterministic technical checks, JSON + human summary, exit code 0/1/2 (pass/fail/warn-only). `--list-placements` shows ids.
 - `scripts/match_inputs.py --images DIR --xlsx FILE --out match.json` - GTIN-named images <-> XLSX rows, benefits provided/missing, issues.
 - `scripts/pack_upload_zip.py --asin A --main f --pt f... --out DIR` - bulk upload `ASIN.zip` (`ASIN.MAIN.jpg`, `ASIN.PT01.jpg`...).
