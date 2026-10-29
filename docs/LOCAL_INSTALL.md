@@ -36,6 +36,7 @@
 |---|---|
 | `amazon-seo-listings` | «Подготовь данные для Feed по файлу inbox/products.xlsx, рынок DE, SEO из inbox/cerebro.xlsx» |
 | `amazon-feeds` | Заполнить: «Заполни Feed по пакету SEO-Listings, шаблон inbox/DE_template.xlsm» (в первый раз добавьте «режим SIMULATION»). Ошибки: «Разбери ошибки загруженного Feed inbox/feed_uploaded.xlsm» |
+| `amazon-finance` | «Разбери отчёты inbox/date_range_DE.csv и inbox/business_report.csv, посчитай P&L и юнит-экономику, найди утечки» (себестоимость: `assets/cost_master_template.csv`) |
 | `amazon-ppc` | «Разбери search term отчёт inbox/st.xlsx, target ACOS 30%, найди минус-слова и что вынести в Exact» |
 | `amazon-creative-studio` (Design) | «Сделай план карусели и ТЗ дизайнеру по товарам из inbox/products.xlsx, картинки в inbox/images/» |
 

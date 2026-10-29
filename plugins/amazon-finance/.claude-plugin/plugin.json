@@ -1,0 +1,15 @@
+{
+  "name": "amazon-finance",
+  "version": "1.0.0",
+  "description": "Amazon Finance agent: P&L, Cash Flow / Settlement, sales, SKU profitability, ads, inventory, unit economics, profit leakage and what-if from Seller Central reports.",
+  "author": {
+    "name": "business2business17-ui"
+  },
+  "keywords": [
+    "amazon",
+    "finance",
+    "pnl",
+    "unit-economics",
+    "settlement"
+  ]
+}

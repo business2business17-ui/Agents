@@ -1,6 +1,6 @@
 # Agents
 
-Четыре автономных агента (по одной ветке на агента: `AMZ-DESIGN`, `SEO-Listings`, `PPC`, `Feeds`; в `main` все четыре) для работы с Amazon. Подключаются плагинами в Claude Code (локально в терминале) или загружаются в ChatGPT, Gemini, Claude.ai, Codex, Cursor.
+Пять автономных агентов (по одной ветке на агента: `AMZ-DESIGN`, `SEO-Listings`, `PPC`, `Feeds`, `Finance`; в `main` все пять) для работы с Amazon. Подключаются плагинами в Claude Code (локально в терминале) или загружаются в ChatGPT, Gemini, Claude.ai, Codex, Cursor.
 
 | Агент (плагин) | Ветка | Что делает |
 |---|---|---|
@@ -8,12 +8,13 @@
 | `amazon-seo-listings` (SEO, Listings) | `SEO-Listings` | ТТХ, сопоставление, тексты листингов, SEO (Cerebro / Helium 10 MCP), цены и маржа, пакет для Feeds |
 | `amazon-ppc` (PPC) | `PPC` | Реклама: кампании, search term отчёты, harvest и минус-слова, ставки / бюджеты, ACOS / TACOS / ROAS |
 | `amazon-feeds` (Feeds) | `Feeds` | Заполнение Feed, ошибки Feed, корректировки (два режима одного агента) |
+| `amazon-finance` (Finance) | `Finance` | Финансовая аналитика по отчётам Seller Central: P&L, Cash Flow / Settlement, юнит-экономика, утечки прибыли, what-if |
 
 Подробно кто за что отвечает: [`docs/AGENTS_OVERVIEW.md`](docs/AGENTS_OVERVIEW.md). Amazon-агенты: [`docs/AMAZON_AGENTS.md`](docs/AMAZON_AGENTS.md). Локальная установка в терминал: [`docs/LOCAL_INSTALL.md`](docs/LOCAL_INSTALL.md) (`install.sh` / `install.ps1`).
 
 ## Правило веток
 
-Вся работа по агенту живёт в его ветке: **всё, что связано с дизайном (карусели, A+, Brand Story, ТЗ, картинки, рендеры, production-пакеты по товарам), всегда идёт в `AMZ-DESIGN`**; SEO и листинги в `SEO-Listings`; реклама в `PPC`; Feed (заполнение, ошибки, корректировки) в `Feeds`. Ветки `claude/...` временные: после проверки их содержимое переносится в ветку агента.
+Вся работа по агенту живёт в его ветке: **всё, что связано с дизайном (карусели, A+, Brand Story, ТЗ, картинки, рендеры, production-пакеты по товарам), всегда идёт в `AMZ-DESIGN`**; SEO и листинги в `SEO-Listings`; реклама в `PPC`; Feed (заполнение, ошибки, корректировки) в `Feeds`; финансовая аналитика (P&L, Cash Flow, юнит-экономика, утечки прибыли) в `Finance`. Ветки `claude/...` временные: после проверки их содержимое переносится в ветку агента.
 
 ## Обязательные правила заполнения Feed Amazon
 
@@ -50,6 +51,7 @@
 /plugin install amazon-seo-listings@business2business17-agents
 /plugin install amazon-ppc@business2business17-agents
 /plugin install amazon-feeds@business2business17-agents
+/plugin install amazon-finance@business2business17-agents
 ```
 **Другие ИИ:** `dist/<агент>/` и `dist/<агент>.zip`: `system-prompt.md` (всё внутри) или `instructions-short.md` (<= 8000 символов, для Custom GPT) + `knowledge/`.
 
@@ -61,6 +63,7 @@ plugins/amazon-creative-studio/   Design            (ветка AMZ-DESIGN)
 plugins/amazon-seo-listings/      SEO, Listings     (ветка SEO-Listings)
 plugins/amazon-ppc/               PPC               (ветка PPC)
 plugins/amazon-feeds/             Feeds: скиллы amazon-feeds (роутер), amazon-feed-compiler (FILL), amazon-feed-error-agent (ERRORS)  (ветка Feeds)
+plugins/amazon-finance/           Finance           (ветка Finance)
    у каждого: {.claude-plugin/plugin.json, agents/, skills/<агент>/{SKILL.md, references/, scripts/, assets/}, licenses/}
 shared/amazon/                    общий код; tools/sync_shared.py раскладывает по плагинам
 dist/<агент>/                     собирается: python3 tools/build_portable.py (--check для CI)
