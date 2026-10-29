@@ -126,3 +126,66 @@ class DesignTools(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DesignBranch(unittest.TestCase):
+    """design_branch.py keeps design output on AMZ-DESIGN (local bare remote, no network)."""
+
+    def setUp(self):
+        import shutil
+        import subprocess as sp
+        import tempfile
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.bare = os.path.join(self.tmp, "remote.git")
+        self.work = os.path.join(self.tmp, "work")
+        sp.run(["git", "init", "-q", "--bare", "-b", "main", self.bare], check=True)
+        sp.run(["git", "clone", "-q", self.bare, self.work], check=True, capture_output=True)
+        self.g("config", "user.email", "t@example.com")
+        self.g("config", "user.name", "t")
+        with open(os.path.join(self.work, "README.md"), "w") as fh:
+            fh.write("x\n")
+        self.g("add", ".")
+        self.g("commit", "-q", "-m", "init")
+        self.g("branch", "-M", "main")
+        self.g("push", "-q", "-u", "origin", "main")
+        self.g("checkout", "-q", "-b", "claude/some-session-branch")
+        self.script = os.path.join(CS, "design_branch.py")
+
+    def g(self, *a):
+        import subprocess as sp
+        return sp.run(["git", *a], cwd=self.work, capture_output=True, text=True, check=True).stdout.strip()
+
+    def run_script(self, *a, ok=(0,)):
+        import subprocess as sp
+        p = sp.run([sys.executable, self.script, *a], cwd=self.work, capture_output=True, text=True)
+        self.assertIn(p.returncode, ok, p.stdout + p.stderr)
+        return p
+
+    def test_creates_branch_from_main_and_commits_only_design_paths(self):
+        out = os.path.join(self.work, "creative-studio", "p1", "output")
+        os.makedirs(out)
+        with open(os.path.join(out, "01_MAIN.jpg"), "wb") as fh:
+            fh.write(b"jpg")
+        with open(os.path.join(self.work, "notes.txt"), "w") as fh:
+            fh.write("unrelated\n")
+        self.run_script("commit", "-m", "Add render")
+        self.assertEqual(self.g("branch", "--show-current"), "AMZ-DESIGN")
+        self.assertEqual(self.g("show", "--name-only", "--format=", "HEAD"), "creative-studio/p1/output/01_MAIN.jpg")
+        self.assertIn("notes.txt", self.g("status", "--short"))  # unrelated file stays untouched
+        self.assertIn("nothing to commit", self.run_script("commit", "-m", "again").stdout)
+
+    def test_push_and_reuse_existing_remote_branch(self):
+        self.run_script("ensure")
+        self.run_script("push")
+        self.assertIn("AMZ-DESIGN", self.g("ls-remote", "--heads", "origin"))
+        self.g("checkout", "-q", "main")
+        self.g("branch", "-D", "AMZ-DESIGN")
+        self.g("checkout", "-q", "-b", "claude/other")
+        self.assertIn("created from remote", self.run_script("ensure").stdout)
+        self.assertIn("already on", self.run_script("ensure").stdout)
+
+    def test_not_a_repo(self):
+        import subprocess as sp
+        p = sp.run([sys.executable, self.script, "ensure"], cwd=self.tmp, capture_output=True, text=True)
+        self.assertEqual(p.returncode, 2)

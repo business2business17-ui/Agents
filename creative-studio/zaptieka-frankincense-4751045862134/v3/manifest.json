@@ -1,0 +1,145 @@
+[
+  {
+    "file": "01_MAIN.jpg",
+    "copy": "",
+    "layout": "Original packaged product on pure white.",
+    "source": "images/4751045862134.png",
+    "background": null,
+    "product_state": "packaged",
+    "dimensions": "4000 x 4000",
+    "bytes": 1890693,
+    "placement": "pdp-main"
+  },
+  {
+    "file": "02_Hero.jpg",
+    "copy": "NATURAL SOAP BAR\nFrankincense\nsoap for calm,\nsoft skin\nSoothing daily cleanse.\nComfort for\nsensitive-feeling skin.",
+    "layout": "AI adult at bathroom mirror; original packaged soap on dry foreground stone.",
+    "source": "images/4751045862134.png",
+    "background": "02_Hero_provider.png",
+    "product_state": "packaged",
+    "dimensions": "4000 x 4000",
+    "bytes": 2609165,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "03_Benefits.jpg",
+    "copy": "Key benefits\nSoothing daily cleanse\nComfort for sensitive-feeling skin\nLeaves skin feeling soft\nFor face & body",
+    "layout": "AI adult drying face; packaged soap on dry counter.",
+    "source": "images/4751045862134.png",
+    "background": "03_Benefits.png",
+    "product_state": "packaged",
+    "dimensions": "4000 x 4000",
+    "bytes": 3867047,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "04_How_to_use.jpg",
+    "copy": "How to use\nWet hands and the soap bar\nLather and cleanse gently\nRinse well; let the bar dry between uses",
+    "layout": "Lathered adult hands at sink; packaged product on a separate dry ledge.",
+    "source": "images/4751045862134.png",
+    "background": "04_How_to_use.png",
+    "product_state": "packaged",
+    "dimensions": "4000 x 4000",
+    "bytes": 2612373,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "05_Ingredients.jpg",
+    "copy": "What's inside\nFrankincense\nBoswellia Carterii Oil\nShea butter\nButyrospermum Parkii Butter\nCoconut oil\nCocos Nucifera Oil",
+    "layout": "Only unwrapped bar in series; original photographic texture; bathroom vanity.",
+    "source": "images/ZAptieka-amazon/20261017_100454.png",
+    "background": "05_Ingredients.png",
+    "product_state": "unwrapped",
+    "dimensions": "4000 x 4000",
+    "bytes": 3300423,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "06_Size_weight.jpg",
+    "copy": "Size & weight\n100 g\n8 × 5 × 2.5 cm",
+    "layout": "Packaged soap on bathroom shelf; adult AI model in background; source table measurements.",
+    "source": "images/4751045862134.png",
+    "background": "06_Size_weight.png",
+    "product_state": "packaged",
+    "dimensions": "4000 x 4000",
+    "bytes": 2560978,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "07_Ritual.jpg",
+    "copy": "Your daily cleansing ritual\nFrankincense soap for calm, soft skin",
+    "layout": "AI adult in closed robe beside shower; packaged soap outside wet zone.",
+    "source": "images/4751045862134.png",
+    "background": "07_Ritual.png",
+    "product_state": "packaged",
+    "dimensions": "4000 x 4000",
+    "bytes": 2876630,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "B1_Basic_Hero.jpg",
+    "copy": "ZAptieka\nFrankincense\nsoap for calm,\nsoft skin\nSoothing daily cleanse.\nComfort for sensitive-feeling skin.",
+    "layout": "Lifestyle bathroom with AI adults; original packaged product on dry foreground surface.",
+    "source": "images/4751045862134.png",
+    "background": "B1_Basic_Hero.png",
+    "product_state": "packaged",
+    "dimensions": "970 x 600",
+    "bytes": 172262,
+    "placement": "aplus-basic"
+  },
+  {
+    "file": "B2_Basic_Ritual.jpg",
+    "copy": "ZAptieka\nA gentle\ndaily ritual\nWet. Lather. Rinse.\nLet the bar dry between uses.",
+    "layout": "Lifestyle bathroom with AI adults; original packaged product on dry foreground surface.",
+    "source": "images/4751045862134.png",
+    "background": "B2_Basic_Ritual.png",
+    "product_state": "packaged",
+    "dimensions": "970 x 600",
+    "bytes": 177244,
+    "placement": "aplus-basic"
+  },
+  {
+    "file": "B3_Basic_Ingredients.jpg",
+    "copy": "ZAptieka\nWhat's inside\nFrankincense — Boswellia Carterii Oil\nShea butter · Coconut oil\n100 g",
+    "layout": "Lifestyle bathroom with AI adults; original packaged product on dry foreground surface.",
+    "source": "images/4751045862134.png",
+    "background": "B3_Basic_Ingredients.png",
+    "product_state": "packaged",
+    "dimensions": "970 x 600",
+    "bytes": 164137,
+    "placement": "aplus-basic"
+  },
+  {
+    "file": "P1_Premium_Hero.jpg",
+    "copy": "ZAptieka\nFrankincense\nsoap for calm, soft skin",
+    "layout": "Lifestyle bathroom with AI adults; original packaged product on dry foreground surface.",
+    "source": "images/4751045862134.png",
+    "background": "P1_Premium_Hero.png",
+    "product_state": "packaged",
+    "dimensions": "1464 x 600",
+    "bytes": 250683,
+    "placement": "aplus-premium"
+  },
+  {
+    "file": "P2_Premium_Ingredients.jpg",
+    "copy": "ZAptieka\nFrankincense\nBoswellia Carterii Oil\nShea butter · Coconut oil",
+    "layout": "Lifestyle bathroom with AI adults; original packaged product on dry foreground surface.",
+    "source": "images/4751045862134.png",
+    "background": "P2_Premium_Ingredients.png",
+    "product_state": "packaged",
+    "dimensions": "1464 x 600",
+    "bytes": 242403,
+    "placement": "aplus-premium"
+  },
+  {
+    "file": "P3_Premium_Ritual.jpg",
+    "copy": "ZAptieka\nYour daily\ncleansing ritual\nWet. Lather. Rinse.\nLet the bar dry between uses. · 100 g",
+    "layout": "Lifestyle bathroom with AI adults; original packaged product on dry foreground surface.",
+    "source": "images/4751045862134.png",
+    "background": "P3_Premium_Ritual.png",
+    "product_state": "packaged",
+    "dimensions": "1464 x 600",
+    "bytes": 211194,
+    "placement": "aplus-premium"
+  }
+]

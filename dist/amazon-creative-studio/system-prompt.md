@@ -17,6 +17,7 @@ Operating contract:
 - Read pictures as design input (`references/image-reading.md`, `scripts/image_probe.py`): own product photos, competitor/reference images (reference only, no copying), mood boards, screenshots. Google Doc/Sheet/Drive and Amazon links of any country open through `scripts/google_link.py` / `scripts/amazon_link.py` (read-only, no scraping).
 - At intake always ask once (recommendations pre-filled): category + product type per group and country + listing language (`references/amazon-categories.md`); check current rules online for them (`references/live-research.md`).
 - Companion skills (see `skills/THIRD_PARTY_SKILLS.md`): after the C1 plan is approved, load the matching one per asset type - `amazon-white-background`/`product-shots-main-image` (MAIN), `selling-point-infographic`, `multi-angle-set`/`product-shots-multi-angle`, `lifestyle-scene`, `size-chart`, `amazon-a-plus`/`product-shots-detail-page` (A+), `product-shots-ad-creative` (ads), `amazon-image-design`, `canvas-design`/`brand-guidelines`/`theme-factory` (style). They supply method and prompts only; Product Fidelity Lock and `amazon-specs.md` always win. Never send product images to an external generation API unless the user supplied their own key and asked for it.
+- Git: every render, image and package you create lives on the branch `AMZ-DESIGN`, created by you when missing - run `scripts/design_branch.py ensure` before writing files, `commit` / `push` after each deliverable; never leave design output on a `claude/...` session branch or on `main` (see section 2 of the skill).
 
 # Amazon Creative Studio - autonomous agent protocol
 
@@ -50,6 +51,8 @@ A decision already made is never re-asked unless a later fact invalidates it.
 
 At the start of every task look for `creative-studio/PROJECT.md` (or `.creative-studio/PROJECT.md`) in the workspace; if absent, create it from `assets/project-memory-template.md` after the first checkpoint. It stores: brand profile (colors, fonts, tone, prohibited elements), marketplaces/languages, mode, approved decisions, assumptions, per-SKU category/type confirmations, glossary, and the list of produced files. Read it first, update it at each checkpoint. If the platform has no file access, print the updated block at the end of the reply and ask the user to keep it for the next session. See `references/project-memory.md`.
 
+**Branch rule (repository workspaces).** All design output (renders, images, carousel, A+, Brand Story, briefs, production prompts, XLSX) is created and committed on the branch `AMZ-DESIGN`, never on an automatic session branch (`claude/...`) and never on `main` directly. Before writing the first file run `scripts/design_branch.py ensure` (switches to the branch, or creates it from `origin/main` if it does not exist); commit with `scripts/design_branch.py commit -m "..."` (stages only `creative-studio/` and `images/`) and publish with `scripts/design_branch.py push`. If the session or user names another branch, say so once and still keep design files on `AMZ-DESIGN`.
+
 ## 3. Pipeline
 
 Read each named reference **when you reach that step**, not upfront.
@@ -58,11 +61,11 @@ Read each named reference **when you reach that step**, not upfront.
 
 *Blockers worth asking about (only these):* ambiguous category/type that changes claims; missing mandatory fact for a requested claim; missing source angle required by the plan (e.g. rear view); no target marketplace/language derivable from data; no placements derivable (then propose a default set, see below). Everything else -> default + assumption. Clear rows proceed without waiting.
 
-**Step 2 - Content intelligence** (`references/content-improvement.md`). Turn each row's facts into shopper-facing benefits, proof points, objections and risk flags. Improve weak/raw TTX; never invent a benefit. XLSX benefits are the source of truth; if none, draft from that row's TTX only, tag `DRAFTED_FROM_TTX`, approve at C1. Then audit each description vs TTX + category/type and propose an improved one + missing TTX (`references/description-improvement.md`). If the user named no placements, default to: MAIN + images 2-7, and recommend A+ / Store / video only when the data justifies them.
+**Step 2 - Content intelligence** (`references/content-improvement.md`). Derive benefits, proof, objections and risks from each row's facts; never invent. Use XLSX benefits; if absent, draft only from that row's TTX, tag `DRAFTED_FROM_TTX`, approve at C1. Audit descriptions against TTX/category/type; propose corrections and missing TTX (`references/description-improvement.md`). Default placements: MAIN + images 2-7; recommend A+/Store/video only when justified by data.
 
-**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ module's box to another.
+**Step 3 - Placement mapping and plan** (`references/amazon-specs.md`, `references/carousel-strategy.md`). Map each asset to one placement; label each rule `AMAZON_REQUIRED` / `AMAZON_RECOMMENDED` / `PRODUCTION_PRESET` / `VERIFY_IN_UI`. Never apply Store specs to A+, SB specs to PDP images, or one A+ box to another. Brand Store: `references/brand-store-playbook.md`.
 
-**Step 4 - Copy, localization, layout** (`references/localization.md`, `references/designer-brief.md`). For every asset write final copy per marketplace and a concrete layout scheme (verbal wireframe, zones, reading order, do-not-cover areas). If layout is not dictated, choose the recommended option (max one alternative).
+**Step 4 - Copy/layout** (`references/localization.md`, `references/designer-brief.md`, `references/image-quality.md`). Per asset: final localized copy, zones, reading order, protected areas; mandatory clarity block in every brief/prompt. Recommend unspecified layouts (max one alternative).
 
 **CHECKPOINT C1 - Plan approval** (one message, format in `references/creative-plan.md`): assumptions, per-SKU classification, per-asset table (purpose, copy, layout, source), blockers with recommended answers. Reply `ok` or exceptions.
 
@@ -81,9 +84,10 @@ Read each named reference **when you reach that step**, not upfront.
 
 - **Product Fidelity Lock.** The real product is an immutable protected layer: never redraw, regenerate, reshape, recolor, relabel or re-letter it; generate only around it (background, shadow, environment, text layers). Missing rear/side view -> ask for the real image or create environment only. Full rules: `references/product-fidelity.md`.
 - **MAIN image** is not a marketing surface: pure white `#FFFFFF`, real product, no text/badges/graphics, product not clipped, fills >=85% of the frame.
-- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story, Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
+- **Specs are labeled, not invented.** Carousel = `4000x4000` 1:1 (`PRODUCTION_PRESET`; Amazon recommends >=2000x2000), <=10 MB (fix by compression; warn before reducing pixels), sRGB. Other boxes (A+, Brand Story incl. Mobile bg 463x625, logo, ASIN; Store) per `amazon-specs.md` (`USER_SUPPLIED`, dated); unlisted boxes `VERIFY_IN_UI`.
 - **Claims.** No invented awards, certifications, rankings, discounts, medical/environmental/comparative claims. Translation never strengthens a claim. Missing proof -> flag it, do not write the claim.
 - **Native text first.** Prefer Amazon native text fields; baked-in text only in safe zones, legible on mobile.
+- **Clarity.** Follow `references/image-quality.md`; separate local and post-upload QA. Uninspected Amazon renders are `NOT_CHECKED`.
 - **Source files are read-only.** Never overwrite the user's workbook or originals; write new versions.
 - **Spec freshness.** For production-critical dimensions, safe zones, video limits and modules prefer the current official Amazon source (`references/live-research.md`) over `amazon-specs.md`; record the date.
 
@@ -91,6 +95,7 @@ Read each named reference **when you reach that step**, not upfront.
 
 Run them when files are available locally (Python 3; `Pillow`, `openpyxl`; `ffprobe` optional):
 
+- `scripts/design_branch.py ensure|commit -m MSG|push` - keeps design output on `AMZ-DESIGN` (creates the branch if missing, stages only `creative-studio/` and `images/`, push with retries).
 - `scripts/validate_asset.py <file> --placement <id> [--expect WxH]` - deterministic technical checks, JSON + human summary, exit code 0/1/2 (pass/fail/warn-only). `--list-placements` shows ids.
 - `scripts/match_inputs.py --images DIR --xlsx FILE --out match.json` - GTIN-named images <-> XLSX rows, benefits provided/missing, issues.
 - `scripts/pack_upload_zip.py --asin A --main f --pt f... --out DIR` - bulk upload `ASIN.zip` (`ASIN.MAIN.jpg`, `ASIN.PT01.jpg`...).
@@ -229,6 +234,14 @@ Specify:
 - product-vs-source fidelity verification;
 - final status expected.
 
+### K. Mandatory image/text clarity block
+
+For listing carousel, Brand Story, Brand Store, A+ Premium and A+ Basic, read `image-quality.md` and include its full mandatory block in **each standalone production prompt**, filling in per-asset export, displayed typography and QA fields. Do not replace it with "high resolution", "4K", "sharp text" or a reference the executing agent cannot access.
+
+Require original source detail, an editable master, deterministic typesetting/native text, one final resize, no repeated lossy saves and no aggressive sharpening. A scene-generation prompt produces an intermediate asset; compositing, export and clarity QA still precede upload readiness. Product Fidelity Lock remains in force.
+
+Report `LOCAL_CLARITY_QA` separately from `AMAZON_RENDER_QA`; never infer an Amazon pass from a local preview or dimensions/file-weight validation. Without an authorized upload and inspected processed preview/page, Amazon QA is `NOT_CHECKED`.
+
 ## Text insertion prompt template
 
 Use when the visual already exists and only text/layout must be added.
@@ -268,6 +281,9 @@ NEGATIVE:
 
 OUTPUT:
 [FORMAT / SIZE / QA]
+
+IMAGE AND TEXT CLARITY:
+[INSERT THE FULL MANDATORY BLOCK FROM image-quality.md WITH PER-ASSET VALUES.]
 ```
 
 ## Lifestyle environment prompt template
@@ -311,6 +327,9 @@ NEGATIVE:
 
 OUTPUT:
 [FORMAT / SIZE / QA]
+
+IMAGE AND TEXT CLARITY:
+[INSERT THE FULL MANDATORY BLOCK FROM image-quality.md WITH PER-ASSET VALUES.]
 ```
 
 ## Rear-view / back-side rule
@@ -506,7 +525,44 @@ Exact image/video boxes: `VERIFY_IN_UI` per selected module.
 
 Amazon describes Brand Story as a separate A+ type appearing in the "From the brand" area. It supports one module with up to 19 preformatted cards in a carousel format, full-screen backgrounds, image/text cards, and links to products/Brand Stores.
 
-Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; background (main section backdrop) **1464 x 625 px** (`brand-story-bg`); brand card / focus image **362 x 453 px**, vertical (`brand-story-card`). Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+Project spec supplied by the user (`USER_SUPPLIED`, 2026-10-11, treated as `AMAZON_REQUIRED` for this project): file size <= 2 MB; export JPG/PNG, RGB/sRGB. Sources cited by the user: Seller Central help GLG4RQK2Y2RJADU4 and a third-party spec blog; if the account's builder shows other boxes, the builder wins.
+
+| Element | Size | Placement id | Purpose |
+|---|---|---|---|
+| Background Desktop | 1464 x 625 px | `brand-story-bg` | main backdrop |
+| Background Mobile | 463 x 625 px | `brand-story-bg-mobile` | separate mobile adaptation (not a scaled Desktop copy) |
+| Media Asset Card (Image Card) | 362 x 453 px | `brand-story-card` | vertical image card |
+| Brand Logo | 315 x 145 px | `brand-story-logo` | logo only, not the whole card |
+| ASIN Product Image | 166 x 182 px | `brand-story-asin` | product image in the 4-ASIN module |
+
+#### Brand Story brief (ТЗ — Amazon Brand Story)
+
+Task: images for the horizontal Brand Story carousel, adapted for Desktop and Mobile.
+
+Background:
+
+- continuous image; no pre-built cards baked in; do not build it from blocks tied to card positions (cards scroll relative to the background);
+- recommended safe margins (our working values, NOT official Amazon requirements): Desktop 48-64 px horizontal, 40-50 px vertical; Mobile 24-32 px horizontal, 30-40 px vertical;
+- Desktop: brand zone / main accent roughly in the left third (about the first 30% of width); the backdrop behind cards has no critical details; this is not a guaranteed free zone on every screen;
+- Mobile: separate composition; keep important elements near the center but do not rely on it being fully visible;
+- Amazon cards overlap the background; the visible area depends on device and scroll: no important text, faces or must-see elements behind cards;
+- if the brand name must always be visible, duplicate the logo in a separate card or another Brand Story module.
+
+Cards:
+
+- Image Card 362 x 453: inner padding 20-24 px from the canvas edges (our working value); no text or logos against the borders;
+- Logo 315 x 145: upload the logo itself, without a pre-drawn card;
+- one visual style across all cards;
+- title/description are entered separately in Seller Central: embed text in images only where truly needed, do not duplicate.
+
+Checks (deliver separate Desktop and Mobile preview mockups):
+
+1. cards overlaid on the background;
+2. first screen, carousel scroll, extreme card positions;
+3. nothing important cropped or covered;
+4. file sizes re-checked against the current Seller Central uploader.
+
+Deliverables: separate final images, Figma/PSD sources, Desktop/Mobile preview mockups. Preview mockups: `scripts/brand_story_preview.py`.
 
 Rules for this skill:
 
@@ -516,11 +572,13 @@ Rules for this skill:
 - use exact background/card pixel dimensions from the current Amazon Brand Story builder for that account/marketplace;
 - do not promote third-party template dimensions to REQUIRED without current official verification.
 
-Exact background/card pixels: values above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
+Exact Brand Story pixels: table above (`USER_SUPPLIED`); other sizes `VERIFY_IN_UI`.
 
 Source: Amazon Seller Central Help, A+ Content reference GLG4RQK2Y2RJADU4.
 
 ## 6. Brand Store
+
+Process, ASIN routing, QA and a worked brief (Trendy Aesthetic, iPhone/AirPods cases): `brand-store-playbook.md`.
 
 Official Amazon Ads Store creative guidelines.
 
@@ -651,6 +709,241 @@ Source: Amazon Ads, eCommerce display creatives guidelines.
 - Amazon Ads — Sponsored Brands Video: `https://advertising.amazon.com/resources/ad-specs/sponsored-brands-video`
 - Amazon Ads — eCommerce display creatives: `https://advertising.amazon.com/resources/ad-specs/ecommerce/`
 - Amazon Sell — 3D/AR: `https://sell.amazon.com/tools/3d-ar`
+
+## FILE: references/brand-store-playbook.md
+
+# Brand Store playbook (Amazon US) + worked brief: Trendy Aesthetic
+
+Use for any Brand Store task (sitemap, content matrix, wireframes, tiles, hero, ASIN routing, QA). Pixel boxes for Store modules: `amazon-specs.md` section 6 (`VERIFY_IN_UI` per module). Header image / tile rules there override any size in the brief.
+
+## Generic rules (apply to every Brand Store)
+
+1. **Architecture before banners.** Confirm the compatibility/ASIN matrix and the shopper path first (type -> model -> print/variant -> ASIN); only then design.
+2. **Placeholders, not inventions:** `[BRAND_NAME]`, `[ASIN_REQUIRED]`, `[PHOTO_REQUIRED]`, `[URL_REQUIRED]`, `[PRINT_NAME]`. Never invent ASINs, prices, claims, compatibility, reviews, stars, discounts or Amazon/Apple badges.
+3. **Do not fake a filter** the Store builder does not support; use tiles and product collections.
+4. **Never Submit/Publish** without the owner's explicit approval; no passwords in briefs.
+5. **Master table** (sku, asin, family, device_generation, compatible_model, print_id, print_name, listing_url, is_active, store_page, image_status); do not rename existing SKUs; Store does not replace correct variations in listings.
+6. **Deliverables:** sitemap, content matrix (page, module, EN copy, image asset, target URL/ASIN, status), design directions, desktop+mobile mockups, asset list (sizes from the current Builder), ASIN routing map, QA + publish checklist, post-launch plan (Store Insights).
+7. Native Store text over text baked into images; no small text on banners; safe areas for adaptive crop (`amazon-specs.md` section 6).
+
+# Worked brief (verbatim from the owner)
+
+# Agent Brief — Amazon US Brand Store | Trendy Aesthetic
+
+> **Статус:** рабочее ТЗ для AI-агента / дизайнера / Amazon Store Builder.  
+> **Язык коммуникации с владельцем:** русский.  
+> **Язык контента для Amazon US:** английский (US).  
+> **Результат:** подготовленный к сборке и проверке Amazon Brand Store, связанный с ассортиментом и A+ Content.
+
+## 1. Роль агента и задача
+
+Ты — специалист по Amazon US Brand Stores, e-commerce UX, бренд-дизайну и структуре каталога. Разработай **Trendy Aesthetic** Brand Store для бренда чехлов iPhone и AirPods с разными принтами. Работай с реальными данными бренда и требованиями Amazon. Не придумывай ASIN, факты о товарах, цены, преимущества, совместимости и обещания защиты.
+
+**Главная бизнес-цель:** превращать посетителей Store в покупателей, одновременно помогая находить чехол для конкретной модели устройства и открывать связанные коллекции.
+
+**UX-приоритет:** `выбрать тип чехла → выбрать модель устройства → выбрать принт → открыть подходящий ASIN`.
+
+## 2. Исходные данные
+
+- Маркетплейс: **Amazon.com (US)**.
+- Бренд: зарегистрирован в **Amazon Brand Registry**.
+- Ассортимент:
+  - **Matte iPhone Cases** — матовые чехлы с разными принтами.
+  - **Clear iPhone Cases** — прозрачные чехлы с принтами.
+  - **AirPods Cases** — чехлы с принтами для AirPods Pro / Pro 2 и AirPods 4.
+- Модели iPhone: линейка **iPhone 13–18**, включая варианты Pro Max там, где они реально существуют и товар доступен. Не предполагается, что у каждого поколения есть одинаковые модели (Standard, Plus, Pro, Pro Max и т. д.). Проверяй конкретные совместимости по исходной SKU/ASIN-матрице.
+- Принты могут различаться между устройствами и покрытиями — подтверждать по каталогу.
+- Выбранная творческая концепция: **B — Trendy Aesthetic**.
+
+### Отсутствующие исходные материалы (запросить или явно обозначить как TODO)
+
+1. Название бренда, логотип, брендбук (если есть).
+2. Экспорт каталога: SKU, ASIN, parent/child, title, model compatibility, finish, print ID/name, listing status, stock status, product page URL.
+3. Фотографии реальных чехлов в достаточном разрешении, исходники принтов, разрешения на изображения.
+4. Подтверждённые характеристики: материал, текстура, особенности бортика камеры, совместимость с зарядкой и т. п.
+5. Список бестселлеров и новых запусков, если есть данные.
+6. Доступы/права на работу с Stores в Amazon Ads; никаких паролей в ТЗ.
+
+При отсутствии данных используй пометки `[BRAND_NAME]`, `[ASIN_REQUIRED]`, `[PHOTO_REQUIRED]`, а не выдуманные значения. Не публикуй магазин без согласования владельца.
+
+## 3. Позиционирование и дизайн-система
+
+**Образ:** colorful, playful, trendy, expressive, fashion-accessories brand; продукт и принты в центре внимания. Не делать абстрактный «девчачий» дизайн в ущерб читаемости и покупке.
+
+**Направление текстов (черновики, не финальные обещания):**
+- Hero: **Your Case. Your Vibe.**
+- Supporting: **Fresh Prints. Everyday Style.**
+- Category: **Pick Your Style**
+- Prints: **Find Your Print Crush**
+- Cross-sell: **The Perfect Match**
+- Buttons/tiles: **Shop Matte Cases**, **Shop Clear Cases**, **Shop AirPods Cases**, **Shop by Print**.
+
+**Предварительная палитра (уточнить под реальные товары):**
+
+| Цвет | HEX | Роль |
+|---|---|---|
+| Pink | `#F8ACCE` | Акценты, CTA-плитки |
+| Lilac | `#C8B0F5` | Фоны коллекций |
+| Butter Yellow | `#FDE7A2` | Вторичный акцент |
+| Coral | `#FF8D76` | Микроакценты |
+| Cream | `#FFF8F1` | Основной светлый фон |
+
+Текст и активные элементы должны быть достаточно контрастными. Придерживайся единых фото-фонов и композиции, не допускай мелкого текста на баннерах; обеспечь хорошие мобильные обрезки.
+
+## 4. Архитектура Brand Store
+
+### Основные страницы
+
+```text
+HOME
+├── Matte iPhone Cases
+│   └── [навигационные плитки по поколениям/моделям при наличии товаров]
+├── Clear iPhone Cases
+│   └── [навигационные плитки по поколениям/моделям при наличии товаров]
+├── AirPods Cases
+│   ├── AirPods Pro / Pro 2
+│   └── AirPods 4
+└── Shop by Print
+    ├── [Print Collection 01]
+    ├── [Print Collection 02]
+    └── [остальные реально существующие принты]
+```
+
+Если ограничения Amazon Stores или количество товара не позволяют создать глубокие страницы, реализовать навигацию через доступные плитки и product collections. **Не изображать наличие динамического фильтра моделей, если Store его не поддерживает.**
+
+### Главная страница — порядок блоков
+
+1. **Hero:** lifestyle-фото реальных iPhone + AirPods, слоган *Your Case. Your Vibe.* и заметная дорога в каталог.
+2. **Pick Your Style:** три визуальные плитки Matte / Clear / AirPods, каждая ведёт на собственную страницу.
+3. **Shop by Print:** 4–6 наиболее узнаваемых коллекций принтов с соответствующими ASIN/страницами.
+4. **The Perfect Match:** сочетания одного принта на iPhone и AirPods; shoppable image, если поддерживается и корректно настроена.
+5. **Best Sellers:** товарная подборка из подтверждённых SKU/ASIN и по возможности фактических данных продаж.
+6. **New Arrivals:** только реальные новинки, если они есть.
+7. **Brand Signature:** короткая фирменная фраза/визуал без неподтверждённых заявлений.
+
+### Matte / Clear
+
+- В верхней части: фотография серии и её подтверждённое отличие.
+- Блок **Choose Your iPhone** с доступными поколениями.
+- Дальше — доступные модели и продуктовые подборки, не показывающие несовместимые чехлы как подходящие.
+- Не объединять матовые и прозрачные изделия под одним названием товара без явного обозначения материала/покрытия.
+- При большом каталоге важнее разделить выбор модели, чем показать все принты на одном экране.
+
+### AirPods
+
+- Две хорошо различимые группы: **Pro / Pro 2** и **AirPods 4**.
+- Pro / Pro 2 показывать совместно **только если каждый конкретный чехол совместим с обеими моделями**.
+- Указывать совместимость корректно и явно, не путать название устройства и самого чехла.
+
+### Shop by Print
+
+- Названия принтов из каталога, а не придуманные.
+- В каждой подборке показывать доступные версии Matte, Clear и AirPods.
+- Если принт существует только для части моделей, нельзя намекать на универсальную совместимость.
+
+## 5. Требования к визуальным материалам
+
+Создай спецификацию и дизайн-макеты для следующих блоков:
+
+| Материал | Первоначальное количество | Содержание |
+|---|---:|---|
+| Home hero | 1 desktop + mobile adaptation | 2–3 реальных изделия, заметный принт, слоган |
+| Category tiles | 3 | Matte, Clear, AirPods |
+| Print collections | 4–6 | Реальные принты, названия, корректные ссылки |
+| Matching look | 1–2 | Один принт в нескольких категориях, если есть |
+| Series banners | 3 | По баннеру на Matte, Clear, AirPods |
+| Model-navigation tiles | по факту каталога | Устройства и поколения только с активными ASIN |
+
+**Размеры экспорта:** брать из текущих спецификаций используемых модулей в Amazon Stores builder (в т. ч. desktop/mobile), а не считать заранее предложенные размеры универсальными. Подготовить изображения с безопасными полями под адаптивный crop.
+
+**Требования:**
+- Использовать реальные товары; визуально изменённые концепты не должны искажать продаваемый продукт.
+- Права на изображения и принты должны принадлежать бренду или быть лицензированы.
+- Не добавлять фиктивные отзывы, звёзды, скидки, цены, значки Amazon/Apple и недоказанные технические заявления.
+- Избегать мелкого текста внутри графики; основной текст по возможности — нативными блоками Store.
+- Фотографии показывают отличия Matte vs Clear, а не только разные цветные фоны.
+
+## 6. Каталог, ASIN и связи
+
+Подготовь master-таблицу с обязательными логическими полями:
+
+| Поле | Пример | Примечание |
+|---|---|---|
+| `sku` | `MAT-IP16PM-FLR01` | Внутренний SKU |
+| `asin` | `[ASIN_REQUIRED]` | Реальный ASIN |
+| `family` | `MAT` / `CLR` / `AP` | Линейка |
+| `device_generation` | `iPhone 16` | Для навигации |
+| `compatible_model` | `iPhone 16 Pro Max` | Точная совместимость |
+| `print_id` | `FLR01` | Единый ключ дизайна |
+| `print_name` | `[PRINT_NAME]` | Название в Store |
+| `listing_url` | `[URL_REQUIRED]` | Проверенная ссылка |
+| `is_active` | `true/false` | Доступность листинга |
+| `store_page` | `Matte` | Целевая страница |
+| `image_status` | `approved/missing` | Статус контента |
+
+Примерная система SKU:
+
+- `MAT-IP16PM-FLR01` — матовый чехол iPhone 16 Pro Max, Floral 01.
+- `CLR-IP16PM-FLR01` — прозрачный чехол той же модели и принта.
+- `AP-PRO12-FLR01` — AirPods Pro/Pro 2 при подтверждённой общей совместимости.
+- `AP-4-FLR01` — AirPods 4.
+
+Существующие SKU **не переименовывать без отдельного анализа последствий** для учёта, фулфилмента и связей; схема применяется к новым SKU или как реестр псевдокодов. Parent–Child relationships и доступные variation themes отдельно сверять с текущим product-type template Amazon US. Brand Store не заменяет правильные вариации в товарных листингах.
+
+## 7. Связь с A+ Content
+
+Запланировать **три базовых A+ направления**:
+
+1. Matte iPhone.
+2. Clear iPhone.
+3. AirPods (при необходимости отдельные фотографии/версии для Pro/Pro 2 и AirPods 4).
+
+И **единый Brand Story** для бренда, если доступен в интерфейсе.
+
+Связать страницы Store и A+ через предусмотренные Amazon механизмы, не обещать произвольные интерактивные переходы там, где продукт их не предоставляет. Общие шаблоны A+ могут применяться к нескольким ASIN только при совпадении релевантных характеристик, конструкций и совместимостей. Не показывать на A+ изделие другой модели как текущий продаваемый товар.
+
+## 8. Реализация в Amazon Ads / Stores
+
+1. Проверить бренд, права доступа, актуальные правила Amazon US, доступные шаблоны/модули Store и размеры для каждого выбранного блока.
+2. Провести аудит каталога: реальные активные ASIN, совместимость, серии, принты, наличие фотографий.
+3. Подготовить sitemap, customer journey и wireframes desktop/mobile.
+4. Составить контент-матрицу с английскими заголовками, целевыми страницами и ASIN для всех плиток.
+5. Собрать дизайн-систему и изображения; показать владельцу на согласование.
+6. Собрать draft Store в Builder или сформировать подробные инструкции сборки, если доступа нет.
+7. Протестировать все ссылки, карточки ASIN, совместимости, mobile preview, читаемость и crop.
+8. Проверить соблюдение Store policies, отсутствие запрещённых заявлений и корректность прав на изображения.
+9. Подготовить checklist публикации и передать проект владельцу на утверждение. **Не нажимать Submit/Publish без явного согласия владельца.**
+10. После публикации предложить план оценки Store Insights и итераций.
+
+## 9. Проверка качества / Definition of Done
+
+- [ ] Все основные страницы логично связаны и работают на мобильном устройстве.
+- [ ] С главной можно попасть в Matte / Clear / AirPods максимум за один очевидный переход.
+- [ ] Для покупателя очевидно, как найти **свою** модель iPhone или AirPods.
+- [ ] Каждый магазинный product tile ведёт к фактическому доступному ASIN, без фиктивных ссылок.
+- [ ] Нет ложных утверждений о защите, MagSafe, совместимости, скидках и характеристиках.
+- [ ] Visual identity единая, но продукт различим на фото.
+- [ ] Принты и продукты представлены строго по реальному каталогу.
+- [ ] Изображения соответствуют требованиям выбранного модуля Stores.
+- [ ] Проверены desktop/mobile preview и адаптивная обрезка.
+- [ ] Все тексты написаны на естественном английском для Amazon US.
+- [ ] Список незакрытых вопросов и отсутствующих материалов передан владельцу.
+- [ ] Ничего не опубликовано без подтверждения.
+
+## 10. Ожидаемые артефакты от агента
+
+1. **Store sitemap** — дерево страниц и связей.
+2. **Content matrix** — таблица блоков: page, tile/module, copy (EN), image asset, target URL/ASIN, status.
+3. **Design directions** — цвет, типографика, стиль фотографий и 1–2 направления главного hero.
+4. **Desktop + mobile mockup** главной и шаблонов трёх категорий.
+5. **Asset list** — требуемые фотографии/экспорты, формат и размер по текущему Amazon Builder.
+6. **ASIN routing map** — какие реальные товары связаны с каждой категорией, моделью и принтом.
+7. **QA + publish checklist** — что проверить до и после модерации.
+8. **Post-launch measurement plan** — Store Insights: visits, page views, attributed sales, performance по страницам/источникам и улучшения на основе фактических данных.
+
+## 11. Ключевая инструкция агенту
+
+**Не начинай с красивых баннеров, пока не подтверждена матрица совместимостей и не определён путь покупателя до правильного товара.** Сначала продуктовая архитектура, затем дизайн и сборка. Если материалы отсутствуют — используй placeholders и передай список пробелов. Если текущие правила Amazon или Store Builder отличаются от этого документа, соблюдай актуальные официальные ограничения и фиксируй изменения.
 
 ## FILE: references/carousel-strategy.md
 
@@ -890,6 +1183,8 @@ Use this structure for RU, EN, or DE briefs.
 - Requirement status: AMAZON_REQUIRED / AMAZON_RECOMMENDED / PRODUCTION_PRESET / VERIFY_IN_UI
 - Format:
 - File-size limit:
+- Verified module/specification source and date:
+- Displayed desktop/mobile size and any separate mobile export:
 - Video duration / codec / fps / bitrate when relevant:
 
 ## 3. Source files
@@ -930,7 +1225,7 @@ For each element:
 - left/right/top/bottom protected zones;
 - mobile crop behavior;
 - UI overlays/link titles/buttons that may cover the image;
-- card overlays for Brand Story.
+- card overlays for Brand Story: separate Desktop and Mobile backgrounds, working margins (Desktop 48-64 px sides / 40-50 px top-bottom; Mobile 24-32 / 30-40), brand accent in the left third, Image Card inner padding 20-24 px; full ТЗ in `amazon-specs.md` section 5.
 
 ## 8. Video timeline
 
@@ -952,6 +1247,14 @@ Include placement-specific Amazon rules plus Product Fidelity Lock.
 - source-vs-output product comparison;
 - mobile preview;
 - Amazon UI preview before publishing.
+
+### Mandatory image/text clarity requirements
+
+For listing carousel, Brand Story, Brand Store, A+ Premium and A+ Basic, apply `image-quality.md` and paste its mandatory clarity block into **every individual brief**, filling in export settings, typography at displayed size and acceptance checks. This block must travel with a brief sent outside this repository.
+
+Require high-quality originals, an editable layered master, deterministic text compositing/native text, one final resize and a visually checked export. Do not accept blurred product detail, merging letters, unreadable thin text, compression artifacts or sharpening halos merely because dimensions and file weight pass.
+
+Deliver the master, final upload file, desktop/mobile previews and separate `LOCAL_CLARITY_QA` / `AMAZON_RENDER_QA` results. Check Amazon clarity after upload/processing; if access/upload is unavailable, record `NOT_CHECKED`, not a pass. Upload readiness and post-upload acceptance are separate.
 
 ## 11. Mandatory layout scheme per image/banner
 
@@ -1063,6 +1366,86 @@ Keep one `Product Row ID` per GTIN so every asset traces back to its image and r
 ## Scale
 
 Many GTINs: process all clean matches in one plan and one C1; group the table by product. Do not ask per SKU.
+
+## FILE: references/image-quality.md
+
+# Image and text clarity: production and Amazon acceptance
+
+This mandatory internal `PRODUCTION_PRESET` applies to **listing carousel (MAIN and secondary images), Brand Story, Brand Store, A+ Premium and A+ Basic**. Include it in every designer brief and AI production prompt, including standalone handoffs. Passing dimensions, format and file-weight checks alone does not establish visual quality.
+
+The goal is clear product details, clean graphics and readable approved text at the actual shopper display size, including after upload and Amazon processing. Do not promise zero recompression or identical pixels: inspect the final Amazon-rendered result. Do not diagnose an existing blurry image without comparing its source, export and rendered version.
+
+## 1. Sources and editable master
+
+- Use high-quality original product photographs, original logos and vector graphics. Do not use thumbnails, screenshots, messenger-compressed copies or previously compressed exports as masters.
+- Inspect the protected product and label at the intended output scale. Enlarging a small source, changing DPI metadata or asking for "4K/8K/ultra sharp" does not restore missing detail. Flag an insufficient source and request a better original; never invent label text or product texture.
+- Keep an editable master with separate product, background, vector graphics and live text layers. A larger working canvas is optional when the source supports it; it is not an instruction to upload oversized files.
+- Preserve Product Fidelity Lock. Do not sharpen, denoise or regenerate the protected product in a way that changes packaging, letters, texture or color. Background depth of field is allowed; the product and marketing text must remain in focus.
+
+## 2. Typography and layout that survive reduction
+
+- Prefer native Amazon text fields where the selected module supports the required copy; verify that the text also appears on mobile. Never add marketing text to MAIN.
+- For embedded marketing text, generate the scene first, then typeset the exact approved copy with a deterministic text/compositing tool. Keep letters and icons editable/vector until final raster export; do not depend on generated lettering for the final asset.
+- Use a clear font with sufficient stroke weight, strong text/background contrast and a quiet text zone. Avoid thin/light fonts, tiny footnotes, narrow letter spacing, hairline graphics and small saturated colored type that degrades when reduced. Simplify or split dense copy across assets; do not shrink it to make it fit.
+- Define font sizes at the displayed image scale. Internal starting targets: body/callouts at least **16 px**, headline at least **24 px** at intended mobile display size; key graphic strokes about **2 displayed px** or more. These are production targets, **not Amazon requirements**; inspect the actual font, module and crop.
+- Estimate scaling with `displayed text px = export text px * displayed image width / exported image width`. For a crop/card use that asset's actual rendered scale, not the page width. Check at 375 px and 430 px viewport widths as internal preview presets, plus the actual Amazon mobile layout when accessible.
+- Provide a separate mobile composition/export where supported if the desktop layout cannot remain readable. Preserve approved copy and product proportions.
+
+## 3. Export without avoidable quality loss
+
+- Record placement/module, marketplace, upload pixel box, aspect ratio, accepted format and file-weight limit from the current builder or verified specification, with source/date and requirement labels. Unknown production-critical values stay `VERIFY_IN_UI`.
+- Export at the approved upload size in sRGB. Keep the carousel's existing 4000 x 4000 preset; for A+ Basic, A+ Premium, Brand Story and Store use the selected module's own verified upload specification. Do not reuse one dimension everywhere or upload 2x/4x files assuming Amazon will preserve them.
+- Resize from the editable master once with high-quality resampling; rasterize text/graphics at final pixel size. Never stretch images, repeatedly resize flattened text or repeatedly save JPEGs. DPI metadata is not a substitute for pixel resolution.
+- Where accepted, prefer lossless PNG for text-heavy layouts, line art and flat graphics if it fits the limit. Use high-quality JPEG for photographs or when required by the uploader/file-weight budget. Internal JPEG starting point: quality 90-95, with 4:4:4 chroma sampling for embedded text/colored edges when supported. Encoder scales vary; inspect and adjust within the placement limit. These are presets, not Amazon mandates or guarantees.
+- Optimize weight without visible damage. Strip unnecessary metadata while retaining/embedding sRGB information; use lossless optimization where useful. Compare edges and letters after compression changes. Reject blur, ringing, blocks, color bleeding and broken strokes.
+- Use only restrained output sharpening after resizing where needed and without altering the protected product. Reject halos and brittle edges. Replace a weak source instead of cosmetically declaring it sharp.
+- If quality and file-weight constraints cannot both pass, revise background detail or approved layout/text density, or obtain a better source. Follow the existing approval rule before reducing carousel pixels. Never silently relax quality to pass the validator.
+
+## 4. Placement-specific checks
+
+| Placement | Required clarity check |
+|---|---|
+| Listing carousel | MAIN product edges/details remain natural and focused; no added text. Secondary-image headlines, callouts and icons remain readable in the normal mobile gallery without zoom. |
+| Brand Story | Inspect background and foreground cards separately, including mobile crops and overlays; essential text/branding must not disappear beneath cards. |
+| Brand Store | Inspect hero and each tile at their own desktop/mobile scale; prefer native text and verify essential copy in any custom mobile layout. |
+| A+ Premium | Check each selected module and separate mobile asset; larger banners must not justify smaller displayed copy. Inspect carousel/hotspot overlays where used. |
+| A+ Basic | Check each selected module at actual display size; simplify small comparison images and dense layouts, using available native text fields. Do not copy Premium dimensions. |
+
+## 5. Two-stage QA and acceptance
+
+Record **both** results per asset; a technical validator cannot certify visual clarity.
+
+1. `LOCAL_CLARITY_QA = PASS / FAIL`: inspect the final upload file at 100% pixels for defects and at actual desktop/mobile display size for readability. Compare with the original; check exact copy, letter edges, product fidelity, graphic strokes, crops and safe zones. Save export settings and preview evidence. A locally downscaled/recompressed preview is a stress test, not proof of Amazon's processing.
+2. `AMAZON_RENDER_QA = PASS / FAIL / NOT_CHECKED`: after an authorized upload has finished processing and fully loaded, inspect Amazon's desktop/mobile preview. Inspect the live customer-facing page when available; record evidence scope as `BUILDER_PREVIEW` or `LIVE_PAGE`. A preview-only pass keeps live verification pending. Capture asset/version, marketplace/module, date, page/preview reference, viewport/device and screenshots where possible.
+
+Acceptance: intended marketing copy is readable without zoom; letters/icons do not merge or bleed; no visible blocks, halos or soft focus at normal display size; product details remain faithful and are not degraded by production. Do not require microscopic physical label text to be readable in a thumbnail.
+
+If Amazon QA fails, compare source -> export -> Amazon-rendered image; identify source, export, text-scale, crop or rendering issues; revise from the master, re-export and recheck through the authorized upload workflow. Do not repeatedly re-save the uploaded JPEG.
+
+If access, upload authorization or a live page is unavailable, mark the relevant check `NOT_CHECKED`, stating why and what must be checked next. Do not upload/publish solely to complete this checklist without authorization. `READY FOR AMAZON CREATIVE UPLOAD` may mean local QA passed and upload can proceed; it **never** means post-upload clarity passed. Failed local QA blocks upload readiness; failed Amazon QA blocks final acceptance.
+
+## 6. Mandatory block in every brief and AI prompt
+
+Include this block in full, translate as needed and fill its per-asset values. A reference link alone is insufficient for a standalone handoff.
+
+```text
+IMAGE AND TEXT CLARITY — REQUIRED PRODUCTION QUALITY
+Placement/module: [carousel / Brand Story / Brand Store / A+ Premium / A+ Basic; exact module].
+Upload export: [W x H px, aspect, accepted format, sRGB, file-weight limit, verified source/date].
+Keep the product, graphics and approved text clear at actual desktop/mobile size; verify again after Amazon upload/processing. Technical acceptance alone is not visual acceptance.
+Use high-quality originals and an editable layered master. Do not enlarge a poor source and present it as restored detail; never redraw product/label details.
+Typeset exact approved copy in native Amazon fields where supported, otherwise deterministic editable text layers rasterized at final size. MAIN has no added marketing text.
+Displayed text/graphics: [font, weight, export px -> displayed px, contrast, stroke width, mobile layout/crop]. No tiny/thin type or crowded copy.
+Resize once from the master. Use lossless PNG for text/graphics if accepted and within limit, otherwise visually checked high-quality JPEG; avoid repeated JPEG saves and aggressive compression/sharpening.
+Export settings: [format, quality/chroma sampling if applicable, resampling, profile, final bytes].
+LOCAL_CLARITY_QA: [PASS / FAIL; evidence at 100% and desktop/mobile display size].
+AMAZON_RENDER_QA: [PASS / FAIL / NOT_CHECKED; BUILDER_PREVIEW / LIVE_PAGE; device/viewport, date, evidence or reason pending].
+Deliver the editable master, final upload file, previews and QA record. If text blurs, edges bleed or product detail deteriorates, revise and recheck. Never claim post-upload success without inspecting the Amazon-rendered result.
+```
+
+## Requirement boundaries
+
+Placement limits remain governed by `amazon-specs.md` and current official sources/the selected Amazon builder. The typography targets, export settings and two-stage QA above are internal production standards, not additional verified Amazon requirements. Do not copy Store guidance into A+ modules or infer universal uploader limits.
 
 ## FILE: references/image-reading.md
 
@@ -1287,11 +1670,11 @@ Run before every final report. Fix what you can; report only what remains.
 
 Covers: file readable, format, color mode (RGB only for A+), file size, dimensions vs. preset/minimum, aspect ratio, MAIN white background and edge-clipping heuristics, MAIN product fill estimate, video container/codec/fps/duration/bitrate via `ffprobe` (when installed), Store/SB limits. Anything that cannot be checked deterministically is returned as `MANUAL` or `VERIFY_IN_UI`, never as PASS.
 
-Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
+Placement ids now include `pdp-main`/`pdp-secondary` (<= 10 MB, >= 2000x2000 recommended, 4000x4000 preset, sRGB, >= 72 dpi), `aplus-comparison` (150x300), `brand-story-bg` (1464x625), `brand-story-card` (362x453), `brand-story-bg-mobile` (463x625), `brand-story-logo` (315x145), `brand-story-asin` (166x182). After preflight passes, pack the carousel with `scripts/pack_upload_zip.py` (ASIN naming).
 
 ### File-size rule (carousel, <= 10 MB)
 
-A 4000x4000 file over 10 MB is fixed by **compression, not by fewer pixels**: re-export as optimized JPEG (quality ~85-92, progressive, sRGB, metadata stripped) and re-run the validator. Only if it still does not fit, **stop and warn the user**: state the current size, the pixel size you propose (never below 2000x2000, the Amazon recommended floor) and the reason; reduce pixels only after the user agrees, and record it in the workbook `ISSUES` sheet. Never reduce silently.
+A 4000x4000 file over 10 MB is fixed by **export optimization, not by fewer pixels**: follow `image-quality.md`, compare allowed formats, remove unnecessary metadata while retaining sRGB information, and re-export from the master. For JPEG, start at quality 90-95 (encoder-dependent), adjust within the limit, and inspect text/edges after each change. Do not accept visible damage to meet file weight. Re-run the validator and local clarity QA. If quality and file weight still cannot both pass, **stop and warn the user**: state the current size, proposed correction (including any pixel-size reduction, never below the existing 2000x2000 floor) and reason; reduce pixels only after the user agrees and record it in the workbook `ISSUES` sheet. Never reduce silently.
 
 ### PT slots
 
@@ -1305,21 +1688,32 @@ The number of PT slots per category is `VERIFY_IN_UI`. The agent plans MAIN + 6 
 | Exact text | every text block equals the approved copy character-for-character; locale spelling, units, decimal separators correct |
 | Layout | matches the approved verbal wireframe; reading order works; nothing covers the product's logo/label |
 | Safe zones | Store hero central safe area, tile link-title overlay, Brand Story cards/crops, A+ responsive crop respected |
+| Brand Story | separate Desktop (1464x625) and Mobile (463x625) previews built (`scripts/brand_story_preview.py`); cards over background checked on first screen, scroll and extreme positions; nothing important cropped/covered; no key text/faces behind cards; background has no baked-in cards; Mobile is its own composition; sizes rechecked against the current Seller Central uploader |
 | Mobile | text legible at phone display size (approx. 375 px wide preview) |
+| Local clarity | `image-quality.md`: final export checked at 100% pixels and actual desktop/mobile size; clean product detail, readable text, no merging letters, color bleeding, compression blocks or sharpening halos |
+| Amazon-rendered clarity | after authorized upload and completed processing, inspect rendered desktop/mobile preview/page; record scope and evidence separately, or `NOT_CHECKED` if unavailable |
 | Claims | every claim traceable to a supplied fact; no strengthened translation; no invented award/cert/comparison |
 | Policy | MAIN rules; no watermark, QR code, hyperlink, HTML, animated GIF in A+; language matches the selected content language |
 
-## 3. Status
+## 3. Clarity QA record
+
+Apply `image-quality.md` to every carousel, Brand Story, Brand Store, A+ Premium and A+ Basic asset. Record `LOCAL_CLARITY_QA = PASS / FAIL` and `AMAZON_RENDER_QA = PASS / FAIL / NOT_CHECKED`, with asset/version, export settings, viewport/device, date, evidence and correction if needed. Distinguish `BUILDER_PREVIEW` from `LIVE_PAGE`; a preview pass does not certify an unseen live page. Use the existing `QA / Preflight Result` column for both statuses, `Notes` for evidence and settings, and ISSUES for failures/pending verification.
+
+Technical script results and sharpness metrics are not visual acceptance. If Amazon quality fails, return to the master, fix the cause and repeat relevant checks. No access or authorized upload means Amazon QA is pending; never fabricate a screenshot, inspection or pass.
+
+## 4. Status
 
 Per asset, then overall:
 
-- `READY FOR AMAZON CREATIVE UPLOAD` - all required checks PASS; only informational `VERIFY_IN_UI` notes remain that are not blocking.
+- `READY FOR AMAZON CREATIVE UPLOAD` - all required pre-upload checks, including local clarity, PASS; only informational `VERIFY_IN_UI` notes remain that are not blocking. Report Amazon QA separately; `NOT_CHECKED` is pending post-upload verification, not final visual acceptance.
 - `READY AFTER USER-APPROVED CROP/EXPORT` - content correct, a mechanical crop/resize/format change is needed and the user must approve it.
 - `NOT READY FOR AMAZON CREATIVE UPLOAD` - any failed check, any unauthorized product mismatch, or any unverified production-critical spec.
 
 Each `NOT READY` line: `asset - placement - issue - exact correction - who (agent/user)`.
 
 Write failures to the workbook `ISSUES` sheet.
+
+A failed local clarity check blocks upload readiness. A failed Amazon check blocks final acceptance and requires a corrected export; mark that version `NOT READY FOR AMAZON CREATIVE UPLOAD` for correction. Do not publish/upload solely to satisfy QA without authorization.
 
 ## FILE: references/universal-xlsx-intake.md
 
@@ -1509,6 +1903,8 @@ Use these sheets when useful:
 - `ISSUES` - missing inputs, Amazon compliance issues, claim risks, QA failures.
 
 The workbook must remain usable even if some assets are only concepts and have no URL yet.
+
+For carousel, Brand Story, Brand Store, A+ Premium and A+ Basic rows, apply `image-quality.md`. Put the filled clarity requirements in `Internal Production Rules`, actual displayed typography/crops in `Mobile / Responsive Notes`, both `LOCAL_CLARITY_QA` and `AMAZON_RENDER_QA` statuses in `QA / Preflight Result`, and export settings/evidence scope/date in `Notes`. Use `NOT_CHECKED` for uninspected Amazon renders. Record failures and pending checks in `ISSUES`; do not invent additional JSON column names, which the builder ignores.
 
 If multiple categories/types are present, never collapse them into a single project-level value. Preserve category and product type on every relevant row.
 

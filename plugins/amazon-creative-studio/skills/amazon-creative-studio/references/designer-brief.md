@@ -18,6 +18,8 @@ Use this structure for RU, EN, or DE briefs.
 - Requirement status: AMAZON_REQUIRED / AMAZON_RECOMMENDED / PRODUCTION_PRESET / VERIFY_IN_UI
 - Format:
 - File-size limit:
+- Verified module/specification source and date:
+- Displayed desktop/mobile size and any separate mobile export:
 - Video duration / codec / fps / bitrate when relevant:
 
 ## 3. Source files
@@ -58,7 +60,7 @@ For each element:
 - left/right/top/bottom protected zones;
 - mobile crop behavior;
 - UI overlays/link titles/buttons that may cover the image;
-- card overlays for Brand Story.
+- card overlays for Brand Story: separate Desktop and Mobile backgrounds, working margins (Desktop 48-64 px sides / 40-50 px top-bottom; Mobile 24-32 / 30-40), brand accent in the left third, Image Card inner padding 20-24 px; full ТЗ in `amazon-specs.md` section 5.
 
 ## 8. Video timeline
 
@@ -80,6 +82,14 @@ Include placement-specific Amazon rules plus Product Fidelity Lock.
 - source-vs-output product comparison;
 - mobile preview;
 - Amazon UI preview before publishing.
+
+### Mandatory image/text clarity requirements
+
+For listing carousel, Brand Story, Brand Store, A+ Premium and A+ Basic, apply `image-quality.md` and paste its mandatory clarity block into **every individual brief**, filling in export settings, typography at displayed size and acceptance checks. This block must travel with a brief sent outside this repository.
+
+Require high-quality originals, an editable layered master, deterministic text compositing/native text, one final resize and a visually checked export. Do not accept blurred product detail, merging letters, unreadable thin text, compression artifacts or sharpening halos merely because dimensions and file weight pass.
+
+Deliver the master, final upload file, desktop/mobile previews and separate `LOCAL_CLARITY_QA` / `AMAZON_RENDER_QA` results. Check Amazon clarity after upload/processing; if access/upload is unavailable, record `NOT_CHECKED`, not a pass. Upload readiness and post-upload acceptance are separate.
 
 ## 11. Mandatory layout scheme per image/banner
 

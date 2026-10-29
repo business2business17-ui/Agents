@@ -38,6 +38,7 @@
 - **Спрашивает категорию, тип товара, страну и язык**; свежие требования ищет в интернете (`references/live-research.md`).
 - **Скрипты запускает сам агент:** проверка изображений/видео (`validate_asset.py`), сборка production XLSX (`build_workbook.py`), сопоставление файлов с товарами по GTIN (`match_inputs.py`).
 - **Честные статусы:** `READY FOR AMAZON CREATIVE UPLOAD` только после проверок, иначе `NOT READY…` с точными причинами.
+- **Четкость после загрузки:** каждое ТЗ дизайнеру и промпт AI-агенту для карусели, Brand Story, Brand Store, A+ Premium и A+ Basic содержит требования к исходникам, читаемому тексту, экспорту и проверке результата в Amazon. Локальная проверка и проверка после обработки Amazon фиксируются отдельно; без просмотра результат не считается проверенным. Стандарт: [`image-quality.md`](plugins/amazon-creative-studio/skills/amazon-creative-studio/references/image-quality.md).
 
 ## Подключение
 

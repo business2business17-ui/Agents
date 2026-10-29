@@ -1,0 +1,119 @@
+[
+  {
+    "file": "01_MAIN.jpg",
+    "copy": "",
+    "layout": "One packaged product on white; existing photographic composite retained.",
+    "source": "images/4751045862134.png",
+    "dimensions": "4000 x 4000",
+    "bytes": 1890693,
+    "placement": "pdp-main"
+  },
+  {
+    "file": "02_Hero.jpg",
+    "copy": "NATURAL SOAP BAR\nFrankincense\nsoap for calm,\nsoft skin\nSoothing daily cleanse.\nComfort for\nsensitive-feeling skin.",
+    "layout": "Reference composition: typography upper right; real unwrapped bar lower left; photographic resin lower right.",
+    "source": "20261017_100454.png",
+    "dimensions": "4000 x 4000",
+    "bytes": 1745887,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "03_Benefits.jpg",
+    "copy": "Key benefits\nSoothing daily cleanse\nComfort for\nsensitive-feeling skin\nLeaves skin feeling soft\nFor face & body",
+    "layout": "Title top left; source product lower left; four benefit blocks right.",
+    "source": "20261017_100405.png",
+    "dimensions": "4000 x 4000",
+    "bytes": 1150269,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "04_How_to_use.jpg",
+    "copy": "How to use\n1. Wet hands and the soap bar\n2. Lather and cleanse gently\n3. Rinse well; let the bar dry between uses",
+    "layout": "Three numbered typographic steps; small real bar bottom right.",
+    "source": "20261017_100454.png",
+    "dimensions": "4000 x 4000",
+    "bytes": 876238,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "05_Ingredients.jpg",
+    "copy": "What's inside\nFrankincense\nBoswellia Carterii Oil\nShea butter\nButyrospermum Parkii Butter\nCoconut oil\nCocos Nucifera Oil",
+    "layout": "Unwrapped soap left; three ingredient name pairs right; composition per user table.",
+    "source": "20261017_100402.png",
+    "dimensions": "4000 x 4000",
+    "bytes": 966695,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "06_Size_weight.jpg",
+    "copy": "Size & weight\n100 g\n8 × 5 × 2.5 cm",
+    "layout": "Large weight upper left; dimensions below; real bar bottom right, no inferred measurement arrows.",
+    "source": "20261017_100454.png",
+    "dimensions": "4000 x 4000",
+    "bytes": 1037822,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "07_Ritual.jpg",
+    "copy": "Your daily cleansing ritual\nFrankincense soap for calm, soft skin",
+    "layout": "Typographic reassurance upper left; real soap lower right on photographic stone.",
+    "source": "20261017_100454.png",
+    "dimensions": "4000 x 4000",
+    "bytes": 1148044,
+    "placement": "pdp-secondary"
+  },
+  {
+    "file": "B1_Basic_Hero.jpg",
+    "copy": "ZAptieka\nFrankincense\nsoap for calm,\nsoft skin\nSoothing daily cleanse.\nComfort for sensitive-feeling skin.",
+    "layout": "Wide composition: left 56% text, right 29% immutable real product, photographic ivory stone background.",
+    "source": "20261017_100454.png",
+    "dimensions": "970 x 600",
+    "bytes": 71021,
+    "placement": "aplus-basic"
+  },
+  {
+    "file": "B2_Basic_Ritual.jpg",
+    "copy": "ZAptieka\nA gentle\ndaily ritual\nWet. Lather. Rinse.\nLet the bar dry between uses.",
+    "layout": "Wide composition: left 56% text, right 29% immutable real product, photographic ivory stone background.",
+    "source": "20261017_100405.png",
+    "dimensions": "970 x 600",
+    "bytes": 68539,
+    "placement": "aplus-basic"
+  },
+  {
+    "file": "B3_Basic_Ingredients.jpg",
+    "copy": "ZAptieka\nWhat's inside\nFrankincense — Boswellia Carterii Oil\nShea butter\nCoconut oil\n100 g",
+    "layout": "Wide composition: left 56% text, right 29% immutable real product, photographic ivory stone background.",
+    "source": "20261017_100454.png",
+    "dimensions": "970 x 600",
+    "bytes": 61200,
+    "placement": "aplus-basic"
+  },
+  {
+    "file": "P1_Premium_Hero.jpg",
+    "copy": "ZAptieka\nFrankincense\nsoap for calm, soft skin",
+    "layout": "Wide composition: left 56% text, right 29% immutable real product, photographic ivory stone background.",
+    "source": "20261017_100454.png",
+    "dimensions": "1464 x 600",
+    "bytes": 86196,
+    "placement": "aplus-premium"
+  },
+  {
+    "file": "P2_Premium_Ingredients.jpg",
+    "copy": "ZAptieka\nFrankincense\nBoswellia Carterii Oil\nShea butter · Coconut oil",
+    "layout": "Wide composition: left 56% text, right 29% immutable real product, photographic ivory stone background.",
+    "source": "20261017_100454.png",
+    "dimensions": "1464 x 600",
+    "bytes": 93885,
+    "placement": "aplus-premium"
+  },
+  {
+    "file": "P3_Premium_Ritual.jpg",
+    "copy": "ZAptieka\nYour daily cleansing ritual\nWet. Lather. Rinse.\nLet the bar dry between uses. · 100 g",
+    "layout": "Wide composition: left 56% text, right 29% immutable real product, photographic ivory stone background.",
+    "source": "20261017_100454.png",
+    "dimensions": "1464 x 600",
+    "bytes": 100143,
+    "placement": "aplus-premium"
+  }
+]
